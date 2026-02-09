@@ -1,0 +1,754 @@
+================================================================================
+                    LOOT BOX CREATOR - PROJECT SUMMARY
+================================================================================
+
+PROJECT OVERVIEW
+--------------------------------------------------------------------------------
+A web-based loot box creation and opening app with deep space royal blue 
+aesthetic. Users can create custom loot boxes with configurable items, 
+percentages, and opening mechanics. Built with React (via CDN) in a single 
+HTML file for easy deployment and testing.
+
+CURRENT STATUS: Single HTML file (loot-box-app-v2.html) - fully functional 
+for local boxes, Firebase integration pending for shared boxes.
+
+
+================================================================================
+COMPLETED FEATURES
+================================================================================
+
+CORE FUNCTIONALITY
+--------------------------------------------------------------------------------
+✓ Create Boxes
+  - Box name input
+  - Type selection (local/shared)
+  - Max pulls limit (optional)
+  - Hide contents option (shows "???" for items, "Mystery Item" for other users)
+  - Hide odds option (completely hides odds panel)
+
+✓ Add Items to Boxes
+  - Item name
+  - Percentage (must total exactly 100%)
+  - Color picker (8 predefined colors)
+  - Max quantity (optional, enables dynamic odds)
+  - Real-time percentage validation with remaining % display
+
+✓ Edit Boxes
+  - Full editing of existing boxes
+  - Modify box name, settings, items
+  - Pre-fills all data in edit mode
+  - Can add/remove/edit items
+
+✓ Edit Items
+  - Click edit button on any item
+  - Pre-fills form with item data
+  - Update button replaces add button
+  - Cancel option to exit edit mode
+
+✓ Delete Boxes
+  - Custom modal confirmation dialog (no browser popups)
+  - Shows box name in confirmation
+  - Properly clears state if viewing deleted box
+  - Success toast notification
+
+✓ Open Boxes
+  - 2-second spinning box animation
+  - Beautiful reveal with item color glow
+  - Shows item name and percentage
+  - Can open multiple times (if pulls remaining)
+  - Name entry prompt for shared boxes
+
+✓ Dynamic Odds System
+  - Automatically adjusts percentages when limited items run out
+  - Normalizes to always total 100%
+  - Shows remaining quantity for limited items
+  - Prevents opening when all items claimed
+
+✓ Pull History
+  - Chronological list of all pulls
+  - Shows: item name, user name, timestamp, color dot
+  - Respects hideContents (user sees their own pulls, others see "Mystery Item")
+  - Auto-scrolling list (newest at top)
+
+
+UI/UX DESIGN
+--------------------------------------------------------------------------------
+✓ Royal Blue Color Scheme
+  - Dark royal blue (#1e40af) primary
+  - Sky blue (#3b82f6) accents
+  - Deep space dark backgrounds (#0a0e1a → #1a1f35)
+  - Gold accents for premium features
+  - Red for danger/delete actions
+
+✓ Custom Styling
+  - Glass morphism cards with backdrop blur
+  - Custom scrollbars with rounded edges and glow on hover
+  - No spinner arrows on number inputs
+  - Toast notifications (slide up from bottom, 3sec auto-dismiss)
+  - Smooth animations (fadeIn, slideUp, spin, pulse, glow)
+
+✓ Layout Components
+  - Header with notification badge and settings icon
+  - Filter tabs (Shared/New/Local)
+  - Responsive grid for box cards
+  - Two-column layout in box opener (odds + history)
+
+✓ Interactive Elements
+  - Hover effects on all buttons and cards
+  - Edit/delete buttons on box cards (top-right corner)
+  - Color picker with 8 colors, visual selection feedback
+  - Loading states and disabled states
+
+
+DATA MANAGEMENT
+--------------------------------------------------------------------------------
+✓ LocalStorage Implementation
+  - Key: 'lootBoxes' - array of all boxes
+  - Key: 'userSettings' - user preferences
+  - Automatic save on create/edit/delete/pull
+  - Loads on app mount
+
+✓ Free Tier Limits (enforced)
+  - Max 5 local boxes
+  - No shared boxes allowed
+  - canCreateLocalBox() checks count
+
+✓ Paid Tier (UI only, not enforced)
+  - Unlimited local boxes
+  - Unlimited shared boxes
+  - Premium badge in header
+  - Additional features planned (analytics, sounds, custom images)
+
+
+================================================================================
+NOT YET IMPLEMENTED
+================================================================================
+
+HIGH PRIORITY
+--------------------------------------------------------------------------------
+☐ Firebase Integration
+  - Real-time shared/community boxes
+  - Pull notifications
+  - User authentication
+  - Cloud storage for shared boxes
+
+☐ Box Image Library
+  - 10-15 default PNG box images
+  - Image selector in create/edit
+  - Free vs premium image sets
+  - Base64 encoding for small images
+
+☐ Notification System
+  - Activity feed panel
+  - New pull notifications
+  - Expiring box warnings
+  - Badge count on header icon
+
+☐ User Authentication
+  - Login/signup flow
+  - Display name management
+  - Paid tier verification
+  - Account settings
+
+
+MEDIUM PRIORITY
+--------------------------------------------------------------------------------
+☐ Settings Page
+  - Theme toggle (dark/light mode options)
+  - Display name input
+  - Sound effects toggle
+  - Default preferences
+
+☐ Share URL Generation
+  - Integration with URL shortener API (TinyURL, Bitly, etc.)
+  - Copy to clipboard functionality
+  - QR code generation
+  - Share via social media
+
+☐ Sound Effects
+  - Opening sound (whoosh/reveal)
+  - Pull success sound
+  - Button click sounds
+  - Paid tier feature
+  - Volume control in settings
+
+☐ Analytics Dashboard (Paid Feature)
+  - Who opened boxes
+  - Pull statistics
+  - Most popular items
+  - Time-based charts
+
+
+NICE TO HAVE
+--------------------------------------------------------------------------------
+☐ Box Templates
+  - Pre-made boxes users can customize
+  - Categories (gaming, raffle, giveaway)
+  - One-click copy and edit
+
+☐ Custom Image Upload
+  - User uploads their own box images
+  - Paid tier feature
+  - File size limits
+  - Image preview
+
+☐ Expiration Management
+  - Auto-delete expired boxes
+  - Extension functionality
+  - Email/notification before expiration
+
+☐ Export/Import Feature
+  - Export boxes to JSON file
+  - Import from JSON
+  - Useful for backups and version transfers
+
+☐ Mobile App
+  - PWA (Progressive Web App)
+  - Installable on home screen
+  - Offline functionality
+  - Push notifications
+
+
+================================================================================
+CURRENT ARCHITECTURE
+================================================================================
+
+FILE STRUCTURE
+--------------------------------------------------------------------------------
+Single File: loot-box-app-v2.html
+
+Contents:
+  1. HTML Head
+     - React CDN imports (react, react-dom, babel)
+     - Google Fonts (Inter)
+     - Global CSS styles
+
+  2. CSS Section
+     - Root variables (colors, spacing, fonts)
+     - Custom scrollbars
+     - Animation keyframes
+     - Responsive breakpoints
+     - Number input spinner removal
+
+  3. React Components (inline via Babel)
+     - Utility Functions
+     - Common Components (Button, Input, Card, Toast)
+     - Layout Components (Header, FilterTabs, ConfirmDialog)
+     - Box Components (BoxCard, BoxCreator, BoxOpener)
+     - Item Components (ItemCreator, ItemList)
+     - Main App Component
+
+  4. Render
+     - ReactDOM.render(<App />, document.getElementById('root'))
+
+
+COMPONENT HIERARCHY
+--------------------------------------------------------------------------------
+App (main state management)
+├── Header
+│   ├── Title (gradient text)
+│   ├── Tier Badge (Free/Premium)
+│   ├── Notification Button (with badge count)
+│   └── Settings Button
+│
+├── Home Mode
+│   ├── FilterTabs (Shared/New/Local)
+│   ├── Create Button
+│   └── BoxCard Grid
+│       └── BoxCard (multiple)
+│           ├── Edit Button
+│           ├── Delete Button (triggers ConfirmDialog)
+│           └── ConfirmDialog (portal-style)
+│
+├── Create/Edit Mode
+│   └── BoxCreator
+│       ├── Box Settings (name, type, maxPulls, hide options)
+│       ├── ItemCreator
+│       │   ├── Item form
+│       │   ├── Remaining percentage display
+│       │   └── Color picker
+│       └── ItemList
+│           └── Item cards with edit/delete
+│
+├── Open Mode
+│   └── BoxOpener
+│       ├── Header (back button, name, pulls remaining)
+│       ├── Opening Animation Area
+│       │   ├── Ready state (box icon)
+│       │   ├── Opening state (spinning animation)
+│       │   └── Result state (item reveal with glow)
+│       ├── Open Button
+│       ├── Current Odds Panel (if not hidden)
+│       └── Pull History Panel
+│
+└── ToastContainer (notifications)
+
+
+UTILITY FUNCTIONS
+--------------------------------------------------------------------------------
+calculateDynamicOdds(items, pullHistory)
+  - Filters out fully-claimed items
+  - Recalculates percentages to total 100%
+  - Returns adjusted odds with remaining counts
+
+validatePercentages(items)
+  - Sums all item percentages
+  - Returns {valid, total, message}
+  - Used to enable/disable create button
+
+getRemainingPercentage(items)
+  - Calculates 100 - sum of current items
+  - Used in real-time as items are added
+
+generateShareCode()
+  - Creates 6-character alphanumeric code
+  - Used for box sharing (not yet implemented)
+
+localStorage helpers:
+  - getAllBoxes()
+  - saveBox(box)
+  - deleteBox(boxId)
+  - getBoxById(boxId)
+  - getUserSettings()
+  - saveUserSettings(settings)
+  - canCreateLocalBox()
+
+
+================================================================================
+DESIGN SYSTEM
+================================================================================
+
+COLOR PALETTE
+--------------------------------------------------------------------------------
+Backgrounds:
+  --color-bg-primary: #0a0e1a (darkest)
+  --color-bg-secondary: #0f1624 (dark)
+  --color-bg-tertiary: #1a1f35 (medium)
+  --color-bg-card: rgba(26, 31, 53, 0.6) (glass)
+
+Brand Colors:
+  --color-brand-primary: #1e40af (dark royal blue)
+  --color-brand-secondary: #2563eb (royal blue)
+  --color-brand-accent: #3b82f6 (sky blue)
+
+Text Colors:
+  --color-text-primary: #e2e8f0 (bright)
+  --color-text-secondary: #cbd5e1 (medium)
+  --color-text-tertiary: #94a3b8 (muted)
+
+Semantic Colors:
+  Success: #10b981 (green)
+  Warning: #f59e0b (gold/amber)
+  Error: #ef4444 (red)
+  Info: #3b82f6 (blue)
+
+Gradients:
+  Primary Button: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)
+  Secondary Button: linear-gradient(135deg, #2563eb 0%, #60a5fa 100%)
+  Open Button: linear-gradient(135deg, #1e40af 0%, #f59e0b 100%)
+  Header Title: linear-gradient(135deg, #3b82f6 0%, #60a5fa 50%, #93c5fd 100%)
+
+
+TYPOGRAPHY
+--------------------------------------------------------------------------------
+Font Family: 'Inter', sans-serif (from Google Fonts)
+Font Weights: 400 (normal), 500 (medium), 600 (semibold), 700 (bold)
+
+Font Sizes:
+  xs: 0.75rem
+  sm: 0.875rem
+  base: 1rem
+  lg: 1.125rem
+  xl: 1.25rem
+  2xl: 1.5rem
+  3xl: 1.875rem
+  4xl: 2.25rem
+
+
+SPACING & LAYOUT
+--------------------------------------------------------------------------------
+Border Radius:
+  sm: 6px
+  md: 12px
+  lg: 16px
+  xl: 24px
+
+Spacing:
+  xs: 0.5rem
+  sm: 0.75rem
+  md: 1rem
+  lg: 1.5rem
+  xl: 2rem
+
+Transitions:
+  fast: 0.15s ease
+  normal: 0.25s ease
+  slow: 0.4s ease
+
+
+ANIMATIONS
+--------------------------------------------------------------------------------
+fadeIn: opacity 0→1, translateY 10px→0, 0.4s
+slideUp: opacity 0→1, translateY 20px→0, 0.4s
+spin: rotate 0deg→360deg, 2s linear infinite
+pulse: opacity 1→0.5→1, 2s infinite
+glow: boxShadow intensity variation, 2s infinite
+
+
+================================================================================
+DATA STRUCTURES
+================================================================================
+
+BOX OBJECT
+--------------------------------------------------------------------------------
+{
+  id: string,                    // Unique identifier (timestamp)
+  name: string,                  // Display name
+  type: 'local' | 'shared',     // Box type
+  items: Array<Item>,            // Array of item objects
+  maxPulls: number | null,       // Pull limit (null = unlimited)
+  hideContents: boolean,         // Hide item names in odds/history
+  hideOdds: boolean,             // Hide entire odds panel
+  pullHistory: Array<Pull>,      // Array of pull records
+  createdAt: number,             // Unix timestamp
+  shareCode: string,             // 6-char code for sharing
+  boxImage: string | null,       // Image URL or base64 (not implemented)
+  expiresAt?: number             // Unix timestamp (for shared boxes)
+}
+
+
+ITEM OBJECT
+--------------------------------------------------------------------------------
+{
+  id: string,                    // Unique identifier
+  name: string,                  // Display name
+  percentage: number,            // Probability (0-100)
+  color: string,                 // Hex color code
+  maxQuantity: number | null     // Max pulls (null = unlimited)
+}
+
+
+PULL OBJECT
+--------------------------------------------------------------------------------
+{
+  itemId: string,                // Reference to item
+  itemName: string,              // Item name (for history)
+  percentage: number,            // Original percentage
+  color: string,                 // Item color
+  timestamp: number,             // Unix timestamp
+  userName: string               // Display name of puller
+}
+
+
+USER SETTINGS OBJECT
+--------------------------------------------------------------------------------
+{
+  tier: 'free' | 'paid',        // User tier
+  localBoxCount: number,         // Current count (for limit checking)
+  displayName: string,           // Display name
+  soundEnabled: boolean,         // Sound preference
+  theme: 'dark' | 'light'       // Theme preference (not implemented)
+}
+
+
+================================================================================
+TECHNICAL NOTES
+================================================================================
+
+LOCALSTORAGE KEYS
+--------------------------------------------------------------------------------
+'lootBoxes'      - Array of all box objects
+'userSettings'   - User preferences object
+'notifications'  - Array of notification objects (not implemented)
+
+
+FREE TIER ENFORCEMENT
+--------------------------------------------------------------------------------
+Limit: 5 local boxes maximum
+Check: canCreateLocalBox() function
+  - Returns true if tier === 'paid'
+  - Returns true if localBoxCount < 5
+  - Returns false otherwise
+Blocks: Create button and box save action
+
+
+PERCENTAGE VALIDATION
+--------------------------------------------------------------------------------
+Real-time validation as items are added:
+  1. Sum all item percentages
+  2. Round to 2 decimal places
+  3. Compare to 100
+  4. Show error if !== 100
+  5. Disable create button if invalid
+
+Display shows:
+  - "Perfect!" if exactly 100%
+  - "Missing X%" if under 100
+  - "Over by X%" if over 100
+
+
+DYNAMIC ODDS CALCULATION
+--------------------------------------------------------------------------------
+Triggered: Every time box is opened
+Process:
+  1. For each item, count pulls from history
+  2. Calculate remaining = maxQuantity - pulledCount
+  3. Filter out items with remaining = 0
+  4. Sum percentages of remaining items
+  5. Normalize each to (percentage / total) * 100
+  6. Return adjusted odds array
+
+Result: Odds always total 100% with available items only
+
+
+HIDE CONTENTS LOGIC
+--------------------------------------------------------------------------------
+In Odds Panel:
+  - If hideContents: show "???" instead of item name
+  - Color dot and percentage still visible
+
+In Pull History:
+  - Current user (who pulled): ALWAYS sees actual item name
+  - Other users: see "Mystery Item" if hideContents enabled
+  - Determined by comparing pull.userName to current user
+
+Rationale: User should know what THEY got, but not what others got
+
+
+HIDE ODDS LOGIC
+--------------------------------------------------------------------------------
+When hideOdds is enabled:
+  - Entire odds panel is hidden
+  - Pull history takes full width
+  - Grid changes from 2 columns to 1 column
+  - User must open blind (exciting!)
+
+
+================================================================================
+KNOWN ISSUES & LIMITATIONS
+================================================================================
+
+EXPECTED BEHAVIORS
+--------------------------------------------------------------------------------
+✓ LocalStorage clears when downloading new versions
+  - This is expected for file-based apps
+  - Each downloaded file has its own storage space
+  - Will be resolved with hosted version or Firebase
+
+✓ No persistence between browser sessions for file:// protocol
+  - LocalStorage works within same file instance
+  - Different browsers have different file origins
+
+
+NEEDS TESTING
+--------------------------------------------------------------------------------
+☐ Mobile responsiveness
+  - Touch interactions
+  - Small screen layouts
+  - Virtual keyboard behavior
+
+☐ Cross-browser compatibility
+  - Chrome (primary development)
+  - Firefox
+  - Safari
+  - Edge
+
+☐ Performance with many boxes
+  - 50+ boxes
+  - 100+ pulls per box
+  - Large pull histories
+
+
+NOT IMPLEMENTED YET
+--------------------------------------------------------------------------------
+☐ Firebase/cloud storage (all boxes are local only)
+☐ Real-time sync for shared boxes
+☐ User authentication
+☐ Paid tier enforcement (UI exists, no backend)
+☐ Actual box images (just emoji placeholder)
+☐ Sound effects
+☐ Email/push notifications
+☐ Analytics tracking
+☐ Export/import functionality
+
+
+================================================================================
+NEXT SESSION PRIORITIES
+================================================================================
+
+IMMEDIATE (Session Start)
+--------------------------------------------------------------------------------
+1. Test current functionality
+   - Create/edit/delete boxes
+   - Add/edit items with percentage validation
+   - Open boxes and verify dynamic odds
+   - Test hide contents/odds features
+
+2. Decide on next feature
+   - Firebase integration (biggest impact)
+   - Box image library (visual upgrade)
+   - Settings page (user experience)
+   - Mobile optimization (accessibility)
+
+
+RECOMMENDED NEXT STEPS
+--------------------------------------------------------------------------------
+Priority 1: Firebase Integration
+  Why: Enables the "shared box" feature which is core to the product
+  Tasks:
+    - Set up Firebase project
+    - Add Firebase SDK
+    - Implement real-time database
+    - Add authentication
+    - Migrate from localStorage to hybrid approach
+  Impact: HIGH - unlocks social features
+
+Priority 2: Box Image Library
+  Why: Makes the app more visually appealing and professional
+  Tasks:
+    - Find/create 10-15 quality PNG box images
+    - Implement image selector in create/edit
+    - Add base64 encoding for small images
+    - Create free vs premium image sets
+  Impact: MEDIUM - improves aesthetics
+
+Priority 3: Mobile Optimization
+  Why: Many users will access on mobile devices
+  Tasks:
+    - Test on various screen sizes
+    - Adjust layouts for touch
+    - Optimize button sizes
+    - Test virtual keyboard behavior
+  Impact: MEDIUM - improves accessibility
+
+Priority 4: Settings Page
+  Why: Allows users to customize their experience
+  Tasks:
+    - Create settings modal/page
+    - Add display name input
+    - Add sound toggle
+    - Add theme options
+    - Save preferences to localStorage
+  Impact: LOW - nice to have
+
+
+================================================================================
+DEVELOPMENT NOTES
+================================================================================
+
+PROS OF CURRENT APPROACH (Single HTML File)
+--------------------------------------------------------------------------------
+✓ Easy to deploy - just open the file
+✓ No build process required
+✓ No dependencies to manage
+✓ Easy to share and test
+✓ Works offline immediately
+✓ Simple to understand structure
+
+
+CONS OF CURRENT APPROACH
+--------------------------------------------------------------------------------
+✗ Large file size (~2000 lines)
+✗ Hard to maintain as features grow
+✗ No code splitting
+✗ No hot module reloading
+✗ Limited TypeScript/tooling support
+✗ All code loaded at once
+
+
+WHEN TO REFACTOR TO MODULAR STRUCTURE
+--------------------------------------------------------------------------------
+Consider splitting into modules when:
+  - File exceeds 3000 lines
+  - Adding Firebase (separate config/service files)
+  - Team collaboration increases
+  - Need build optimization
+  - Want TypeScript support
+  - Adding complex state management
+
+
+SUGGESTED FUTURE STRUCTURE
+--------------------------------------------------------------------------------
+src/
+├── index.html
+├── styles/
+│   ├── global.css
+│   └── theme.js
+├── components/
+│   ├── common/
+│   │   ├── Button.jsx
+│   │   ├── Input.jsx
+│   │   ├── Card.jsx
+│   │   └── Toast.jsx
+│   ├── layout/
+│   │   ├── Header.jsx
+│   │   ├── FilterTabs.jsx
+│   │   └── ConfirmDialog.jsx
+│   └── boxes/
+│       ├── BoxCard.jsx
+│       ├── BoxCreator.jsx
+│       ├── BoxOpener.jsx
+│       ├── ItemCreator.jsx
+│       └── ItemList.jsx
+├── utils/
+│   ├── calculations.js
+│   ├── storage.js
+│   └── validation.js
+├── services/
+│   └── firebase.js
+├── assets/
+│   └── images/
+└── App.jsx
+
+
+================================================================================
+CONTACT & HANDOFF
+================================================================================
+
+CURRENT FILE
+--------------------------------------------------------------------------------
+File: loot-box-app-v2.html
+Location: /mnt/user-data/outputs/loot-box-app-v2.html
+Size: ~128KB (including React via CDN)
+React Version: 18
+Babel: Standalone
+
+HOW TO RUN
+--------------------------------------------------------------------------------
+1. Download loot-box-app-v2.html
+2. Open in any modern browser
+3. Start creating boxes!
+
+No server required, no installation, no dependencies.
+
+
+IMPORTANT REMINDERS FOR NEXT SESSION
+--------------------------------------------------------------------------------
+1. Everything is in ONE file currently
+2. LocalStorage clears between downloaded versions (expected)
+3. Firebase not yet integrated (all boxes are local)
+4. Free tier limits are enforced (5 box max)
+5. Royal blue color scheme is current theme
+6. All features work but need Firebase for "shared boxes"
+
+
+TESTING CHECKLIST FOR NEXT SESSION
+--------------------------------------------------------------------------------
+☐ Create a box with 3-4 items totaling 100%
+☐ Edit the box name and items
+☐ Delete a box and verify modal works
+☐ Open a box multiple times
+☐ Test dynamic odds (add item with maxQuantity: 2, open 3 times)
+☐ Test hide contents and hide odds options
+☐ Verify free tier limit (try creating 6th box)
+☐ Check that edit/delete buttons work from home screen
+
+
+================================================================================
+END OF SUMMARY
+================================================================================
+
+Questions? Start by testing the current functionality, then decide on the next
+feature to implement based on priority and user needs.
+
+Good luck with the next session!

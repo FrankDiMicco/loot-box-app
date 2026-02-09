@@ -1,0 +1,2700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Loot Box Creator - Deep Space Edition</title>
+  
+  <!-- React -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  
+  <style>
+    /* Global Styles */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --color-bg-primary: #0a0e1a;
+      --color-bg-secondary: #0f1624;
+      --color-bg-tertiary: #1a1f35;
+      --color-bg-card: rgba(26, 31, 53, 0.6);
+      
+      --color-brand-primary: #1e40af;
+      --color-brand-secondary: #2563eb;
+      --color-brand-accent: #3b82f6;
+      
+      --color-text-primary: #e2e8f0;
+      --color-text-secondary: #cbd5e1;
+      --color-text-tertiary: #94a3b8;
+      
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      
+      --spacing-md: 1rem;
+      --spacing-lg: 1.5rem;
+      
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      
+      --transition-normal: 0.25s ease;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: linear-gradient(135deg, #0a0e1a 0%, #1a1f35 100%);
+      color: var(--color-text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 22, 36, 0.5);
+      border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: rgba(59, 130, 246, 0.3);
+      border-radius: 10px;
+      transition: background 0.3s ease;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(59, 130, 246, 0.6);
+      box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
+    }
+
+    /* Firefox scrollbar */
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: rgba(59, 130, 246, 0.3) rgba(15, 22, 36, 0.5);
+    }
+
+    /* Selection */
+    ::selection {
+      background: rgba(59, 130, 246, 0.3);
+      color: var(--color-text-primary);
+    }
+
+    *:focus {
+      outline: none;
+    }
+
+    *:focus-visible {
+      outline: 2px solid var(--color-brand-primary);
+      outline-offset: 2px;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    button {
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes spin {
+      from {
+        transform: rotate(0deg);
+      }
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.5;
+      }
+    }
+
+    @keyframes glow {
+      0%, 100% {
+        box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+      }
+      50% {
+        box-shadow: 0 0 30px rgba(59, 130, 246, 0.6);
+      }
+    }
+
+    /* Mobile optimizations */
+    @media (max-width: 768px) {
+      body {
+        font-size: 14px;
+      }
+      
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+    }
+
+    /* Remove number input spinners */
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    input[type="number"] {
+      -moz-appearance: textfield;
+      appearance: textfield;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel" data-type="module">
+    const { useState, useEffect } = React;
+
+    // ========== FIREBASE CONFIGURATION ==========
+
+    // Firebase configuration (replace with your actual config)
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_AUTH_DOMAIN",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_STORAGE_BUCKET",
+      messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    // Initialize Firebase (only if config is valid)
+    let db = null;
+    let storage = null;
+    let auth = null;
+    let firebaseEnabled = false;
+
+    try {
+      if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
+        firebase.initializeApp(firebaseConfig);
+        db = firebase.firestore();
+        storage = firebase.storage();
+        auth = firebase.auth();
+        firebaseEnabled = true;
+        console.log('Firebase initialized successfully');
+      } else {
+        console.warn('Firebase not configured - using local-only mode');
+      }
+    } catch (error) {
+      console.error('Firebase initialization failed:', error);
+    }
+
+    // ========== BOX SOURCE TYPES ==========
+
+    const BOX_SOURCES = {
+      DEFAULT: 'default',      // Hardcoded, always available
+      SEASONAL: 'seasonal',    // Time-limited from Firebase
+      STORE: 'store',         // Purchasable from Firebase
+      USER_UPLOADED: 'user',  // User-created, uploaded to Firebase (premium)
+      LOCAL: 'local',         // User-created locally (current system)
+    };
+
+    // ========== BOX IMAGE CATALOG ==========
+
+    // MONETIZATION MODEL:
+    // - Free Users: Get 3 default box skins for free, can purchase additional skins individually
+    // - Premium Users: Unlimited local boxes, can upload custom boxes, still purchase skins individually
+    // - All Users: Can purchase seasonal/store box skins at set prices (e.g., $0.99, $1.99, $2.99)
+
+    // Default boxes - always available and free for all users
+    const DEFAULT_BOX_IMAGES = [
+      {
+        id: 'chest',
+        name: 'Classic Chest',
+        file: 'chest.png',
+        source: BOX_SOURCES.DEFAULT,
+        price: null,
+        seasonalInfo: null,
+        imageUrl: './assets/images/boxes/free/chest.png'
+      },
+      {
+        id: 'skull_bone',
+        name: 'Skull Chest',
+        file: 'skull_bone.png',
+        source: BOX_SOURCES.DEFAULT,
+        price: null,
+        seasonalInfo: null,
+        imageUrl: './assets/images/boxes/free/skull_bone.png'
+      },
+      {
+        id: 'metal',
+        name: 'Metal Chest',
+        file: 'metal.png',
+        source: BOX_SOURCES.DEFAULT,
+        price: null,
+        seasonalInfo: null,
+        imageUrl: './assets/images/boxes/free/metal.png'
+      },
+    ];
+
+    // Get default images
+    const getDefaultBoxImages = () => {
+      return DEFAULT_BOX_IMAGES;
+    };
+
+    // Get all images as flat array (legacy compatibility)
+    const getAllBoxImages = () => {
+      return DEFAULT_BOX_IMAGES;
+    };
+
+    // Check if user can use an image (alias for userOwnsBox)
+    const canUseBoxImage = (imageId, userSettings) => {
+      return userOwnsBox(imageId, userSettings);
+    };
+
+    // Get image URL (supports both local and Firebase URLs)
+    const getBoxImageUrl = (imageId, boxCatalog = null) => {
+      // Try to find in provided catalog first
+      if (boxCatalog) {
+        const box = boxCatalog.all?.find(img => img.id === imageId);
+        if (box) return box.imageUrl;
+      }
+
+      // Fallback to default images
+      const image = DEFAULT_BOX_IMAGES.find(img => img.id === imageId);
+      if (image) return image.imageUrl;
+
+      return null;
+    };
+
+    // ========== UTILITIES ==========
+    
+    // Calculate dynamic odds
+    const calculateDynamicOdds = (items, pullHistory) => {
+      const remainingItems = items.map(item => {
+        const pulledCount = pullHistory.filter(p => p.itemId === item.id).length;
+        const remaining = item.maxQuantity 
+          ? Math.max(0, item.maxQuantity - pulledCount) 
+          : Infinity;
+        return { ...item, remaining };
+      }).filter(item => item.remaining > 0);
+
+      if (remainingItems.length === 0) return [];
+
+      const totalPercentage = remainingItems.reduce((sum, item) => sum + item.percentage, 0);
+      
+      return remainingItems.map(item => ({
+        ...item,
+        adjustedPercentage: (item.percentage / totalPercentage) * 100
+      }));
+    };
+
+    // Validate percentages
+    const validatePercentages = (items) => {
+      if (items.length === 0) {
+        return { valid: false, total: 0, message: 'Add at least one item' };
+      }
+
+      const total = items.reduce((sum, item) => sum + parseFloat(item.percentage || 0), 0);
+      const rounded = Math.round(total * 100) / 100;
+      
+      if (rounded === 100) {
+        return { valid: true, total: rounded, message: 'Perfect!' };
+      } else if (rounded < 100) {
+        return { 
+          valid: false, 
+          total: rounded, 
+          message: `Missing ${(100 - rounded).toFixed(2)}%` 
+        };
+      } else {
+        return { 
+          valid: false, 
+          total: rounded, 
+          message: `Over by ${(rounded - 100).toFixed(2)}%` 
+        };
+      }
+    };
+
+    // Get remaining percentage
+    const getRemainingPercentage = (items) => {
+      const total = items.reduce((sum, item) => sum + parseFloat(item.percentage || 0), 0);
+      return Math.max(0, 100 - total);
+    };
+
+    // Generate share code
+    const generateShareCode = () => {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let code = '';
+      for (let i = 0; i < 6; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return code;
+    };
+
+    // Format expiration countdown
+    const formatExpirationCountdown = (expiresAt) => {
+      const now = Date.now();
+      const diff = expiresAt - now;
+      
+      if (diff <= 0) return 'Expired';
+      
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const days = Math.floor(hours / 24);
+      const remainingHours = hours % 24;
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      
+      if (days > 0) return `${days}d ${remainingHours}h`;
+      if (hours > 0) return `${hours}h ${minutes}m`;
+      return `${minutes}m`;
+    };
+
+    // Check if expiring soon
+    const isExpiringSoon = (expiresAt) => {
+      const now = Date.now();
+      const diff = expiresAt - now;
+      const hoursRemaining = diff / (1000 * 60 * 60);
+      return hoursRemaining > 0 && hoursRemaining <= 24;
+    };
+
+    // ========== STORAGE ==========
+    
+    const STORAGE_KEYS = {
+      BOXES: 'lootBoxes',
+      USER_SETTINGS: 'userSettings',
+      NOTIFICATIONS: 'notifications',
+    };
+
+    const getAllBoxes = () => {
+      try {
+        const data = localStorage.getItem(STORAGE_KEYS.BOXES);
+        return data ? JSON.parse(data) : [];
+      } catch (error) {
+        console.error('Error reading boxes:', error);
+        return [];
+      }
+    };
+
+    const saveBox = (box) => {
+      try {
+        const boxes = getAllBoxes();
+        const existingIndex = boxes.findIndex(b => b.id === box.id);
+        
+        if (existingIndex >= 0) {
+          boxes[existingIndex] = box;
+        } else {
+          boxes.push(box);
+        }
+        
+        localStorage.setItem(STORAGE_KEYS.BOXES, JSON.stringify(boxes));
+        return true;
+      } catch (error) {
+        console.error('Error saving box:', error);
+        return false;
+      }
+    };
+
+    const deleteBox = (boxId) => {
+      try {
+        const boxes = getAllBoxes();
+        const filtered = boxes.filter(box => box.id !== boxId);
+        localStorage.setItem(STORAGE_KEYS.BOXES, JSON.stringify(filtered));
+        return true;
+      } catch (error) {
+        console.error('Error deleting box:', error);
+        return false;
+      }
+    };
+
+    const getBoxById = (boxId) => {
+      const boxes = getAllBoxes();
+      return boxes.find(box => box.id === boxId) || null;
+    };
+
+    const getUserSettings = () => {
+      try {
+        const data = localStorage.getItem(STORAGE_KEYS.USER_SETTINGS);
+        return data ? JSON.parse(data) : {
+          tier: 'free',
+          localBoxCount: 0,
+          displayName: 'Guest',
+          soundEnabled: true,
+          theme: 'dark',
+          uid: null,  // Firebase user ID
+          ownedBoxes: [],  // Store and seasonal purchases
+          uploadedBoxes: [],  // User's uploaded boxes
+          purchasedBoxImages: [], // Legacy - kept for compatibility
+        };
+      } catch (error) {
+        return {
+          tier: 'free',
+          localBoxCount: 0,
+          displayName: 'Guest',
+          soundEnabled: true,
+          theme: 'dark',
+          uid: null,
+          ownedBoxes: [],
+          uploadedBoxes: [],
+          purchasedBoxImages: [],
+        };
+      }
+    };
+
+    const canCreateLocalBox = () => {
+      const settings = getUserSettings();
+      if (settings.tier === 'paid') return true;
+      
+      const MAX_FREE_BOXES = 5;
+      const boxes = getAllBoxes();
+      const currentCount = boxes.filter(box => box.type === 'local').length;
+      return currentCount < MAX_FREE_BOXES;
+    };
+
+    const getUnreadCount = () => {
+      return 0; // Placeholder
+    };
+
+    // ========== FIREBASE BOX CATALOG SERVICE ==========
+
+    // Fetch seasonal boxes from Firebase
+    const fetchSeasonalBoxes = async () => {
+      if (!firebaseEnabled || !db) return [];
+
+      try {
+        const now = Date.now();
+        const snapshot = await db.collection('boxCatalog')
+          .where('source', '==', BOX_SOURCES.SEASONAL)
+          .where('seasonalInfo.endDate', '>', now)
+          .get();
+
+        return snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+      } catch (error) {
+        console.error('Error fetching seasonal boxes:', error);
+        return [];
+      }
+    };
+
+    // Fetch store boxes from Firebase
+    const fetchStoreBoxes = async () => {
+      if (!firebaseEnabled || !db) return [];
+
+      try {
+        const snapshot = await db.collection('boxCatalog')
+          .where('source', '==', BOX_SOURCES.STORE)
+          .where('active', '==', true)
+          .get();
+
+        return snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+      } catch (error) {
+        console.error('Error fetching store boxes:', error);
+        return [];
+      }
+    };
+
+    // Fetch user's uploaded boxes from Firebase
+    const fetchUserUploadedBoxes = async (userId) => {
+      if (!firebaseEnabled || !db || !userId) return [];
+
+      try {
+        const snapshot = await db.collection('boxCatalog')
+          .where('source', '==', BOX_SOURCES.USER_UPLOADED)
+          .where('userId', '==', userId)
+          .get();
+
+        return snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+      } catch (error) {
+        console.error('Error fetching user uploaded boxes:', error);
+        return [];
+      }
+    };
+
+    // Upload user's custom box image to Firebase
+    const uploadUserBox = async (imageFile, metadata, userId) => {
+      if (!firebaseEnabled || !storage || !db) {
+        throw new Error('Firebase not available');
+      }
+
+      if (!userId) {
+        throw new Error('User not authenticated');
+      }
+
+      try {
+        // Upload image to Firebase Storage
+        const storageRef = storage.ref();
+        const fileName = `user-boxes/${userId}/${Date.now()}_${imageFile.name}`;
+        const imageRef = storageRef.child(fileName);
+
+        const uploadTask = await imageRef.put(imageFile);
+        const downloadURL = await uploadTask.ref.getDownloadURL();
+
+        // Create Firestore document
+        const boxData = {
+          name: metadata.name || 'Custom Box',
+          source: BOX_SOURCES.USER_UPLOADED,
+          userId: userId,
+          imageUrl: downloadURL,
+          price: null,
+          seasonalInfo: null,
+          createdAt: Date.now(),
+          active: true
+        };
+
+        const docRef = await db.collection('boxCatalog').add(boxData);
+
+        return {
+          id: docRef.id,
+          ...boxData
+        };
+      } catch (error) {
+        console.error('Error uploading box:', error);
+        throw error;
+      }
+    };
+
+    // Get all available box images (unified loader)
+    const getAllAvailableBoxImages = async (userSettings) => {
+      const defaults = getDefaultBoxImages();
+
+      let seasonal = [];
+      let store = [];
+      let userUploaded = [];
+
+      if (firebaseEnabled) {
+        [seasonal, store, userUploaded] = await Promise.all([
+          fetchSeasonalBoxes(),
+          fetchStoreBoxes(),
+          userSettings.tier === 'paid' && userSettings.uid
+            ? fetchUserUploadedBoxes(userSettings.uid)
+            : Promise.resolve([])
+        ]);
+      }
+
+      return {
+        defaults,
+        seasonal,
+        store,
+        userUploaded,
+        all: [...defaults, ...seasonal, ...store, ...userUploaded]
+      };
+    };
+
+    // Purchase a box from the store
+    const purchaseBox = async (boxId, userId) => {
+      if (!firebaseEnabled || !db) {
+        throw new Error('Firebase not available');
+      }
+
+      try {
+        // Record purchase in Firestore
+        await db.collection('purchases').add({
+          boxId: boxId,
+          userId: userId,
+          purchasedAt: Date.now(),
+          type: 'box'
+        });
+
+        // Update user's owned boxes
+        const userRef = db.collection('users').doc(userId);
+        await userRef.update({
+          ownedBoxes: firebase.firestore.FieldValue.arrayUnion(boxId)
+        });
+
+        return true;
+      } catch (error) {
+        console.error('Error purchasing box:', error);
+        throw error;
+      }
+    };
+
+    // Check if user owns a box
+    const userOwnsBox = (boxId, userSettings) => {
+      const box = DEFAULT_BOX_IMAGES.find(b => b.id === boxId);
+
+      // Default boxes are always available to everyone
+      if (box && box.source === BOX_SOURCES.DEFAULT) return true;
+
+      // User's own uploaded boxes (premium only)
+      if (userSettings.uploadedBoxes && userSettings.uploadedBoxes.includes(boxId)) return true;
+
+      // Individually purchased boxes (free AND premium users)
+      if (userSettings.ownedBoxes && userSettings.ownedBoxes.includes(boxId)) return true;
+
+      // Premium users get access to all store/seasonal boxes without purchasing
+      // (but NOT user-uploaded boxes from other users)
+      if (userSettings.tier === 'paid') {
+        // Check if it's a store or seasonal box
+        // This will be checked dynamically when catalog loads
+        return false; // Will be overridden in ImagePicker for premium users
+      }
+
+      return false;
+    };
+
+    // ========== COMPONENTS - COMMON ==========
+    
+    // Button Component
+    const Button = ({ children, onClick, variant = 'primary', size = 'md', disabled = false, fullWidth = false, style = {} }) => {
+      const [isHovered, setIsHovered] = useState(false);
+
+      const variants = {
+        primary: {
+          background: 'linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)',
+          color: '#ffffff',
+          boxShadow: '0 4px 16px rgba(30, 64, 175, 0.4)',
+        },
+        secondary: {
+          background: 'linear-gradient(135deg, #2563eb 0%, #60a5fa 100%)',
+          color: '#ffffff',
+          boxShadow: '0 4px 16px rgba(37, 99, 235, 0.4)',
+        },
+        ghost: {
+          background: 'rgba(26, 31, 53, 0.6)',
+          color: '#cbd5e1',
+          border: '1px solid rgba(59, 130, 246, 0.2)',
+        },
+      };
+
+      const sizes = {
+        sm: { padding: '0.5rem 1rem', fontSize: '0.875rem' },
+        md: { padding: '0.75rem 1.5rem', fontSize: '1rem' },
+        lg: { padding: '1rem 2rem', fontSize: '1.125rem' },
+      };
+
+      const baseStyles = {
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '0.5rem',
+        border: 'none',
+        borderRadius: '12px',
+        fontFamily: 'inherit',
+        fontWeight: 600,
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        transition: 'all 0.25s ease',
+        width: fullWidth ? '100%' : 'auto',
+        opacity: disabled ? 0.5 : 1,
+        ...variants[variant],
+        ...sizes[size],
+        ...(isHovered && !disabled ? { transform: 'translateY(-2px)' } : {}),
+        ...style,
+      };
+
+      return (
+        <button
+          style={baseStyles}
+          onClick={disabled ? undefined : onClick}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+          disabled={disabled}
+        >
+          {children}
+        </button>
+      );
+    };
+
+    // Input Component  
+    const Input = ({ type = 'text', value, onChange, placeholder = '', label = '', fullWidth = false, ...props }) => {
+      const [isFocused, setIsFocused] = useState(false);
+
+      const containerStyles = {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0.5rem',
+        width: fullWidth ? '100%' : 'auto',
+      };
+
+      const inputStyles = {
+        width: '100%',
+        padding: '0.75rem',
+        fontSize: '1rem',
+        fontFamily: 'inherit',
+        color: '#e2e8f0',
+        background: 'rgba(15, 22, 36, 0.8)',
+        border: `2px solid ${isFocused ? '#3b82f6' : 'rgba(59, 130, 246, 0.2)'}`,
+        borderRadius: '8px',
+        outline: 'none',
+        transition: 'all 0.25s ease',
+        boxShadow: isFocused ? '0 0 20px rgba(59, 130, 246, 0.2)' : 'none',
+      };
+
+      return (
+        <div style={containerStyles}>
+          {label && <label style={{ fontSize: '0.875rem', fontWeight: 500, color: '#cbd5e1' }}>{label}</label>}
+          <input
+            type={type}
+            value={value}
+            onChange={onChange}
+            placeholder={placeholder}
+            style={inputStyles}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
+            {...props}
+          />
+        </div>
+      );
+    };
+
+    // Card Component
+    const Card = ({ children, hover = false, onClick, style = {} }) => {
+      const [isHovered, setIsHovered] = useState(false);
+
+      const baseStyles = {
+        background: 'rgba(26, 31, 53, 0.6)',
+        backdropFilter: 'blur(12px)',
+        border: '1px solid rgba(59, 130, 246, 0.2)',
+        borderRadius: '16px',
+        padding: '1.5rem',
+        transition: 'all 0.3s ease',
+        cursor: onClick ? 'pointer' : 'default',
+        ...(hover && isHovered ? {
+          transform: 'translateY(-4px)',
+          borderColor: '#3b82f6',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+        } : {}),
+        ...style,
+      };
+
+      return (
+        <div
+          style={baseStyles}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+          onClick={onClick}
+        >
+          {children}
+        </div>
+      );
+    };
+
+    // Toast Component
+    const Toast = ({ message, type = 'info', duration = 3000, onClose, show = false }) => {
+      useEffect(() => {
+        if (show && duration > 0) {
+          const timer = setTimeout(() => onClose && onClose(), duration);
+          return () => clearTimeout(timer);
+        }
+      }, [show, duration, onClose]);
+
+      if (!show) return null;
+
+      const types = {
+        success: { background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.9) 0%, rgba(5, 150, 105, 0.9) 100%)', icon: '✓' },
+        error: { background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.9) 0%, rgba(220, 38, 38, 0.9) 100%)', icon: '✕' },
+        info: { background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.9) 0%, rgba(37, 99, 235, 0.9) 100%)', icon: 'ℹ' },
+      };
+
+      const typeStyle = types[type] || types.info;
+
+      const containerStyles = {
+        position: 'fixed',
+        bottom: '2rem',
+        left: '50%',
+        transform: 'translate(-50%, 0)',
+        zIndex: 9999,
+        display: 'flex',
+        alignItems: 'center',
+        gap: '1rem',
+        padding: '1rem 1.5rem',
+        background: typeStyle.background,
+        backdropFilter: 'blur(12px)',
+        borderRadius: '12px',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+        color: '#ffffff',
+        fontWeight: 500,
+        minWidth: '300px',
+        animation: 'slideUp 0.4s ease',
+      };
+
+      return (
+        <div style={containerStyles}>
+          <span style={{ fontSize: '1.25rem' }}>{typeStyle.icon}</span>
+          <span>{message}</span>
+          <button
+            style={{
+              marginLeft: 'auto',
+              background: 'none',
+              border: 'none',
+              color: '#ffffff',
+              fontSize: '1.25rem',
+              cursor: 'pointer',
+              opacity: 0.7,
+            }}
+            onClick={onClose}
+          >
+            ×
+          </button>
+        </div>
+      );
+    };
+
+    // useToast Hook
+    const useToast = () => {
+      const [toasts, setToasts] = useState([]);
+
+      const showToast = (message, type = 'info', duration = 3000) => {
+        const id = Date.now();
+        setToasts(prev => [...prev, { id, message, type, duration, show: true }]);
+      };
+
+      const hideToast = (id) => {
+        setToasts(prev => prev.filter(toast => toast.id !== id));
+      };
+
+      const ToastContainer = () => (
+        <>
+          {toasts.map(toast => (
+            <Toast
+              key={toast.id}
+              message={toast.message}
+              type={toast.type}
+              duration={toast.duration}
+              show={toast.show}
+              onClose={() => hideToast(toast.id)}
+            />
+          ))}
+        </>
+      );
+
+      return {
+        showToast,
+        ToastContainer,
+        success: (message, duration) => showToast(message, 'success', duration),
+        error: (message, duration) => showToast(message, 'error', duration),
+        info: (message, duration) => showToast(message, 'info', duration),
+      };
+    };
+
+    // ========== COMPONENTS - LAYOUT ==========
+    
+    // Header
+    const Header = ({ title = 'Loot Box Creator', notificationCount = 0, onNotificationClick, onSettingsClick, userTier = 'free' }) => {
+      return (
+        <header style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '1.5rem 0',
+          marginBottom: '2rem',
+          borderBottom: '1px solid rgba(59, 130, 246, 0.2)',
+        }}>
+          <h1 style={{
+            fontSize: '2.5rem',
+            fontWeight: 700,
+            background: 'linear-gradient(135deg, #3b82f6 0%, #60a5fa 50%, #93c5fd 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            filter: 'drop-shadow(0 0 30px rgba(59, 130, 246, 0.4))',
+            margin: 0,
+          }}>
+            {title}
+          </h1>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <div style={{
+              padding: '0.5rem 1rem',
+              background: userTier === 'paid' ? 'linear-gradient(135deg, #f59e0b 0%, #ec4899 100%)' : 'rgba(26, 31, 53, 0.6)',
+              border: `1px solid ${userTier === 'paid' ? '#f59e0b' : 'rgba(59, 130, 246, 0.2)'}`,
+              borderRadius: '12px',
+              fontSize: '0.875rem',
+              fontWeight: 600,
+              color: '#ffffff',
+              textTransform: 'uppercase',
+            }}>
+              {userTier === 'paid' ? '⭐ Premium' : 'Free'}
+            </div>
+
+            <button
+              style={{
+                position: 'relative',
+                width: '48px',
+                height: '48px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'rgba(26, 31, 53, 0.6)',
+                border: '1px solid rgba(59, 130, 246, 0.2)',
+                borderRadius: '12px',
+                cursor: 'pointer',
+                fontSize: '1.25rem',
+              }}
+              onClick={onNotificationClick}
+            >
+              🔔
+              {notificationCount > 0 && (
+                <span style={{
+                  position: 'absolute',
+                  top: '-4px',
+                  right: '-4px',
+                  minWidth: '20px',
+                  height: '20px',
+                  padding: '0 6px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: 'linear-gradient(135deg, #ec4899 0%, #ef4444 100%)',
+                  borderRadius: '10px',
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                  color: '#ffffff',
+                  boxShadow: '0 0 12px rgba(236, 72, 153, 0.6)',
+                }}>
+                  {notificationCount}
+                </span>
+              )}
+            </button>
+
+            <button
+              style={{
+                width: '48px',
+                height: '48px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'rgba(26, 31, 53, 0.6)',
+                border: '1px solid rgba(59, 130, 246, 0.2)',
+                borderRadius: '12px',
+                cursor: 'pointer',
+                fontSize: '1.25rem',
+              }}
+              onClick={onSettingsClick}
+            >
+              ⚙️
+            </button>
+          </div>
+        </header>
+      );
+    };
+
+    // FilterTabs
+    const FilterTabs = ({ activeFilter, onFilterChange, filters = ['Shared', 'New', 'Local'] }) => {
+      return (
+        <div style={{
+          display: 'flex',
+          gap: '0.5rem',
+          padding: '0.5rem',
+          background: 'rgba(15, 22, 36, 0.8)',
+          borderRadius: '12px',
+          border: '1px solid rgba(59, 130, 246, 0.2)',
+          marginBottom: '2rem',
+        }}>
+          {filters.map(filter => {
+            const isActive = activeFilter === filter;
+            return (
+              <button
+                key={filter}
+                style={{
+                  flex: 1,
+                  padding: '0.75rem 1.5rem',
+                  fontSize: '0.875rem',
+                  fontWeight: 600,
+                  color: isActive ? '#ffffff' : '#94a3b8',
+                  background: isActive ? 'linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)' : 'transparent',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  transition: 'all 0.25s ease',
+                  fontFamily: 'inherit',
+                  boxShadow: isActive ? '0 4px 16px rgba(59, 130, 246, 0.3)' : 'none',
+                }}
+                onClick={() => onFilterChange(filter)}
+              >
+                {filter}
+              </button>
+            );
+          })}
+        </div>
+      );
+    };
+
+    // ConfirmDialog Component
+    const ConfirmDialog = ({ show, title, message, onConfirm, onCancel, confirmText = 'Delete', cancelText = 'Cancel' }) => {
+      if (!show) return null;
+
+      return (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.7)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          animation: 'fadeIn 0.2s ease',
+        }}>
+          <Card style={{
+            maxWidth: '400px',
+            width: '90%',
+            animation: 'slideUp 0.3s ease',
+          }}>
+            <h3 style={{
+              fontSize: '1.5rem',
+              fontWeight: 700,
+              color: '#e2e8f0',
+              marginBottom: '1rem',
+            }}>
+              {title}
+            </h3>
+            <p style={{
+              fontSize: '1rem',
+              color: '#94a3b8',
+              marginBottom: '1.5rem',
+              lineHeight: 1.6,
+            }}>
+              {message}
+            </p>
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              <Button variant="ghost" onClick={onCancel} fullWidth>
+                {cancelText}
+              </Button>
+              <Button variant="secondary" onClick={onConfirm} fullWidth style={{
+                background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+              }}>
+                {confirmText}
+              </Button>
+            </div>
+          </Card>
+        </div>
+      );
+    };
+
+    // BoxCard (simplified for brevity)
+    const BoxCard = ({ box, onClick, onEdit, onDelete }) => {
+      const { name, items = [], pullHistory = [], maxPulls, type = 'local' } = box;
+      const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+      const handleEdit = (e) => {
+        e.stopPropagation();
+        onEdit && onEdit(box);
+      };
+
+      const handleDeleteClick = (e) => {
+        e.stopPropagation();
+        setShowDeleteConfirm(true);
+      };
+
+      const handleDeleteConfirm = () => {
+        setShowDeleteConfirm(false);
+        onDelete && onDelete(box.id);
+      };
+
+      const handleDeleteCancel = () => {
+        setShowDeleteConfirm(false);
+      };
+
+      return (
+        <>
+          <Card hover onClick={onClick}>
+            <div style={{ position: 'relative' }}>
+              {/* Action buttons */}
+              <div style={{ 
+                position: 'absolute', 
+                top: '-0.5rem', 
+                right: '-0.5rem', 
+                display: 'flex', 
+                gap: '0.5rem',
+                zIndex: 10,
+              }}>
+                <button
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    background: 'rgba(26, 31, 53, 0.9)',
+                    border: '1px solid rgba(59, 130, 246, 0.3)',
+                    borderRadius: '8px',
+                    color: '#60a5fa',
+                    cursor: 'pointer',
+                    fontSize: '1rem',
+                    fontWeight: 600,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'all 0.2s ease',
+                  }}
+                  onClick={handleEdit}
+                  onMouseEnter={(e) => {
+                    e.target.style.background = 'rgba(59, 130, 246, 0.2)';
+                    e.target.style.borderColor = '#60a5fa';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.background = 'rgba(26, 31, 53, 0.9)';
+                    e.target.style.borderColor = 'rgba(59, 130, 246, 0.3)';
+                  }}
+                  title="Edit box"
+                >
+                  ✎
+                </button>
+                
+                <button
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    background: 'rgba(26, 31, 53, 0.9)',
+                    border: '1px solid rgba(239, 68, 68, 0.3)',
+                    borderRadius: '8px',
+                    color: '#ef4444',
+                    cursor: 'pointer',
+                    fontSize: '1.125rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'all 0.2s ease',
+                  }}
+                  onClick={handleDeleteClick}
+                  onMouseEnter={(e) => {
+                    e.target.style.background = 'rgba(239, 68, 68, 0.2)';
+                    e.target.style.borderColor = '#ef4444';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.background = 'rgba(26, 31, 53, 0.9)';
+                    e.target.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+                  }}
+                  title="Delete box"
+                >
+                  ×
+                </button>
+              </div>
+
+            <div style={{
+            width: '100%',
+            height: '180px',
+            marginBottom: '1rem',
+            borderRadius: '12px',
+            background: 'linear-gradient(135deg, rgba(30, 64, 175, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            border: '1px solid rgba(59, 130, 246, 0.3)',
+            overflow: 'hidden',
+          }}>
+            {box.boxImageId ? (
+              <img 
+                src={getBoxImageUrl(box.boxImageId)} 
+                alt={box.name}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'contain',
+                }}
+              />
+            ) : (
+              <span style={{ fontSize: '4rem' }}>📦</span>
+            )}
+          </div>
+          </div>
+
+          <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#e2e8f0', marginBottom: '0.75rem' }}>
+            {name}
+          </h3>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', color: '#94a3b8' }}>
+              <span>Items:</span>
+              <span style={{ fontWeight: 600, color: '#cbd5e1' }}>{items.length}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', color: '#94a3b8' }}>
+              <span>Pulls:</span>
+              <span style={{ fontWeight: 600, color: '#cbd5e1' }}>
+                {pullHistory.length}{maxPulls ? ` / ${maxPulls}` : ''}
+              </span>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <span style={{
+              padding: '0.25rem 0.75rem',
+              fontSize: '0.75rem',
+              fontWeight: 600,
+              color: '#ffffff',
+              background: type === 'shared' 
+                ? 'linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%)'
+                : 'linear-gradient(135deg, #64748b 0%, #475569 100%)',
+              borderRadius: '6px',
+              textTransform: 'uppercase',
+            }}>
+              {type === 'shared' ? '🌐 Shared' : '💻 Local'}
+            </span>
+          </div>
+        </Card>
+
+        <ConfirmDialog
+          show={showDeleteConfirm}
+          title="Delete Loot Box?"
+          message={`Are you sure you want to delete "${name}"? This action cannot be undone and all pull history will be lost.`}
+          onConfirm={handleDeleteConfirm}
+          onCancel={handleDeleteCancel}
+          confirmText="Delete"
+          cancelText="Cancel"
+        />
+      </>
+      );
+    };
+
+    // ItemCreator (simplified)
+    const ItemCreator = ({ items, onAddItem, editingItem, onUpdateItem, onCancelEdit }) => {
+      const [itemForm, setItemForm] = useState({ name: '', percentage: '', color: '#3b82f6', maxQuantity: '' });
+      const remainingPercentage = editingItem 
+        ? getRemainingPercentage(items.filter(i => i.id !== editingItem.id)) 
+        : getRemainingPercentage(items);
+
+      // Pre-fill form when editing
+      useEffect(() => {
+        if (editingItem) {
+          setItemForm({
+            name: editingItem.name,
+            percentage: editingItem.percentage.toString(),
+            color: editingItem.color,
+            maxQuantity: editingItem.maxQuantity ? editingItem.maxQuantity.toString() : '',
+          });
+        }
+      }, [editingItem]);
+
+      const handleSubmit = (e) => {
+        e.preventDefault();
+        if (!itemForm.name || !itemForm.percentage) return;
+
+        const itemData = {
+          id: editingItem ? editingItem.id : Date.now().toString(),
+          name: itemForm.name,
+          percentage: parseFloat(itemForm.percentage),
+          color: itemForm.color,
+          maxQuantity: itemForm.maxQuantity ? parseInt(itemForm.maxQuantity) : null,
+        };
+
+        if (editingItem) {
+          onUpdateItem(itemData);
+        } else {
+          onAddItem(itemData);
+        }
+
+        setItemForm({ name: '', percentage: '', color: itemForm.color, maxQuantity: '' });
+      };
+
+      const handleCancel = () => {
+        if (editingItem && onCancelEdit) {
+          onCancelEdit();
+        }
+        setItemForm({ name: '', percentage: '', color: '#3b82f6', maxQuantity: '' });
+      };
+
+      const predefinedColors = ['#1e40af', '#3b82f6', '#60a5fa', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+
+      return (
+        <Card style={{ marginBottom: '2rem' }}>
+          <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#e2e8f0', marginBottom: '1rem' }}>
+            {editingItem ? 'Edit Item' : 'Add Item'}
+          </h3>
+
+          <div style={{
+            textAlign: 'center',
+            padding: '1rem',
+            background: 'rgba(59, 130, 246, 0.1)',
+            border: '1px solid #3b82f6',
+            borderRadius: '8px',
+            marginBottom: '1rem',
+          }}>
+            <div style={{ fontSize: '0.875rem', color: '#94a3b8', marginBottom: '0.25rem' }}>
+              Remaining Percentage
+            </div>
+            <div style={{ fontSize: '2rem', fontWeight: 700, color: '#60a5fa' }}>
+              {remainingPercentage.toFixed(2)}%
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <Input
+              label="Item Name"
+              placeholder="e.g., Legendary Sword"
+              value={itemForm.name}
+              onChange={(e) => setItemForm({ ...itemForm, name: e.target.value })}
+              fullWidth
+              required
+            />
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <Input
+                type="number"
+                label="Percentage"
+                placeholder={`Max ${remainingPercentage.toFixed(2)}%`}
+                value={itemForm.percentage}
+                onChange={(e) => setItemForm({ ...itemForm, percentage: e.target.value })}
+                step="0.01"
+                min="0.01"
+                max={remainingPercentage}
+                fullWidth
+                required
+              />
+
+              <Input
+                type="number"
+                label="Max Quantity (Optional)"
+                placeholder="Unlimited"
+                value={itemForm.maxQuantity}
+                onChange={(e) => setItemForm({ ...itemForm, maxQuantity: e.target.value })}
+                min="1"
+                fullWidth
+              />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: '#cbd5e1', marginBottom: '0.5rem' }}>
+                Item Color
+              </label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: '0.5rem' }}>
+                {predefinedColors.map(color => (
+                  <button
+                    key={color}
+                    type="button"
+                    style={{
+                      width: '40px',
+                      height: '40px',
+                      background: color,
+                      borderRadius: '8px',
+                      border: '2px solid rgba(59, 130, 246, 0.3)',
+                      cursor: 'pointer',
+                      transform: itemForm.color === color ? 'scale(1.1)' : 'scale(1)',
+                      boxShadow: itemForm.color === color ? `0 0 12px ${color}80` : 'none',
+                      transition: 'all 0.2s ease',
+                    }}
+                    onClick={() => setItemForm({ ...itemForm, color })}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <Button type="submit" variant="primary" fullWidth disabled={remainingPercentage <= 0 || !itemForm.name || !itemForm.percentage}>
+              {editingItem ? 'Update Item' : 'Add Item'}
+            </Button>
+            
+            {editingItem && (
+              <Button type="button" variant="ghost" fullWidth onClick={handleCancel} style={{ marginTop: '0.5rem' }}>
+                Cancel Edit
+              </Button>
+            )}
+          </form>
+        </Card>
+      );
+    };
+
+    // ItemList (simplified)
+    const ItemList = ({ items, onRemoveItem, onEditItem }) => {
+      if (items.length === 0) {
+        return (
+          <Card>
+            <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
+              No items added yet. Add your first item above!
+            </div>
+          </Card>
+        );
+      }
+
+      return (
+        <Card>
+          <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#e2e8f0', marginBottom: '1rem' }}>
+            Items ({items.length})
+          </h3>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            {items.map(item => (
+              <div
+                key={item.id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '1rem',
+                  padding: '1rem',
+                  background: 'rgba(15, 22, 36, 0.6)',
+                  border: `2px solid ${item.color}40`,
+                  borderLeft: `4px solid ${item.color}`,
+                  borderRadius: '8px',
+                }}
+              >
+                <span style={{
+                  width: '12px',
+                  height: '12px',
+                  borderRadius: '50%',
+                  background: item.color,
+                  boxShadow: `0 0 8px ${item.color}80`,
+                }} />
+
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '1rem', fontWeight: 600, color: '#e2e8f0' }}>
+                    {item.name}
+                  </div>
+                  {item.maxQuantity && (
+                    <div style={{ fontSize: '0.875rem', color: '#94a3b8' }}>
+                      Max: {item.maxQuantity}
+                    </div>
+                  )}
+                </div>
+
+                <span style={{ fontSize: '1.25rem', fontWeight: 700, color: '#60a5fa' }}>
+                  {item.percentage}%
+                </span>
+
+                <button
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    background: 'transparent',
+                    border: '1px solid rgba(59, 130, 246, 0.3)',
+                    borderRadius: '6px',
+                    color: '#60a5fa',
+                    cursor: 'pointer',
+                    fontSize: '1rem',
+                    fontWeight: 600,
+                  }}
+                  onClick={() => onEditItem(item)}
+                  title="Edit item"
+                >
+                  ✎
+                </button>
+
+                <button
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    background: 'transparent',
+                    border: '1px solid rgba(239, 68, 68, 0.3)',
+                    borderRadius: '6px',
+                    color: '#ef4444',
+                    cursor: 'pointer',
+                    fontSize: '1.125rem',
+                  }}
+                  onClick={() => onRemoveItem(item.id)}
+                  title="Remove item"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        </Card>
+      );
+    };
+
+    // ImagePicker Component
+    const ImagePicker = ({ selectedImageId, onSelectImage, userSettings }) => {
+      const [activeTab, setActiveTab] = useState('defaults');
+      const [boxCatalog, setBoxCatalog] = useState(null);
+      const [loading, setLoading] = useState(true);
+      const [showPurchaseModal, setShowPurchaseModal] = useState(null);
+      const [uploading, setUploading] = useState(false);
+
+      useEffect(() => {
+        loadBoxCatalog();
+      }, []);
+
+      const loadBoxCatalog = async () => {
+        setLoading(true);
+        try {
+          const catalog = await getAllAvailableBoxImages(userSettings);
+          setBoxCatalog(catalog);
+        } catch (error) {
+          console.error('Error loading box catalog:', error);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      const handleImageClick = (image) => {
+        const canUse = canUserUseBox(image);
+
+        if (canUse) {
+          onSelectImage(image.id);
+        } else {
+          // Show purchase modal for locked boxes (works for free and premium users)
+          setShowPurchaseModal(image);
+        }
+      };
+
+      // Check if user can use this specific box
+      const canUserUseBox = (image) => {
+        // Default boxes - always free
+        if (image.source === BOX_SOURCES.DEFAULT) return true;
+
+        // User's own uploads
+        if (image.source === BOX_SOURCES.USER_UPLOADED &&
+            userSettings.uploadedBoxes?.includes(image.id)) return true;
+
+        // Purchased boxes (free or premium users who bought it)
+        if (userSettings.ownedBoxes?.includes(image.id)) return true;
+
+        return false;
+      };
+
+      const handlePurchase = async (box) => {
+        if (!firebaseEnabled) {
+          alert('Purchase feature requires Firebase configuration');
+          setShowPurchaseModal(null);
+          return;
+        }
+
+        if (!userSettings.uid) {
+          alert('Please sign in to purchase boxes');
+          setShowPurchaseModal(null);
+          return;
+        }
+
+        try {
+          // TODO: Integrate with actual payment provider (Stripe, etc.)
+          // For now, this is a placeholder that would trigger payment flow
+          await purchaseBox(box.id, userSettings.uid);
+
+          // Update local settings with new owned box
+          const updatedSettings = {
+            ...userSettings,
+            ownedBoxes: [...(userSettings.ownedBoxes || []), box.id]
+          };
+          localStorage.setItem(STORAGE_KEYS.USER_SETTINGS, JSON.stringify(updatedSettings));
+
+          alert(`Successfully purchased ${box.name}!`);
+          await loadBoxCatalog(); // Refresh catalog
+          setShowPurchaseModal(null);
+        } catch (error) {
+          alert(`Purchase failed: ${error.message}`);
+        }
+      };
+
+      const handleFileUpload = async (event) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        if (userSettings.tier !== 'paid') {
+          alert('Custom box uploads are a premium feature!');
+          return;
+        }
+
+        if (!firebaseEnabled) {
+          alert('Upload feature requires Firebase configuration');
+          return;
+        }
+
+        if (!userSettings.uid) {
+          alert('Please sign in to upload custom boxes');
+          return;
+        }
+
+        setUploading(true);
+        try {
+          const uploadedBox = await uploadUserBox(file, { name: file.name }, userSettings.uid);
+          alert(`Successfully uploaded ${uploadedBox.name}!`);
+          await loadBoxCatalog(); // Refresh catalog
+        } catch (error) {
+          alert(`Upload failed: ${error.message}`);
+        } finally {
+          setUploading(false);
+        }
+      };
+
+      const getActiveBoxes = () => {
+        if (!boxCatalog) return [];
+
+        switch (activeTab) {
+          case 'defaults':
+            return boxCatalog.defaults;
+          case 'seasonal':
+            return boxCatalog.seasonal;
+          case 'store':
+            return boxCatalog.store;
+          case 'uploads':
+            return boxCatalog.userUploaded;
+          default:
+            return [];
+        }
+      };
+
+      const tabs = [
+        { id: 'defaults', label: 'Defaults', count: boxCatalog?.defaults.length || 0 },
+        { id: 'seasonal', label: 'Seasonal', count: boxCatalog?.seasonal.length || 0 },
+        { id: 'store', label: 'Store', count: boxCatalog?.store.length || 0 },
+        { id: 'uploads', label: 'My Uploads', count: boxCatalog?.userUploaded.length || 0, premium: true }, // Only uploads tab is premium
+      ];
+
+      const activeBoxes = getActiveBoxes();
+
+      return (
+        <div style={{ marginBottom: '1.5rem' }}>
+          <label style={{
+            display: 'block',
+            fontSize: '0.875rem',
+            fontWeight: 500,
+            color: '#cbd5e1',
+            marginBottom: '0.75rem',
+          }}>
+            Box Image
+          </label>
+
+          {/* Tabs */}
+          <div style={{
+            display: 'flex',
+            gap: '0.5rem',
+            marginBottom: '1rem',
+            overflowX: 'auto',
+          }}>
+            {tabs.map(tab => {
+              const isActive = activeTab === tab.id;
+              const isLocked = tab.premium && userSettings.tier !== 'paid';
+
+              return (
+                <button
+                  key={tab.id}
+                  style={{
+                    flex: '0 0 auto',
+                    padding: '0.5rem 1rem',
+                    fontSize: '0.875rem',
+                    fontWeight: 600,
+                    color: isActive ? '#ffffff' : '#94a3b8',
+                    background: isActive
+                      ? 'linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)'
+                      : 'rgba(15, 22, 36, 0.6)',
+                    border: `1px solid ${isActive ? '#3b82f6' : 'rgba(59, 130, 246, 0.2)'}`,
+                    borderRadius: '8px',
+                    cursor: isLocked ? 'not-allowed' : 'pointer',
+                    opacity: isLocked ? 0.5 : 1,
+                    fontFamily: 'inherit',
+                    transition: 'all 0.2s ease',
+                  }}
+                  onClick={() => !isLocked && setActiveTab(tab.id)}
+                  disabled={isLocked}
+                >
+                  {tab.label} {tab.count > 0 && `(${tab.count})`}
+                  {isLocked && ' 🔒'}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Upload Button for Premium Users */}
+          {activeTab === 'uploads' && userSettings.tier === 'paid' && (
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={{
+                display: 'inline-block',
+                padding: '0.75rem 1.5rem',
+                fontSize: '0.875rem',
+                fontWeight: 600,
+                color: '#ffffff',
+                background: uploading
+                  ? 'rgba(59, 130, 246, 0.5)'
+                  : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                borderRadius: '8px',
+                cursor: uploading ? 'not-allowed' : 'pointer',
+                transition: 'all 0.2s ease',
+              }}>
+                {uploading ? 'Uploading...' : '+ Upload Custom Box'}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileUpload}
+                  disabled={uploading}
+                  style={{ display: 'none' }}
+                />
+              </label>
+            </div>
+          )}
+
+          {/* Loading State */}
+          {loading && (
+            <div style={{
+              textAlign: 'center',
+              padding: '2rem',
+              color: '#64748b',
+            }}>
+              Loading boxes...
+            </div>
+          )}
+
+          {/* Box Grid */}
+          {!loading && (
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))',
+              gap: '1rem',
+            }}>
+              {activeBoxes.length === 0 && (
+                <div style={{
+                  gridColumn: '1 / -1',
+                  textAlign: 'center',
+                  padding: '2rem',
+                  color: '#64748b',
+                }}>
+                  {activeTab === 'uploads'
+                    ? 'No uploaded boxes yet. Upload your first custom box!'
+                    : 'No boxes available in this category'}
+                </div>
+              )}
+
+              {activeBoxes.map(image => {
+                const canUse = canUserUseBox(image);
+                const isSelected = selectedImageId === image.id;
+                const isSeasonal = image.source === BOX_SOURCES.SEASONAL;
+                const isStore = image.source === BOX_SOURCES.STORE;
+                const isUserUpload = image.source === BOX_SOURCES.USER_UPLOADED;
+
+                return (
+                  <div
+                    key={image.id}
+                    style={{
+                      position: 'relative',
+                      cursor: 'pointer',
+                      padding: '0.75rem',
+                      background: 'rgba(15, 22, 36, 0.6)',
+                      border: `2px solid ${isSelected ? '#3b82f6' : 'rgba(59, 130, 246, 0.2)'}`,
+                      borderRadius: '12px',
+                      transition: 'all 0.2s ease',
+                      boxShadow: isSelected ? '0 0 20px rgba(59, 130, 246, 0.4)' : 'none',
+                    }}
+                    onClick={() => handleImageClick(image)}
+                  >
+                    {/* Image preview */}
+                    <div style={{
+                      width: '100%',
+                      height: '100px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: 'linear-gradient(135deg, rgba(30, 64, 175, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%)',
+                      borderRadius: '8px',
+                      marginBottom: '0.5rem',
+                      opacity: canUse ? 1 : 0.5,
+                      overflow: 'hidden',
+                      position: 'relative',
+                    }}>
+                      <img
+                        src={getBoxImageUrl(image.id, boxCatalog)}
+                        alt={image.name}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'contain',
+                        }}
+                      />
+                      {!canUse && (
+                        <div style={{
+                          position: 'absolute',
+                          top: '50%',
+                          left: '50%',
+                          transform: 'translate(-50%, -50%)',
+                          fontSize: '2rem',
+                        }}>
+                          🔒
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Image name */}
+                    <div style={{
+                      fontSize: '0.75rem',
+                      fontWeight: 600,
+                      color: '#cbd5e1',
+                      textAlign: 'center',
+                      marginBottom: '0.25rem',
+                    }}>
+                      {image.name}
+                    </div>
+
+                    {/* Badges */}
+                    {isSeasonal && image.seasonalInfo && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '0.5rem',
+                        right: '0.5rem',
+                        padding: '0.25rem 0.5rem',
+                        background: 'linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)',
+                        borderRadius: '6px',
+                        fontSize: '0.625rem',
+                        fontWeight: 700,
+                        color: '#ffffff',
+                        textTransform: 'uppercase',
+                      }}>
+                        {image.seasonalInfo.label || 'Seasonal'}
+                      </div>
+                    )}
+
+                    {isStore && !canUse && image.price !== null && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '0.5rem',
+                        right: '0.5rem',
+                        padding: '0.25rem 0.5rem',
+                        background: 'linear-gradient(135deg, #f59e0b 0%, #3b82f6 100%)',
+                        borderRadius: '6px',
+                        fontSize: '0.625rem',
+                        fontWeight: 700,
+                        color: '#ffffff',
+                        textTransform: 'uppercase',
+                      }}>
+                        ${image.price}
+                      </div>
+                    )}
+
+                    {isUserUpload && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '0.5rem',
+                        right: '0.5rem',
+                        padding: '0.25rem 0.5rem',
+                        background: 'rgba(16, 185, 129, 0.9)',
+                        borderRadius: '6px',
+                        fontSize: '0.625rem',
+                        fontWeight: 700,
+                        color: '#ffffff',
+                        textTransform: 'uppercase',
+                      }}>
+                        Your Upload
+                      </div>
+                    )}
+
+                    {canUse && !isUserUpload && image.source !== BOX_SOURCES.DEFAULT && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '0.5rem',
+                        left: '0.5rem',
+                        padding: '0.25rem 0.5rem',
+                        background: 'rgba(16, 185, 129, 0.9)',
+                        borderRadius: '6px',
+                        fontSize: '0.625rem',
+                        fontWeight: 700,
+                        color: '#ffffff',
+                        textTransform: 'uppercase',
+                      }}>
+                        Owned
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Purchase Modal */}
+          {showPurchaseModal && (
+            <ConfirmDialog
+              show={true}
+              title={`Purchase ${showPurchaseModal.name}?`}
+              message={`Unlock this ${showPurchaseModal.source === BOX_SOURCES.SEASONAL ? 'seasonal ' : ''}box skin${showPurchaseModal.price !== null ? ` for $${showPurchaseModal.price}` : ''}. You'll own it forever and can use it on unlimited loot boxes!`}
+              onConfirm={() => handlePurchase(showPurchaseModal)}
+              onCancel={() => setShowPurchaseModal(null)}
+              confirmText={`Purchase${showPurchaseModal.price !== null ? ` $${showPurchaseModal.price}` : ''}`}
+              cancelText="Cancel"
+            />
+          )}
+        </div>
+      );
+    };
+
+    // BoxCreator
+    const BoxCreator = ({ onComplete, onCancel, editingBox = null }) => {
+      const [boxName, setBoxName] = useState(editingBox ? editingBox.name : '');
+      const [items, setItems] = useState(editingBox ? editingBox.items : []);
+      const [maxPulls, setMaxPulls] = useState(editingBox && editingBox.maxPulls ? editingBox.maxPulls.toString() : '');
+      const [boxType, setBoxType] = useState(editingBox ? editingBox.type : 'local');
+      const [editingItem, setEditingItem] = useState(null);
+      const [hideContents, setHideContents] = useState(editingBox ? editingBox.hideContents || false : false);
+      const [hideOdds, setHideOdds] = useState(editingBox ? editingBox.hideOdds || false : false);
+      const [boxImageId, setBoxImageId] = useState(editingBox ? editingBox.boxImageId || 'chest' : 'chest');
+
+      const userSettings = getUserSettings();
+      const isPaidUser = userSettings.tier === 'paid';
+      const canCreateLocal = editingBox || canCreateLocalBox(); // Allow if editing existing box
+
+      const handleAddItem = (item) => {
+        setItems([...items, item]);
+      };
+
+      const handleUpdateItem = (updatedItem) => {
+        setItems(items.map(item => item.id === updatedItem.id ? updatedItem : item));
+        setEditingItem(null);
+      };
+
+      const handleEditItem = (item) => {
+        setEditingItem(item);
+      };
+
+      const handleCancelEdit = () => {
+        setEditingItem(null);
+      };
+
+      const handleCreate = () => {
+        if (!boxName.trim()) {
+          alert('Please enter a box name');
+          return;
+        }
+
+        if (items.length === 0) {
+          alert('Please add at least one item');
+          return;
+        }
+
+        const validation = validatePercentages(items);
+        if (!validation.valid) {
+          alert(`Percentages must add up to 100%. ${validation.message}`);
+          return;
+        }
+
+        if (boxType === 'local' && !editingBox && !canCreateLocal) {
+          alert('Free users can only create 5 local boxes!');
+          return;
+        }
+
+        const boxData = {
+          id: editingBox ? editingBox.id : Date.now().toString(),
+          name: boxName.trim(),
+          items,
+          maxPulls: maxPulls ? parseInt(maxPulls) : null,
+          type: boxType,
+          shareCode: editingBox ? editingBox.shareCode : generateShareCode(),
+          pullHistory: editingBox ? editingBox.pullHistory : [],
+          createdAt: editingBox ? editingBox.createdAt : Date.now(),
+          boxImageId: boxImageId,
+          hideContents: hideContents,
+          hideOdds: hideOdds,
+        };
+
+        saveBox(boxData);
+        onComplete && onComplete(boxData);
+      };
+
+      const validation = validatePercentages(items);
+
+      return (
+        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+            <h2 style={{ fontSize: '2rem', fontWeight: 700, color: '#e2e8f0', margin: 0 }}>
+              {editingBox ? 'Edit Loot Box' : 'Create Loot Box'}
+            </h2>
+            <Button variant="ghost" onClick={onCancel}>Cancel</Button>
+          </div>
+
+          <div style={{ marginBottom: '2rem' }}>
+            <Card>
+              <Input
+                label="Box Name"
+                placeholder="e.g., Epic Mystery Box"
+                value={boxName}
+                onChange={(e) => setBoxName(e.target.value)}
+                fullWidth
+              />
+
+              <div style={{ marginTop: '1.5rem' }}>
+                <ImagePicker
+                  selectedImageId={boxImageId}
+                  onSelectImage={setBoxImageId}
+                  userSettings={userSettings}
+                />
+              </div>
+
+              <div style={{ marginTop: '1rem' }}>
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: '#cbd5e1', marginBottom: '0.5rem' }}>
+                  Box Type
+                </label>
+                <div style={{ display: 'flex', gap: '1rem' }}>
+                  <button
+                    style={{
+                      flex: 1,
+                      padding: '1rem',
+                      background: boxType === 'local' ? 'linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)' : 'rgba(15, 22, 36, 0.6)',
+                      border: `2px solid ${boxType === 'local' ? '#3b82f6' : 'rgba(59, 130, 246, 0.2)'}`,
+                      borderRadius: '12px',
+                      color: boxType === 'local' ? '#ffffff' : '#94a3b8',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      fontFamily: 'inherit',
+                    }}
+                    onClick={() => setBoxType('local')}
+                  >
+                    💻 Local Box
+                    {!canCreateLocal && <div style={{ fontSize: '0.75rem', marginTop: '0.25rem', opacity: 0.8 }}>(Limit reached)</div>}
+                  </button>
+                  <button
+                    style={{
+                      flex: 1,
+                      padding: '1rem',
+                      background: boxType === 'shared' ? 'linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)' : 'rgba(15, 22, 36, 0.6)',
+                      border: `2px solid ${boxType === 'shared' ? '#3b82f6' : 'rgba(59, 130, 246, 0.2)'}`,
+                      borderRadius: '12px',
+                      color: boxType === 'shared' ? '#ffffff' : '#94a3b8',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      fontFamily: 'inherit',
+                      opacity: isPaidUser ? 1 : 0.6,
+                    }}
+                    onClick={() => setBoxType('shared')}
+                    disabled={!isPaidUser}
+                  >
+                    🌐 Shared Box
+                    {!isPaidUser && <div style={{ fontSize: '0.75rem', marginTop: '0.25rem', opacity: 0.8 }}>(Premium only)</div>}
+                  </button>
+                </div>
+              </div>
+
+              <div style={{ marginTop: '1rem' }}>
+                <Input
+                  type="number"
+                  label="Max Pulls (Optional)"
+                  placeholder="Unlimited"
+                  value={maxPulls}
+                  onChange={(e) => setMaxPulls(e.target.value)}
+                  min="1"
+                  fullWidth
+                />
+              </div>
+
+              <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <label style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem',
+                  color: '#cbd5e1',
+                }}>
+                  <input
+                    type="checkbox"
+                    checked={hideContents}
+                    onChange={(e) => setHideContents(e.target.checked)}
+                    style={{
+                      width: '18px',
+                      height: '18px',
+                      cursor: 'pointer',
+                      accentColor: '#3b82f6',
+                    }}
+                  />
+                  <span>Hide Contents - Don't show what items are in the box</span>
+                </label>
+
+                <label style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem',
+                  color: '#cbd5e1',
+                }}>
+                  <input
+                    type="checkbox"
+                    checked={hideOdds}
+                    onChange={(e) => setHideOdds(e.target.checked)}
+                    style={{
+                      width: '18px',
+                      height: '18px',
+                      cursor: 'pointer',
+                      accentColor: '#3b82f6',
+                    }}
+                  />
+                  <span>Hide Odds - Don't show percentage chances</span>
+                </label>
+              </div>
+            </Card>
+          </div>
+
+          <ItemCreator 
+            items={items} 
+            onAddItem={handleAddItem}
+            editingItem={editingItem}
+            onUpdateItem={handleUpdateItem}
+            onCancelEdit={handleCancelEdit}
+          />
+          <div style={{ marginBottom: '2rem' }}>
+            <ItemList 
+              items={items} 
+              onRemoveItem={(itemId) => setItems(items.filter(i => i.id !== itemId))}
+              onEditItem={handleEditItem}
+            />
+          </div>
+
+          {items.length > 0 && (
+            <div style={{
+              padding: '1rem',
+              background: validation.valid ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+              border: `2px solid ${validation.valid ? '#10b981' : '#ef4444'}`,
+              borderRadius: '12px',
+              textAlign: 'center',
+              marginBottom: '2rem',
+            }}>
+              <div style={{ fontSize: '0.875rem', color: validation.valid ? '#6ee7b7' : '#fca5a5', fontWeight: 600 }}>
+                {validation.message} ({validation.total}%)
+              </div>
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: '1rem' }}>
+            <Button variant="secondary" onClick={onCancel} fullWidth>Cancel</Button>
+            <Button variant="primary" onClick={handleCreate} disabled={!validation.valid || !boxName.trim()} fullWidth>
+              {editingBox ? 'Save Changes' : 'Create Box'}
+            </Button>
+          </div>
+        </div>
+      );
+    };
+
+    // BoxOpener Component
+    const BoxOpener = ({ box, onBack, onBoxUpdate }) => {
+      const [pullHistory, setPullHistory] = useState(box.pullHistory || []);
+      const [isOpening, setIsOpening] = useState(false);
+      const [currentPull, setCurrentPull] = useState(null);
+      const [showResult, setShowResult] = useState(false);
+      const [userName, setUserName] = useState('');
+      const [needsName, setNeedsName] = useState(false);
+
+      const remainingPulls = box.maxPulls ? box.maxPulls - pullHistory.length : null;
+      const canPull = !box.maxPulls || pullHistory.length < box.maxPulls;
+
+      // Calculate current odds with dynamic adjustment
+      const currentOdds = calculateDynamicOdds(box.items, pullHistory);
+
+      const handleOpen = () => {
+        // Check if box is shared and needs user name
+        if (box.type === 'shared' && !userName && !needsName) {
+          setNeedsName(true);
+          return;
+        }
+
+        if (!canPull) {
+          alert('No pulls remaining!');
+          return;
+        }
+
+        if (currentOdds.length === 0) {
+          alert('All items have been claimed!');
+          return;
+        }
+
+        setIsOpening(true);
+        setShowResult(false);
+
+        // Weighted random selection
+        const totalPercentage = currentOdds.reduce((sum, item) => sum + item.adjustedPercentage, 0);
+        let random = Math.random() * totalPercentage;
+        
+        let selectedItem = currentOdds[0];
+        for (const item of currentOdds) {
+          random -= item.adjustedPercentage;
+          if (random <= 0) {
+            selectedItem = item;
+            break;
+          }
+        }
+
+        // Simulate opening animation (2 seconds)
+        setTimeout(() => {
+          const pull = {
+            itemId: selectedItem.id,
+            itemName: selectedItem.name,
+            percentage: selectedItem.percentage,
+            color: selectedItem.color,
+            timestamp: Date.now(),
+            userName: userName || 'You',
+          };
+
+          setCurrentPull(pull);
+          setIsOpening(false);
+          setShowResult(true);
+
+          // Save pull to box
+          const newHistory = [...pullHistory, pull];
+          setPullHistory(newHistory);
+          
+          const updatedBox = { ...box, pullHistory: newHistory };
+          saveBox(updatedBox);
+          onBoxUpdate && onBoxUpdate(updatedBox);
+        }, 2000);
+      };
+
+      const handleNameSubmit = (e) => {
+        e.preventDefault();
+        if (userName.trim()) {
+          setNeedsName(false);
+          handleOpen();
+        }
+      };
+
+      if (needsName) {
+        return (
+          <div style={{ maxWidth: '600px', margin: '0 auto' }}>
+            <Card>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: 600, color: '#e2e8f0', marginBottom: '1rem' }}>
+                Enter Your Name
+              </h2>
+              <p style={{ color: '#94a3b8', marginBottom: '1.5rem' }}>
+                This is a shared box. Your name will be visible to others when you open it.
+              </p>
+              <form onSubmit={handleNameSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <Input
+                  type="text"
+                  placeholder="Your name"
+                  value={userName}
+                  onChange={(e) => setUserName(e.target.value)}
+                  fullWidth
+                  required
+                />
+                <div style={{ display: 'flex', gap: '1rem' }}>
+                  <Button variant="ghost" onClick={onBack} fullWidth>Cancel</Button>
+                  <Button type="submit" variant="primary" fullWidth>Continue</Button>
+                </div>
+              </form>
+            </Card>
+          </div>
+        );
+      }
+
+      return (
+        <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+          {/* Header */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem' }}>
+            <Button variant="ghost" onClick={onBack}>← Back</Button>
+            <h2 style={{ fontSize: '2rem', fontWeight: 700, color: '#e2e8f0', margin: 0 }}>
+              {box.name}
+            </h2>
+            {remainingPulls !== null && (
+              <div style={{
+                padding: '0.5rem 1rem',
+                background: remainingPulls === 0 ? 'rgba(239, 68, 68, 0.2)' : 'rgba(59, 130, 246, 0.2)',
+                border: `1px solid ${remainingPulls === 0 ? '#ef4444' : '#3b82f6'}`,
+                borderRadius: '8px',
+                fontSize: '0.875rem',
+                fontWeight: 600,
+                color: remainingPulls === 0 ? '#fca5a5' : '#93c5fd',
+              }}>
+                {remainingPulls} Pulls Left
+              </div>
+            )}
+          </div>
+
+          {/* Main Opening Area */}
+          <Card style={{ marginBottom: '2rem', minHeight: '400px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+            {isOpening ? (
+              <div style={{ textAlign: 'center' }}>
+                <div style={{
+                  fontSize: '6rem',
+                  animation: 'spin 2s linear infinite',
+                  marginBottom: '1rem',
+                }}>
+                  📦
+                </div>
+                <div style={{ fontSize: '1.25rem', color: '#94a3b8' }}>
+                  Opening...
+                </div>
+              </div>
+            ) : showResult && currentPull ? (
+              <div style={{
+                textAlign: 'center',
+                padding: '3rem',
+                borderRadius: '16px',
+                background: `linear-gradient(135deg, ${currentPull.color}40 0%, ${currentPull.color}20 100%)`,
+                border: `2px solid ${currentPull.color}`,
+                boxShadow: `0 0 40px ${currentPull.color}60`,
+                animation: 'fadeIn 0.5s ease',
+                width: '100%',
+                maxWidth: '500px',
+              }}>
+                <div style={{
+                  fontSize: '4rem',
+                  marginBottom: '1rem',
+                }}>
+                  🎁
+                </div>
+                <h3 style={{
+                  fontSize: '2rem',
+                  fontWeight: 700,
+                  color: '#e2e8f0',
+                  marginBottom: '0.5rem',
+                }}>
+                  {currentPull.itemName}
+                </h3>
+                <div style={{
+                  display: 'inline-block',
+                  padding: '0.5rem 1.5rem',
+                  background: currentPull.color,
+                  borderRadius: '8px',
+                  fontSize: '1rem',
+                  fontWeight: 600,
+                  color: '#ffffff',
+                }}>
+                  {currentPull.percentage}% chance
+                </div>
+              </div>
+            ) : (
+              <div style={{ textAlign: 'center' }}>
+                <div style={{
+                  fontSize: '6rem',
+                  marginBottom: '1.5rem',
+                  filter: 'drop-shadow(0 0 20px rgba(59, 130, 246, 0.4))',
+                }}>
+                  📦
+                </div>
+                <div style={{
+                  fontSize: '1.25rem',
+                  color: '#cbd5e1',
+                  marginBottom: '0.5rem',
+                }}>
+                  Ready to open!
+                </div>
+                <div style={{
+                  fontSize: '0.875rem',
+                  color: '#64748b',
+                }}>
+                  Click the button below to reveal your prize
+                </div>
+              </div>
+            )}
+          </Card>
+
+          {/* Open Button */}
+          <Button
+            variant="primary"
+            size="lg"
+            onClick={handleOpen}
+            disabled={isOpening || !canPull || currentOdds.length === 0}
+            fullWidth
+            style={{ 
+              marginBottom: '2rem', 
+              fontSize: '1.5rem', 
+              padding: '1.25rem',
+              background: 'linear-gradient(135deg, #1e40af 0%, #f59e0b 100%)',
+              boxShadow: '0 8px 32px rgba(30, 64, 175, 0.4)',
+            }}
+          >
+            {isOpening ? 'Opening...' : showResult ? 'Open Again' : 'Open Box'}
+          </Button>
+
+          <div style={{ display: 'grid', gridTemplateColumns: box.hideOdds ? '1fr' : '1fr 1fr', gap: '1.5rem' }}>
+            {/* Current Odds - only show if not hidden */}
+            {!box.hideOdds && (
+              <Card>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#e2e8f0', marginBottom: '1rem' }}>
+                  Current Odds
+                </h3>
+                {currentOdds.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
+                    All items claimed!
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    {currentOdds.map(item => (
+                      <div
+                        key={item.id}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.75rem',
+                          padding: '0.75rem',
+                          background: 'rgba(15, 22, 36, 0.6)',
+                          border: `1px solid ${item.color}40`,
+                          borderLeft: `3px solid ${item.color}`,
+                          borderRadius: '8px',
+                        }}
+                      >
+                        <span style={{
+                          width: '10px',
+                          height: '10px',
+                          borderRadius: '50%',
+                          background: item.color,
+                          boxShadow: `0 0 8px ${item.color}80`,
+                        }} />
+                        <span style={{ flex: 1, fontSize: '0.875rem', color: '#cbd5e1' }}>
+                          {box.hideContents ? '???' : item.name}
+                        </span>
+                        <span style={{ fontSize: '1rem', fontWeight: 700, color: item.color }}>
+                          {item.adjustedPercentage.toFixed(1)}%
+                        </span>
+                        {item.remaining !== Infinity && (
+                          <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                            ({item.remaining} left)
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </Card>
+            )}
+
+            {/* Pull History */}
+            <Card>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#e2e8f0', marginBottom: '1rem' }}>
+                Pull History ({pullHistory.length})
+              </h3>
+              {pullHistory.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
+                  No pulls yet
+                </div>
+              ) : (
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.5rem',
+                  maxHeight: '400px',
+                  overflowY: 'auto',
+                }}>
+                  {pullHistory.slice().reverse().map((pull, idx) => {
+                    // Current user can see their own pulls, but hideContents hides items pulled by others
+                    const isCurrentUserPull = pull.userName === (userName || 'You');
+                    const shouldHideItemName = box.hideContents && !isCurrentUserPull;
+                    
+                    return (
+                      <div
+                        key={idx}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          padding: '0.5rem',
+                          background: 'rgba(15, 22, 36, 0.4)',
+                          borderRadius: '6px',
+                          fontSize: '0.875rem',
+                        }}
+                      >
+                        <span style={{
+                          width: '8px',
+                          height: '8px',
+                          borderRadius: '50%',
+                          background: pull.color,
+                        }} />
+                        <span style={{ color: '#cbd5e1' }}>
+                          {shouldHideItemName ? 'Mystery Item' : pull.itemName}
+                        </span>
+                        <span style={{ marginLeft: 'auto', color: '#64748b', fontSize: '0.75rem' }}>
+                          {pull.userName}
+                        </span>
+                        <span style={{ color: '#475569', fontSize: '0.75rem' }}>
+                          {new Date(pull.timestamp).toLocaleTimeString()}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </Card>
+          </div>
+        </div>
+      );
+    };
+
+    // ========== MAIN APP ==========
+    
+    const App = () => {
+      const [mode, setMode] = useState('home'); // home, create, edit, open
+      const [activeFilter, setActiveFilter] = useState('Local');
+      const [boxes, setBoxes] = useState([]);
+      const [userSettings, setUserSettings] = useState(null);
+      const [notificationCount, setNotificationCount] = useState(0);
+      const [editingBox, setEditingBox] = useState(null);
+      const [openingBox, setOpeningBox] = useState(null);
+      const { showToast, ToastContainer, success, error, info } = useToast();
+
+      useEffect(() => {
+        loadData();
+      }, []);
+
+      const loadData = () => {
+        const loadedBoxes = getAllBoxes();
+        const settings = getUserSettings();
+        const unreadCount = getUnreadCount();
+        
+        setBoxes(loadedBoxes);
+        setUserSettings(settings);
+        setNotificationCount(unreadCount);
+      };
+
+      const handleCreateBox = () => {
+        setEditingBox(null);
+        setMode('create');
+      };
+
+      const handleEditBox = (box) => {
+        setEditingBox(box);
+        setMode('edit');
+      };
+
+      const handleDeleteBox = (boxId) => {
+        deleteBox(boxId);
+        
+        // If we're currently viewing the deleted box, go back to home
+        if (openingBox && openingBox.id === boxId) {
+          setOpeningBox(null);
+          setMode('home');
+        }
+        
+        loadData();
+        success('Box deleted successfully');
+      };
+
+      const handleBoxSaved = (box) => {
+        loadData();
+        setMode('home');
+        setEditingBox(null);
+        success(editingBox ? 'Box updated successfully!' : `${box.name} created successfully!`);
+      };
+
+      const handleCancel = () => {
+        setMode('home');
+        setEditingBox(null);
+      };
+
+      const handleOpenBox = (box) => {
+        setOpeningBox(box);
+        setMode('open');
+      };
+
+      const handleBoxUpdate = (updatedBox) => {
+        loadData();
+        setOpeningBox(updatedBox);
+      };
+
+      const handleCloseOpener = () => {
+        setMode('home');
+        setOpeningBox(null);
+        loadData(); // Reload to show updated pull counts
+      };
+
+      const filteredBoxes = boxes.filter(box => {
+        if (activeFilter === 'Local') return box.type === 'local';
+        if (activeFilter === 'Shared') return box.type === 'shared';
+        if (activeFilter === 'New') {
+          // Show boxes that haven't been opened yet
+          return !box.pullHistory || box.pullHistory.length === 0;
+        }
+        return true;
+      });
+
+      if (!userSettings) return <div>Loading...</div>;
+
+      return (
+        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem', minHeight: '100vh' }}>
+          <Header
+            notificationCount={notificationCount}
+            onNotificationClick={() => info('Notifications coming soon!')}
+            onSettingsClick={() => info('Settings coming soon!')}
+            userTier={userSettings.tier}
+          />
+
+          {mode === 'home' && (
+            <>
+              <FilterTabs activeFilter={activeFilter} onFilterChange={setActiveFilter} />
+
+              <Button variant="primary" size="lg" onClick={handleCreateBox} style={{ marginBottom: '2rem' }}>
+                + Create New Loot Box
+              </Button>
+
+              {filteredBoxes.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '4rem 2rem', color: '#64748b' }}>
+                  <div style={{ fontSize: '4rem', marginBottom: '1rem', opacity: 0.5 }}>📦</div>
+                  <div style={{ fontSize: '1.125rem', marginBottom: '0.5rem' }}>
+                    {activeFilter === 'Local' && 'No local boxes yet'}
+                    {activeFilter === 'Shared' && 'No shared boxes yet'}
+                    {activeFilter === 'New' && 'No unopened boxes'}
+                  </div>
+                  <div style={{ fontSize: '0.875rem', color: '#475569' }}>
+                    {activeFilter === 'New' ? 'All your boxes have been opened!' : 'Create your first loot box to get started!'}
+                  </div>
+                </div>
+              ) : (
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+                  gap: '1.5rem',
+                  marginTop: '2rem',
+                }}>
+                  {filteredBoxes.map(box => (
+                    <BoxCard 
+                      key={box.id} 
+                      box={box} 
+                      onClick={() => handleOpenBox(box)}
+                      onEdit={handleEditBox}
+                      onDelete={handleDeleteBox}
+                    />
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+
+          {(mode === 'create' || mode === 'edit') && (
+            <BoxCreator 
+              onComplete={handleBoxSaved} 
+              onCancel={handleCancel}
+              editingBox={editingBox}
+            />
+          )}
+
+          {mode === 'open' && openingBox && (
+            <BoxOpener 
+              box={openingBox}
+              onBack={handleCloseOpener}
+              onBoxUpdate={handleBoxUpdate}
+            />
+          )}
+
+          <ToastContainer />
+        </div>
+      );
+    };
+
+    // Render
+    ReactDOM.render(<App />, document.getElementById('root'));
+  </script>
+</body>
+</html>
