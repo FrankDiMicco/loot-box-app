@@ -1971,6 +1971,8 @@
             return boxCatalog.seasonal;
           case 'store':
             return boxCatalog.store;
+          case 'premium':
+            return boxCatalog.premium;
           case 'uploads':
             return boxCatalog.userUploaded;
           default:
@@ -1980,9 +1982,10 @@
 
       const tabs = [
         { id: 'defaults', label: 'Defaults', count: boxCatalog?.defaults.length || 0 },
+        { id: 'premium', label: 'Premium', count: boxCatalog?.premium.length || 0, premium: true },
         { id: 'seasonal', label: 'Seasonal', count: boxCatalog?.seasonal.length || 0 },
         { id: 'store', label: 'Store', count: boxCatalog?.store.length || 0 },
-        { id: 'uploads', label: 'My Uploads', count: boxCatalog?.userUploaded.length || 0, premium: true }, // Only uploads tab is premium
+        { id: 'uploads', label: 'My Uploads', count: boxCatalog?.userUploaded.length || 0, premium: true },
       ];
 
       const activeBoxes = getActiveBoxes();

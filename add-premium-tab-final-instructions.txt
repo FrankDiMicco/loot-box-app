@@ -1,0 +1,84 @@
+====================================================================
+ADD PREMIUM TAB TO IMAGEPICKER - CLAUDE CODE INSTRUCTIONS
+====================================================================
+
+====================================================================
+CHANGES NEEDED IN index.html (ImagePicker component only)
+====================================================================
+
+--------------------------------------------------------------------
+CHANGE 1: ADD PREMIUM TAB
+--------------------------------------------------------------------
+
+In the ImagePicker component, find the tabs array:
+
+      const tabs = [
+        { id: 'defaults', label: 'Defaults', count: boxCatalog?.defaults.length || 0 },
+        { id: 'seasonal', label: 'Seasonal', count: boxCatalog?.seasonal.length || 0 },
+        { id: 'store', label: 'Store', count: boxCatalog?.store.length || 0 },
+        { id: 'uploads', label: 'My Uploads', count: boxCatalog?.userUploaded.length || 0, premium: true },
+      ];
+
+Replace with:
+
+      const tabs = [
+        { id: 'defaults', label: 'Defaults', count: boxCatalog?.defaults.length || 0 },
+        { id: 'seasonal', label: 'Seasonal', count: boxCatalog?.seasonal.length || 0 },
+        { id: 'store', label: 'Store', count: boxCatalog?.store.length || 0 },
+        { id: 'premium', label: 'Premium', count: boxCatalog?.premium.length || 0, premium: true },
+        { id: 'uploads', label: 'My Uploads', count: boxCatalog?.userUploaded.length || 0, premium: true },
+      ];
+
+--------------------------------------------------------------------
+CHANGE 2: ADD PREMIUM CASE TO getActiveBoxes
+--------------------------------------------------------------------
+
+In the ImagePicker component, find the getActiveBoxes function
+and replace it entirely with:
+
+      const getActiveBoxes = () => {
+        if (!boxCatalog) return [];
+        switch (activeTab) {
+          case 'defaults':
+            return boxCatalog.defaults;
+          case 'seasonal':
+            return boxCatalog.seasonal;
+          case 'store':
+            return boxCatalog.store;
+          case 'premium':
+            return boxCatalog.premium;
+          case 'uploads':
+            return boxCatalog.userUploaded;
+          default:
+            return [];
+        }
+      };
+
+--------------------------------------------------------------------
+CHANGE 3: UPDATE canUserUseBox FOR PREMIUM
+--------------------------------------------------------------------
+
+In ImagePicker, find the canUserUseBox function and replace
+it entirely with:
+
+      const canUserUseBox = (image) => {
+        // Default boxes (hardcoded OR from Firebase) - always free
+        if (image.source === BOX_SOURCES.DEFAULT || image.source === 'default') return true;
+
+        // Premium boxes - free for premium users only
+        if (image.source === BOX_SOURCES.PREMIUM || image.source === 'premium') {
+          return userSettings.tier === 'paid';
+        }
+
+        // User's own uploads
+        if (image.source === BOX_SOURCES.USER_UPLOADED &&
+            userSettings.uploadedBoxes?.includes(image.id)) return true;
+
+        // Purchased boxes
+        if (userSettings.ownedBoxes?.includes(image.id)) return true;
+
+        return false;
+      };
+
+====================================================================
+FILES CHANGED: Only index.html
