@@ -1226,7 +1226,7 @@
     };
 
     // BoxCard (simplified for brevity)
-    const BoxCard = ({ box, onClick, onEdit, onDelete }) => {
+    const BoxCard = ({ box, onClick, onEdit, onDelete, success }) => {
       const { name, items = [], pullHistory = [], maxPulls, type = 'local' } = box;
       const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
@@ -1238,6 +1238,38 @@
       const handleDeleteClick = (e) => {
         e.stopPropagation();
         setShowDeleteConfirm(true);
+      };
+
+      const handleShare = async (e) => {
+        e.stopPropagation();
+        if (!box.shareCode) return;
+
+        const url = `${window.location.origin}${window.location.pathname}#/box/${box.shareCode}`;
+
+        // Use native share sheet on mobile, clipboard on desktop
+        if (navigator.share) {
+          try {
+            await navigator.share({
+              title: box.name,
+              text: `Open my loot box "${box.name}" and try your luck!`,
+              url: url,
+            });
+          } catch (err) {
+            // User cancelled share - that's fine, do nothing
+            if (err.name !== 'AbortError') {
+              console.error('Share failed:', err);
+            }
+          }
+        } else {
+          // Desktop fallback - copy to clipboard
+          try {
+            await navigator.clipboard.writeText(url);
+            success && success('Link copied to clipboard!');
+          } catch (err) {
+            // Final fallback for older browsers
+            prompt('Copy this link:', url);
+          }
+        }
       };
 
       const handleDeleteConfirm = () => {
@@ -1399,32 +1431,63 @@
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <span style={{
-              padding: '0.25rem 0.75rem',
-              fontSize: '0.75rem',
-              fontWeight: 600,
-              color: '#ffffff',
-              background: type === 'shared'
-                ? 'linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%)'
-                : 'linear-gradient(135deg, #64748b 0%, #475569 100%)',
-              borderRadius: '6px',
-              textTransform: 'uppercase',
-            }}>
-              {type === 'shared' ? '🌐 Shared' : '💻 Local'}
-            </span>
-            {box.isVisitor && (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
               <span style={{
                 padding: '0.25rem 0.75rem',
                 fontSize: '0.75rem',
                 fontWeight: 600,
                 color: '#ffffff',
-                background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
+                background: type === 'shared'
+                  ? 'linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%)'
+                  : 'linear-gradient(135deg, #64748b 0%, #475569 100%)',
                 borderRadius: '6px',
                 textTransform: 'uppercase',
               }}>
-                Joined
+                {type === 'shared' ? '🌐 Shared' : '💻 Local'}
               </span>
+              {box.isVisitor && (
+                <span style={{
+                  padding: '0.25rem 0.75rem',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  color: '#ffffff',
+                  background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
+                  borderRadius: '6px',
+                  textTransform: 'uppercase',
+                }}>
+                  Joined
+                </span>
+              )}
+            </div>
+            {box.type === 'shared' && box.shareCode && (
+              <button
+                style={{
+                  padding: '0.4rem 1rem',
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                  color: '#ffffff',
+                  background: 'linear-gradient(135deg, #4169e1 0%, #1e40af 100%)',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  textTransform: 'uppercase',
+                  boxShadow: '0 0 20px rgba(65, 105, 225, 0.6), 0 0 40px rgba(65, 105, 225, 0.3)',
+                  transition: 'all 0.3s ease',
+                  fontFamily: 'inherit',
+                }}
+                onClick={handleShare}
+                onMouseEnter={(e) => {
+                  e.target.style.transform = 'scale(1.05)';
+                  e.target.style.boxShadow = '0 0 30px rgba(65, 105, 225, 0.8), 0 0 60px rgba(65, 105, 225, 0.4)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.transform = 'scale(1)';
+                  e.target.style.boxShadow = '0 0 20px rgba(65, 105, 225, 0.6), 0 0 40px rgba(65, 105, 225, 0.3)';
+                }}
+              >
+                Share
+              </button>
             )}
           </div>
         </Card>
@@ -3186,12 +3249,13 @@
                   marginTop: '2rem',
                 }}>
                   {filteredBoxes.map(box => (
-                    <BoxCard 
-                      key={box.id} 
-                      box={box} 
+                    <BoxCard
+                      key={box.id}
+                      box={box}
                       onClick={() => handleOpenBox(box)}
                       onEdit={handleEditBox}
                       onDelete={handleDeleteBox}
+                      success={success}
                     />
                   ))}
                 </div>
