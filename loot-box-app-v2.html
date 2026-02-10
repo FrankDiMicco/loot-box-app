@@ -209,14 +209,15 @@
 
     // ========== FIREBASE CONFIGURATION ==========
 
-    // Firebase configuration (replace with your actual config)
+    // Firebase configuration
     const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_AUTH_DOMAIN",
-      projectId: "YOUR_PROJECT_ID",
-      storageBucket: "YOUR_STORAGE_BUCKET",
-      messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-      appId: "YOUR_APP_ID"
+      apiKey: "AIzaSyCo5QnH9iEZL7fprJxs96y9WMq5dk1uxd8",
+      authDomain: "lootbox-app-dd5fa.firebaseapp.com",
+      projectId: "lootbox-app-dd5fa",
+      storageBucket: "lootbox-app-dd5fa.firebasestorage.app",
+      messagingSenderId: "16386037455",
+      appId: "1:16386037455:web:df2ef3eb25929357dfc9ba",
+      measurementId: "G-3KSR19L05G"
     };
 
     // Initialize Firebase (only if config is valid)
@@ -511,16 +512,22 @@
       if (!firebaseEnabled || !db) return [];
 
       try {
-        const now = Date.now();
         const snapshot = await db.collection('boxCatalog')
           .where('source', '==', BOX_SOURCES.SEASONAL)
-          .where('seasonalInfo.endDate', '>', now)
           .get();
 
-        return snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
+        const now = Date.now();
+
+        // Filter expired boxes client-side to avoid needing a Firestore index
+        return snapshot.docs
+          .map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }))
+          .filter(box => {
+            // Only show boxes that haven't expired
+            return !box.seasonalInfo?.endDate || box.seasonalInfo.endDate > now;
+          });
       } catch (error) {
         console.error('Error fetching seasonal boxes:', error);
         return [];
