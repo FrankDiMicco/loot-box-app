@@ -1254,7 +1254,7 @@
           <Card hover onClick={onClick}>
             <div style={{ position: 'relative' }}>
               {/* Action buttons */}
-              {!box.isVisitor && (
+              {!box.isVisitor ? (
                 <div style={{
                   position: 'absolute',
                   top: '-0.5rem',
@@ -1318,6 +1318,36 @@
                       e.target.style.borderColor = 'rgba(239, 68, 68, 0.3)';
                     }}
                     title="Delete box"
+                  >
+                    ×
+                  </button>
+                </div>
+              ) : (
+                <div style={{
+                  position: 'absolute',
+                  top: '-0.5rem',
+                  right: '-0.5rem',
+                  display: 'flex',
+                  gap: '0.5rem',
+                  zIndex: 10,
+                }}>
+                  <button
+                    style={{
+                      width: '32px',
+                      height: '32px',
+                      background: 'rgba(26, 31, 53, 0.9)',
+                      border: '1px solid rgba(148, 163, 184, 0.3)',
+                      borderRadius: '8px',
+                      color: '#94a3b8',
+                      cursor: 'pointer',
+                      fontSize: '1.125rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'all 0.2s ease',
+                    }}
+                    onClick={handleDeleteClick}
+                    title="Remove from your feed"
                   >
                     ×
                   </button>
@@ -1401,11 +1431,14 @@
 
         <ConfirmDialog
           show={showDeleteConfirm}
-          title="Delete Loot Box?"
-          message={`Are you sure you want to delete "${name}"? This action cannot be undone and all pull history will be lost.`}
+          title={box.isVisitor ? "Remove from your feed?" : "Delete Loot Box?"}
+          message={box.isVisitor
+            ? `Remove "${name}" from your feed?`
+            : `Are you sure you want to delete "${name}"? This action cannot be undone and all pull history will be lost.`
+          }
           onConfirm={handleDeleteConfirm}
           onCancel={handleDeleteCancel}
-          confirmText="Delete"
+          confirmText={box.isVisitor ? "Remove" : "Delete"}
           cancelText="Cancel"
         />
       </>
@@ -2942,8 +2975,8 @@
       const handleDeleteBox = async (boxId) => {
         const box = boxes.find(b => b.id === boxId);
 
-        // If shared box, delete from Firestore first
-        if (box && box.type === 'shared' && box.shareCode) {
+        // If shared box AND creator (not visitor), delete from Firestore
+        if (box && box.type === 'shared' && box.shareCode && !box.isVisitor) {
           const deleted = await deleteSharedBox(box.shareCode);
           if (!deleted) {
             error('Failed to delete shared box from server');
@@ -2951,17 +2984,16 @@
           }
         }
 
-        // Delete from localStorage
+        // Delete local reference (works for both creator and visitor)
         deleteBox(boxId);
 
-        // If we're currently viewing the deleted box, go back to home
         if (openingBox && openingBox.id === boxId) {
           setOpeningBox(null);
           setMode('home');
         }
 
         loadData();
-        success('Box deleted successfully');
+        success(box?.isVisitor ? 'Removed from your feed' : 'Box deleted successfully');
       };
 
       const handleBoxSaved = (box) => {
