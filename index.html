@@ -2909,16 +2909,24 @@
                 </div>
                 <div style={{
                   fontSize: '1.25rem',
-                  color: '#cbd5e1',
+                  color: isExpired ? '#fca5a5' : !canPull ? '#fca5a5' : '#cbd5e1',
                   marginBottom: '0.5rem',
                 }}>
-                  Ready to open!
+                  {isExpired
+                    ? 'This box has expired'
+                    : !canPull
+                      ? 'No pulls remaining'
+                      : 'Ready to open!'}
                 </div>
                 <div style={{
                   fontSize: '0.875rem',
                   color: '#64748b',
                 }}>
-                  Click the button below to reveal your prize
+                  {isExpired
+                    ? 'You can still view the pull history below'
+                    : !canPull
+                      ? 'Check the pull history to see what was opened'
+                      : 'Click the button below to reveal your prize'}
                 </div>
               </div>
             )}
