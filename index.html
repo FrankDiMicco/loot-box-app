@@ -1254,73 +1254,75 @@
           <Card hover onClick={onClick}>
             <div style={{ position: 'relative' }}>
               {/* Action buttons */}
-              <div style={{ 
-                position: 'absolute', 
-                top: '-0.5rem', 
-                right: '-0.5rem', 
-                display: 'flex', 
-                gap: '0.5rem',
-                zIndex: 10,
-              }}>
-                <button
-                  style={{
-                    width: '32px',
-                    height: '32px',
-                    background: 'rgba(26, 31, 53, 0.9)',
-                    border: '1px solid rgba(59, 130, 246, 0.3)',
-                    borderRadius: '8px',
-                    color: '#60a5fa',
-                    cursor: 'pointer',
-                    fontSize: '1rem',
-                    fontWeight: 600,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    transition: 'all 0.2s ease',
-                  }}
-                  onClick={handleEdit}
-                  onMouseEnter={(e) => {
-                    e.target.style.background = 'rgba(59, 130, 246, 0.2)';
-                    e.target.style.borderColor = '#60a5fa';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.background = 'rgba(26, 31, 53, 0.9)';
-                    e.target.style.borderColor = 'rgba(59, 130, 246, 0.3)';
-                  }}
-                  title="Edit box"
-                >
-                  ✎
-                </button>
-                
-                <button
-                  style={{
-                    width: '32px',
-                    height: '32px',
-                    background: 'rgba(26, 31, 53, 0.9)',
-                    border: '1px solid rgba(239, 68, 68, 0.3)',
-                    borderRadius: '8px',
-                    color: '#ef4444',
-                    cursor: 'pointer',
-                    fontSize: '1.125rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    transition: 'all 0.2s ease',
-                  }}
-                  onClick={handleDeleteClick}
-                  onMouseEnter={(e) => {
-                    e.target.style.background = 'rgba(239, 68, 68, 0.2)';
-                    e.target.style.borderColor = '#ef4444';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.background = 'rgba(26, 31, 53, 0.9)';
-                    e.target.style.borderColor = 'rgba(239, 68, 68, 0.3)';
-                  }}
-                  title="Delete box"
-                >
-                  ×
-                </button>
-              </div>
+              {!box.isVisitor && (
+                <div style={{
+                  position: 'absolute',
+                  top: '-0.5rem',
+                  right: '-0.5rem',
+                  display: 'flex',
+                  gap: '0.5rem',
+                  zIndex: 10,
+                }}>
+                  <button
+                    style={{
+                      width: '32px',
+                      height: '32px',
+                      background: 'rgba(26, 31, 53, 0.9)',
+                      border: '1px solid rgba(59, 130, 246, 0.3)',
+                      borderRadius: '8px',
+                      color: '#60a5fa',
+                      cursor: 'pointer',
+                      fontSize: '1rem',
+                      fontWeight: 600,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'all 0.2s ease',
+                    }}
+                    onClick={handleEdit}
+                    onMouseEnter={(e) => {
+                      e.target.style.background = 'rgba(59, 130, 246, 0.2)';
+                      e.target.style.borderColor = '#60a5fa';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.background = 'rgba(26, 31, 53, 0.9)';
+                      e.target.style.borderColor = 'rgba(59, 130, 246, 0.3)';
+                    }}
+                    title="Edit box"
+                  >
+                    ✎
+                  </button>
+
+                  <button
+                    style={{
+                      width: '32px',
+                      height: '32px',
+                      background: 'rgba(26, 31, 53, 0.9)',
+                      border: '1px solid rgba(239, 68, 68, 0.3)',
+                      borderRadius: '8px',
+                      color: '#ef4444',
+                      cursor: 'pointer',
+                      fontSize: '1.125rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'all 0.2s ease',
+                    }}
+                    onClick={handleDeleteClick}
+                    onMouseEnter={(e) => {
+                      e.target.style.background = 'rgba(239, 68, 68, 0.2)';
+                      e.target.style.borderColor = '#ef4444';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.background = 'rgba(26, 31, 53, 0.9)';
+                      e.target.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+                    }}
+                    title="Delete box"
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
 
             <div style={{
             width: '100%',
@@ -1373,7 +1375,7 @@
               fontSize: '0.75rem',
               fontWeight: 600,
               color: '#ffffff',
-              background: type === 'shared' 
+              background: type === 'shared'
                 ? 'linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%)'
                 : 'linear-gradient(135deg, #64748b 0%, #475569 100%)',
               borderRadius: '6px',
@@ -1381,6 +1383,19 @@
             }}>
               {type === 'shared' ? '🌐 Shared' : '💻 Local'}
             </span>
+            {box.isVisitor && (
+              <span style={{
+                padding: '0.25rem 0.75rem',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                color: '#ffffff',
+                background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
+                borderRadius: '6px',
+                textTransform: 'uppercase',
+              }}>
+                Joined
+              </span>
+            )}
           </div>
         </Card>
 
@@ -2877,6 +2892,32 @@
       const loadSharedBox = async (shareCode) => {
         const box = await fetchSharedBox(shareCode);
         if (box) {
+          // Save a read-only reference so visitor sees it in their feed
+          const existingBoxes = getAllBoxes();
+          const alreadySaved = existingBoxes.some(
+            b => b.shareCode === shareCode
+          );
+
+          if (!alreadySaved) {
+            const visitorRef = {
+              id: box.id,
+              name: box.name,
+              type: 'shared',
+              shareCode: box.shareCode,
+              isSharedRef: true,
+              isVisitor: true,  // THIS IS THE KEY FLAG
+              items: box.items,
+              maxPulls: box.maxPulls,
+              pullHistory: [],  // will be fetched from Firestore
+              createdAt: box.createdAt,
+              boxImageId: box.boxImageId,
+              hideContents: box.hideContents,
+              hideOdds: box.hideOdds,
+            };
+            saveBox(visitorRef);
+            loadData();  // refresh the box list
+          }
+
           setOpeningBox(box);
           setMode('open');
         } else {
@@ -2890,6 +2931,10 @@
       };
 
       const handleEditBox = (box) => {
+        if (box.isVisitor) {
+          info('You can only view shared boxes you joined');
+          return;
+        }
         setEditingBox(box);
         setMode('edit');
       };
@@ -2933,18 +2978,21 @@
 
       const handleOpenBox = async (box) => {
         if (box.type === 'shared' && box.shareCode) {
-          // Fetch latest from Firestore
           const freshBox = await fetchSharedBox(box.shareCode);
           if (freshBox) {
             setOpeningBox(freshBox);
+            setMode('open');
           } else {
-            setOpeningBox(box); // Fallback to local
-            error('Could not fetch latest data');
+            // Box was deleted - clean up local reference
+            deleteBox(box.id);
+            loadData();
+            error('This box no longer exists. It has been removed from your list.');
+            return;
           }
         } else {
           setOpeningBox(box);
+          setMode('open');
         }
-        setMode('open');
       };
 
       const handleBoxUpdate = (updatedBox) => {
