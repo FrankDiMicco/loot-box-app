@@ -2693,62 +2693,21 @@
       return (
         <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
           {/* Header */}
-          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '2rem' }}>
-            <div style={{ position: 'absolute', left: 0 }}>
+          <div style={{ marginBottom: '2rem' }}>
+            {/* Top row: Back button left, box name centered */}
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem' }}>
               <Button variant="ghost" onClick={onBack}>← Back</Button>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
-              <h2 style={{ fontSize: '2rem', fontWeight: 700, color: '#e2e8f0', margin: 0 }}>
+              <h2 style={{ fontSize: '2rem', fontWeight: 700, color: '#e2e8f0', margin: 0, flex: 1, textAlign: 'center' }}>
                 {box.name}
               </h2>
-              {box.type === 'shared' && box.shareCode && (
-                <button
-                  style={{
-                    padding: '0.5rem 1rem',
-                    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                    border: 'none',
-                    borderRadius: '8px',
-                    color: '#ffffff',
-                    fontSize: '0.875rem',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    fontFamily: 'inherit',
-                    transition: 'all 0.2s ease',
-                  }}
-                  onClick={async () => {
-                    const url = `${window.location.origin}${window.location.pathname}#/box/${box.shareCode}`;
-
-                    // Use native share sheet on mobile, clipboard on desktop
-                    if (navigator.share) {
-                      try {
-                        await navigator.share({
-                          title: box.name,
-                          text: `Open my loot box "${box.name}" and try your luck!`,
-                          url: url,
-                        });
-                      } catch (err) {
-                        // User cancelled share - that's fine, do nothing
-                        if (err.name !== 'AbortError') {
-                          console.error('Share failed:', err);
-                        }
-                      }
-                    } else {
-                      // Desktop fallback - copy to clipboard
-                      try {
-                        await navigator.clipboard.writeText(url);
-                        success('Link copied to clipboard!');
-                      } catch (err) {
-                        // Final fallback for older browsers
-                        prompt('Copy this link:', url);
-                      }
-                    }
-                  }}
-                >
-                  Share Box
-                </button>
-              )}
+              {/* Invisible spacer to balance the Back button */}
+              <div style={{ visibility: 'hidden' }}>
+                <Button variant="ghost">← Back</Button>
+              </div>
             </div>
-            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+
+            {/* Bottom row: Status badges and share button */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
               {remainingPulls !== null && (
                 <div style={{
                   padding: '0.5rem 1rem',
@@ -2801,6 +2760,61 @@
                 }}>
                   {isExpired ? 'Expired' : formatExpirationCountdown(box.expiresAt) + ' left'}
                 </div>
+              )}
+
+              {/* Share button - matches BoxCard style */}
+              {box.type === 'shared' && box.shareCode && (
+                <button
+                  style={{
+                    marginLeft: 'auto',
+                    padding: '0.5rem 1.25rem',
+                    fontSize: '0.8rem',
+                    fontWeight: 700,
+                    color: '#ffffff',
+                    background: 'linear-gradient(135deg, #4169e1 0%, #1e40af 100%)',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    textTransform: 'uppercase',
+                    boxShadow: '0 0 20px rgba(65, 105, 225, 0.6), 0 0 40px rgba(65, 105, 225, 0.3)',
+                    transition: 'all 0.3s ease',
+                    fontFamily: 'inherit',
+                  }}
+                  onClick={async () => {
+                    const url = `${window.location.origin}${window.location.pathname}#/box/${box.shareCode}`;
+
+                    if (navigator.share) {
+                      try {
+                        await navigator.share({
+                          title: box.name,
+                          text: `Open my loot box "${box.name}" and try your luck!`,
+                          url: url,
+                        });
+                      } catch (err) {
+                        if (err.name !== 'AbortError') {
+                          console.error('Share failed:', err);
+                        }
+                      }
+                    } else {
+                      try {
+                        await navigator.clipboard.writeText(url);
+                        success('Link copied to clipboard!');
+                      } catch (err) {
+                        prompt('Copy this link:', url);
+                      }
+                    }
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.transform = 'scale(1.05)';
+                    e.target.style.boxShadow = '0 0 30px rgba(65, 105, 225, 0.8), 0 0 60px rgba(65, 105, 225, 0.4)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.transform = 'scale(1)';
+                    e.target.style.boxShadow = '0 0 20px rgba(65, 105, 225, 0.6), 0 0 40px rgba(65, 105, 225, 0.3)';
+                  }}
+                >
+                  Share
+                </button>
               )}
             </div>
           </div>
