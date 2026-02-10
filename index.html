@@ -1459,6 +1459,24 @@
                   Joined
                 </span>
               )}
+              {box.expiresAt && (
+                <span style={{
+                  padding: '0.25rem 0.75rem',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  color: '#ffffff',
+                  background: Date.now() > box.expiresAt
+                    ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
+                    : isExpiringSoon(box.expiresAt)
+                      ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'
+                      : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                  borderRadius: '6px',
+                }}>
+                  {Date.now() > box.expiresAt
+                    ? 'Expired'
+                    : formatExpirationCountdown(box.expiresAt)}
+                </span>
+              )}
             </div>
             {box.type === 'shared' && box.shareCode && (
               <button
@@ -2187,6 +2205,18 @@
       const [editingItem, setEditingItem] = useState(null);
       const [hideContents, setHideContents] = useState(editingBox ? editingBox.hideContents || false : false);
       const [hideOdds, setHideOdds] = useState(editingBox ? editingBox.hideOdds || false : false);
+      const [expiresAt, setExpiresAt] = useState(() => {
+        if (editingBox && editingBox.expiresAt) {
+          // Convert timestamp to datetime-local format for the input
+          const d = new Date(editingBox.expiresAt);
+          return d.getFullYear() + '-' +
+            String(d.getMonth() + 1).padStart(2, '0') + '-' +
+            String(d.getDate()).padStart(2, '0') + 'T' +
+            String(d.getHours()).padStart(2, '0') + ':' +
+            String(d.getMinutes()).padStart(2, '0');
+        }
+        return '';
+      });
       const [boxImageId, setBoxImageId] = useState(editingBox ? editingBox.boxImageId || 'chest' : 'chest');
 
       const userSettings = getUserSettings();
@@ -2245,6 +2275,7 @@
           boxImageId: boxImageId,
           hideContents: hideContents,
           hideOdds: hideOdds,
+          expiresAt: expiresAt ? new Date(expiresAt).getTime() : null,
         };
 
         // If shared box, save to Firestore
@@ -2267,6 +2298,7 @@
               boxImageId: boxData.boxImageId,
               hideContents: boxData.hideContents,
               hideOdds: boxData.hideOdds,
+              expiresAt: boxData.expiresAt,
             };
             saveBox(localRef);
           } catch (err) {
@@ -2420,6 +2452,38 @@
                   />
                   <span>Hide Odds - Don't show percentage chances</span>
                 </label>
+
+                <div style={{ marginTop: '0.75rem' }}>
+                  <Input
+                    type="datetime-local"
+                    label="Expiration Date (Optional)"
+                    value={expiresAt}
+                    onChange={(e) => setExpiresAt(e.target.value)}
+                    fullWidth
+                  />
+                  {expiresAt && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
+                      <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                        Box will expire: {new Date(expiresAt).toLocaleString()}
+                      </span>
+                      <button
+                        type="button"
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: '#ef4444',
+                          cursor: 'pointer',
+                          fontSize: '0.75rem',
+                          fontFamily: 'inherit',
+                          textDecoration: 'underline',
+                        }}
+                        onClick={() => setExpiresAt('')}
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </Card>
           </div>
@@ -2501,10 +2565,11 @@
       const userPullCount = pullHistory.filter(p => p.userName === currentUserName).length;
       const remainingUserPulls = box.maxPullsPerUser ? box.maxPullsPerUser - userPullCount : null;
 
-      // Can pull only if BOTH limits allow it
+      // Can pull only if ALL limits allow it
       const totalLimitOk = !box.maxPulls || pullHistory.length < box.maxPulls;
       const userLimitOk = !box.maxPullsPerUser || userPullCount < box.maxPullsPerUser;
-      const canPull = totalLimitOk && userLimitOk;
+      const isExpired = box.expiresAt ? Date.now() > box.expiresAt : false;
+      const canPull = totalLimitOk && userLimitOk && !isExpired;
 
       // Calculate current odds with dynamic adjustment
       const currentOdds = calculateDynamicOdds(box.items, pullHistory);
@@ -2517,7 +2582,9 @@
         }
 
         if (!canPull) {
-          if (!userLimitOk) {
+          if (isExpired) {
+            error('This box has expired!');
+          } else if (!userLimitOk) {
             error('You have used all your pulls!');
           } else {
             error('No pulls remaining!');
@@ -2708,6 +2775,33 @@
                   You: {remainingUserPulls} Left
                 </div>
               )}
+              {box.expiresAt && (
+                <div style={{
+                  padding: '0.5rem 1rem',
+                  background: isExpired
+                    ? 'rgba(239, 68, 68, 0.2)'
+                    : isExpiringSoon(box.expiresAt)
+                      ? 'rgba(245, 158, 11, 0.2)'
+                      : 'rgba(16, 185, 129, 0.2)',
+                  border: `1px solid ${
+                    isExpired
+                      ? '#ef4444'
+                      : isExpiringSoon(box.expiresAt)
+                        ? '#f59e0b'
+                        : '#10b981'
+                  }`,
+                  borderRadius: '8px',
+                  fontSize: '0.875rem',
+                  fontWeight: 600,
+                  color: isExpired
+                    ? '#fca5a5'
+                    : isExpiringSoon(box.expiresAt)
+                      ? '#fcd34d'
+                      : '#6ee7b7',
+                }}>
+                  {isExpired ? 'Expired' : formatExpirationCountdown(box.expiresAt) + ' left'}
+                </div>
+              )}
             </div>
           </div>
 
@@ -2845,7 +2939,7 @@
               boxShadow: '0 8px 32px rgba(30, 64, 175, 0.4)',
             }}
           >
-            {isOpening ? 'Opening...' : showResult ? 'Open Again' : 'Open Box'}
+            {isExpired ? 'Box Expired' : isOpening ? 'Opening...' : showResult ? 'Open Again' : 'Open Box'}
           </Button>
 
           <div style={{ display: 'grid', gridTemplateColumns: box.hideOdds ? '1fr' : '1fr 1fr', gap: '1.5rem' }}>
@@ -3121,6 +3215,7 @@
               boxImageId: box.boxImageId,
               hideContents: box.hideContents,
               hideOdds: box.hideOdds,
+              expiresAt: box.expiresAt || null,
             };
             saveBox(visitorRef);
             loadData();  // refresh the box list

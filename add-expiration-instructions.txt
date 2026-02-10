@@ -1,0 +1,272 @@
+====================================================================
+ADD BOX EXPIRATION FEATURE - CLAUDE CODE INSTRUCTIONS
+====================================================================
+
+CONTEXT:
+- Creators should be able to set an optional expiration date/time
+  on any box (local or shared)
+- Once expired, the box stays visible with full pull history but
+  can no longer be opened
+- The app already has unused utility functions for expiration:
+  formatExpirationCountdown() and isExpiringSoon() — wire those up
+- Use a native datetime-local input for mobile-friendly date picking
+
+====================================================================
+CHANGES NEEDED IN index.html
+====================================================================
+
+--------------------------------------------------------------------
+CHANGE 1: ADD STATE FOR expiresAt IN BoxCreator
+--------------------------------------------------------------------
+
+In the BoxCreator component, find the existing state declarations
+near the top. After the hideOdds state:
+
+      const [hideOdds, setHideOdds] = useState(editingBox ? editingBox.hideOdds || false : false);
+
+Add a new state for expiration. We store it as a datetime-local
+string for the input, and convert to timestamp when saving:
+
+      const [expiresAt, setExpiresAt] = useState(() => {
+        if (editingBox && editingBox.expiresAt) {
+          // Convert timestamp to datetime-local format for the input
+          const d = new Date(editingBox.expiresAt);
+          return d.getFullYear() + '-' +
+            String(d.getMonth() + 1).padStart(2, '0') + '-' +
+            String(d.getDate()).padStart(2, '0') + 'T' +
+            String(d.getHours()).padStart(2, '0') + ':' +
+            String(d.getMinutes()).padStart(2, '0');
+        }
+        return '';
+      });
+
+--------------------------------------------------------------------
+CHANGE 2: ADD expiresAt TO boxData IN handleCreate
+--------------------------------------------------------------------
+
+In the BoxCreator component's handleCreate function, find the
+boxData object. After the hideOdds line:
+
+          hideOdds: hideOdds,
+
+Add:
+
+          expiresAt: expiresAt ? new Date(expiresAt).getTime() : null,
+
+--------------------------------------------------------------------
+CHANGE 3: ADD expiresAt TO localRef FOR SHARED BOXES
+--------------------------------------------------------------------
+
+In BoxCreator's handleCreate, find the localRef object for shared
+boxes. After the hideOdds line:
+
+              hideOdds: boxData.hideOdds,
+
+Add:
+
+              expiresAt: boxData.expiresAt,
+
+--------------------------------------------------------------------
+CHANGE 4: ADD THE EXPIRATION INPUT IN BoxCreator UI
+--------------------------------------------------------------------
+
+In the BoxCreator component's JSX, find the checkboxes section
+for hideContents and hideOdds. It's inside a div with
+marginTop: '1rem' and flexDirection: 'column'. After the
+hideOdds checkbox label (the closing </label> of the second
+checkbox), add a new expiration input:
+
+                <div style={{ marginTop: '0.75rem' }}>
+                  <Input
+                    type="datetime-local"
+                    label="Expiration Date (Optional)"
+                    value={expiresAt}
+                    onChange={(e) => setExpiresAt(e.target.value)}
+                    fullWidth
+                  />
+                  {expiresAt && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
+                      <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                        Box will expire: {new Date(expiresAt).toLocaleString()}
+                      </span>
+                      <button
+                        type="button"
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: '#ef4444',
+                          cursor: 'pointer',
+                          fontSize: '0.75rem',
+                          fontFamily: 'inherit',
+                          textDecoration: 'underline',
+                        }}
+                        onClick={() => setExpiresAt('')}
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+--------------------------------------------------------------------
+CHANGE 5: ADD EXPIRATION CHECK TO BoxOpener canPull LOGIC
+--------------------------------------------------------------------
+
+In the BoxOpener component, find the canPull calculation. It
+currently looks like:
+
+      // Can pull only if BOTH limits allow it
+      const totalLimitOk = !box.maxPulls || pullHistory.length < box.maxPulls;
+      const userLimitOk = !box.maxPullsPerUser || userPullCount < box.maxPullsPerUser;
+      const canPull = totalLimitOk && userLimitOk;
+
+Replace with:
+
+      // Can pull only if ALL limits allow it
+      const totalLimitOk = !box.maxPulls || pullHistory.length < box.maxPulls;
+      const userLimitOk = !box.maxPullsPerUser || userPullCount < box.maxPullsPerUser;
+      const isExpired = box.expiresAt ? Date.now() > box.expiresAt : false;
+      const canPull = totalLimitOk && userLimitOk && !isExpired;
+
+--------------------------------------------------------------------
+CHANGE 6: UPDATE ERROR MESSAGE IN handleOpen FOR EXPIRATION
+--------------------------------------------------------------------
+
+In BoxOpener's handleOpen function, find the canPull check:
+
+        if (!canPull) {
+          if (!userLimitOk) {
+            error('You have used all your pulls!');
+          } else {
+            error('No pulls remaining!');
+          }
+          return;
+        }
+
+Replace with:
+
+        if (!canPull) {
+          if (isExpired) {
+            error('This box has expired!');
+          } else if (!userLimitOk) {
+            error('You have used all your pulls!');
+          } else {
+            error('No pulls remaining!');
+          }
+          return;
+        }
+
+--------------------------------------------------------------------
+CHANGE 7: SHOW EXPIRATION STATUS IN BoxOpener HEADER
+--------------------------------------------------------------------
+
+In BoxOpener's JSX, find the header area where the pull count
+badges are displayed. There is a div with display: 'flex' and
+gap: '0.5rem' that contains the "Total Left" and "You: X Left"
+badges. Add an expiration badge inside that same div, after the
+existing badges:
+
+              {box.expiresAt && (
+                <div style={{
+                  padding: '0.5rem 1rem',
+                  background: isExpired
+                    ? 'rgba(239, 68, 68, 0.2)'
+                    : isExpiringSoon(box.expiresAt)
+                      ? 'rgba(245, 158, 11, 0.2)'
+                      : 'rgba(16, 185, 129, 0.2)',
+                  border: `1px solid ${
+                    isExpired
+                      ? '#ef4444'
+                      : isExpiringSoon(box.expiresAt)
+                        ? '#f59e0b'
+                        : '#10b981'
+                  }`,
+                  borderRadius: '8px',
+                  fontSize: '0.875rem',
+                  fontWeight: 600,
+                  color: isExpired
+                    ? '#fca5a5'
+                    : isExpiringSoon(box.expiresAt)
+                      ? '#fcd34d'
+                      : '#6ee7b7',
+                }}>
+                  {isExpired ? 'Expired' : formatExpirationCountdown(box.expiresAt) + ' left'}
+                </div>
+              )}
+
+--------------------------------------------------------------------
+CHANGE 8: SHOW EXPIRATION BADGE ON BoxCard IN HOME FEED
+--------------------------------------------------------------------
+
+In the BoxCard component, find the section at the bottom that
+shows the type badges (the div with display: 'flex' and
+justifyContent: 'space-between' that contains the "Shared" /
+"Local" badge and the Share button). Inside the first child div
+(the one containing the type badge and the "Joined" badge), add
+an expiration badge after all existing badges:
+
+              {box.expiresAt && (
+                <span style={{
+                  padding: '0.25rem 0.75rem',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  color: '#ffffff',
+                  background: Date.now() > box.expiresAt
+                    ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
+                    : isExpiringSoon(box.expiresAt)
+                      ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'
+                      : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                  borderRadius: '6px',
+                }}>
+                  {Date.now() > box.expiresAt
+                    ? 'Expired'
+                    : formatExpirationCountdown(box.expiresAt)}
+                </span>
+              )}
+
+--------------------------------------------------------------------
+CHANGE 9: INCLUDE expiresAt IN VISITOR REF
+--------------------------------------------------------------------
+
+In the App component's loadSharedBox function, find the visitorRef
+object. After the hideOdds line:
+
+              hideOdds: box.hideOdds,
+
+Add:
+
+              expiresAt: box.expiresAt || null,
+
+--------------------------------------------------------------------
+CHANGE 10: DISABLE OPEN BUTTON TEXT WHEN EXPIRED
+--------------------------------------------------------------------
+
+In BoxOpener, find the Open Button. It currently shows text like:
+
+            {isOpening ? 'Opening...' : showResult ? 'Open Again' : 'Open Box'}
+
+Replace with:
+
+            {isExpired ? 'Box Expired' : isOpening ? 'Opening...' : showResult ? 'Open Again' : 'Open Box'}
+
+====================================================================
+SUMMARY OF ALL CHANGES
+====================================================================
+
+1.  BoxCreator: Add expiresAt state with datetime-local conversion
+2.  BoxCreator: Add expiresAt to boxData in handleCreate
+3.  BoxCreator: Add expiresAt to localRef for shared boxes
+4.  BoxCreator: Add datetime-local input with clear button
+5.  BoxOpener: Add isExpired check to canPull logic
+6.  BoxOpener: Add expiration error message in handleOpen
+7.  BoxOpener: Show expiration countdown/status badge in header
+8.  BoxCard: Show expiration badge on cards in home feed
+9.  App: Include expiresAt in visitor ref
+10. BoxOpener: Change Open button text when expired
+
+COLOR CODING FOR EXPIRATION BADGES:
+- Green: More than 24 hours remaining
+- Yellow/Amber: Less than 24 hours remaining (uses isExpiringSoon)
+- Red: Expired
+
+FILES CHANGED: Only index.html
