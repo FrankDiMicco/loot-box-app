@@ -3095,6 +3095,13 @@
       const [openingBox, setOpeningBox] = useState(null);
       const { showToast, ToastContainer, success, error, info } = useToast();
 
+      // Tick every 30 seconds to keep expiration badges fresh
+      const [, setTick] = useState(0);
+      useEffect(() => {
+        const timer = setInterval(() => setTick(t => t + 1), 30000);
+        return () => clearInterval(timer);
+      }, []);
+
       useEffect(() => {
         loadData();
 
