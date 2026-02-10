@@ -1073,7 +1073,7 @@
     // ========== COMPONENTS - LAYOUT ==========
     
     // Header
-    const Header = ({ title = 'Loot Box Creator', notificationCount = 0, onNotificationClick, onSettingsClick, userTier = 'free' }) => {
+    const Header = ({ title = 'Loot Box Creator', onSettingsClick, userTier = 'free' }) => {
       return (
         <header style={{
           display: 'flex',
@@ -1119,46 +1119,6 @@
             >
               {userTier === 'paid' ? '⭐ Premium' : 'Free'}
             </div>
-
-            <button
-              style={{
-                position: 'relative',
-                width: '48px',
-                height: '48px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background: 'rgba(26, 31, 53, 0.6)',
-                border: '1px solid rgba(59, 130, 246, 0.2)',
-                borderRadius: '12px',
-                cursor: 'pointer',
-                fontSize: '1.25rem',
-              }}
-              onClick={onNotificationClick}
-            >
-              🔔
-              {notificationCount > 0 && (
-                <span style={{
-                  position: 'absolute',
-                  top: '-4px',
-                  right: '-4px',
-                  minWidth: '20px',
-                  height: '20px',
-                  padding: '0 6px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  background: 'linear-gradient(135deg, #ec4899 0%, #ef4444 100%)',
-                  borderRadius: '10px',
-                  fontSize: '0.75rem',
-                  fontWeight: 700,
-                  color: '#ffffff',
-                  boxShadow: '0 0 12px rgba(236, 72, 153, 0.6)',
-                }}>
-                  {notificationCount}
-                </span>
-              )}
-            </button>
 
             <button
               style={{
@@ -3446,8 +3406,6 @@
       return (
         <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem', minHeight: '100vh' }}>
           <Header
-            notificationCount={notificationCount}
-            onNotificationClick={() => info('Notifications coming soon!')}
             onSettingsClick={() => info('Settings coming soon!')}
             userTier={userSettings.tier}
           />
