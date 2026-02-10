@@ -2813,7 +2813,7 @@
     
     const App = () => {
       const [mode, setMode] = useState('home'); // home, create, edit, open
-      const [activeFilter, setActiveFilter] = useState('Local');
+      const [activeFilter, setActiveFilter] = useState('All');
       const [boxes, setBoxes] = useState([]);
       const [userSettings, setUserSettings] = useState(null);
       const [notificationCount, setNotificationCount] = useState(0);
@@ -2926,15 +2926,42 @@
         loadData(); // Reload to show updated pull counts
       };
 
-      const filteredBoxes = boxes.filter(box => {
+      let filteredBoxes = boxes.filter(box => {
         if (activeFilter === 'Local') return box.type === 'local';
         if (activeFilter === 'Shared') return box.type === 'shared';
         if (activeFilter === 'New') {
           // Show boxes that haven't been opened yet
           return !box.pullHistory || box.pullHistory.length === 0;
         }
+        if (activeFilter === 'All') return true;
         return true;
       });
+
+      // Sort "All" filter by newest first, then by most recently used
+      if (activeFilter === 'All') {
+        filteredBoxes = filteredBoxes.sort((a, b) => {
+          // Get the most recent pull timestamp for each box
+          const getLastUsed = (box) => {
+            if (!box.pullHistory || box.pullHistory.length === 0) return 0;
+            return Math.max(...box.pullHistory.map(pull => pull.timestamp || 0));
+          };
+
+          const aLastUsed = getLastUsed(a);
+          const bLastUsed = getLastUsed(b);
+
+          // If both have been used, sort by most recent use
+          if (aLastUsed > 0 && bLastUsed > 0) {
+            return bLastUsed - aLastUsed;
+          }
+
+          // If only one has been used, prioritize the unused one (newer)
+          if (aLastUsed > 0 && bLastUsed === 0) return 1;
+          if (aLastUsed === 0 && bLastUsed > 0) return -1;
+
+          // If neither has been used, sort by creation date (newest first)
+          return (b.createdAt || 0) - (a.createdAt || 0);
+        });
+      }
 
       if (!userSettings) return <div>Loading...</div>;
 
@@ -2949,7 +2976,7 @@
 
           {mode === 'home' && (
             <>
-              <FilterTabs activeFilter={activeFilter} onFilterChange={setActiveFilter} />
+              <FilterTabs activeFilter={activeFilter} onFilterChange={setActiveFilter} filters={['All', 'Shared', 'New', 'Local']} />
 
               <Button variant="primary" size="lg" onClick={handleCreateBox} style={{ marginBottom: '2rem' }}>
                 + Create New Loot Box
@@ -2962,6 +2989,7 @@
                     {activeFilter === 'Local' && 'No local boxes yet'}
                     {activeFilter === 'Shared' && 'No shared boxes yet'}
                     {activeFilter === 'New' && 'No unopened boxes'}
+                    {activeFilter === 'All' && 'No boxes yet'}
                   </div>
                   <div style={{ fontSize: '0.875rem', color: '#475569' }}>
                     {activeFilter === 'New' ? 'All your boxes have been opened!' : 'Create your first loot box to get started!'}
