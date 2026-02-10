@@ -2333,11 +2333,23 @@
             {isOpening ? (
               <div style={{ textAlign: 'center' }}>
                 <div style={{
-                  fontSize: '6rem',
+                  width: '200px',
+                  height: '200px',
                   animation: 'spin 2s linear infinite',
                   marginBottom: '1rem',
+                  margin: '0 auto 1rem',
                 }}>
-                  📦
+                  <img
+                    src={getBoxImageUrl(box.boxImageId)}
+                    alt={box.name}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'contain',
+                    }}
+                    onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }}
+                  />
+                  <div style={{ fontSize: '6rem', display: 'none' }}>📦</div>
                 </div>
                 <div style={{ fontSize: '1.25rem', color: '#94a3b8' }}>
                   Opening...
@@ -2384,11 +2396,23 @@
             ) : (
               <div style={{ textAlign: 'center' }}>
                 <div style={{
-                  fontSize: '6rem',
+                  width: '200px',
+                  height: '200px',
                   marginBottom: '1.5rem',
+                  margin: '0 auto 1.5rem',
                   filter: 'drop-shadow(0 0 20px rgba(59, 130, 246, 0.4))',
                 }}>
-                  📦
+                  <img
+                    src={getBoxImageUrl(box.boxImageId)}
+                    alt={box.name}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'contain',
+                    }}
+                    onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }}
+                  />
+                  <div style={{ fontSize: '6rem', display: 'none' }}>📦</div>
                 </div>
                 <div style={{
                   fontSize: '1.25rem',
