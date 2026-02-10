@@ -2387,7 +2387,7 @@
                 </div>
               </div>
 
-              <div style={{ marginTop: '1rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', maxWidth: '500px' }}>
+              <div style={{ marginTop: '1rem', display: 'grid', gridTemplateColumns: boxType === 'shared' ? '1fr 1fr' : '1fr', gap: '1rem', maxWidth: boxType === 'shared' ? '500px' : '250px' }}>
                 <Input
                   type="number"
                   label="Max Pulls Total (Optional)"
@@ -2397,15 +2397,17 @@
                   min="1"
                   fullWidth
                 />
-                <Input
-                  type="number"
-                  label="Max Pulls Per Person (Optional)"
-                  placeholder="Unlimited"
-                  value={maxPullsPerUser}
-                  onChange={(e) => setMaxPullsPerUser(e.target.value)}
-                  min="1"
-                  fullWidth
-                />
+                {boxType === 'shared' && (
+                  <Input
+                    type="number"
+                    label="Max Pulls Per Person (Optional)"
+                    placeholder="Unlimited"
+                    value={maxPullsPerUser}
+                    onChange={(e) => setMaxPullsPerUser(e.target.value)}
+                    min="1"
+                    fullWidth
+                  />
+                )}
               </div>
 
               <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
