@@ -306,13 +306,16 @@
 
     // Get image URL (supports both local and Firebase URLs)
     const getBoxImageUrl = (imageId, boxCatalog = null) => {
-      // Try to find in provided catalog first
+      // If imageId is already a full URL, return it directly
+      if (imageId && imageId.startsWith('http')) return imageId;
+
+      // Try to find in provided catalog first (includes Firebase boxes)
       if (boxCatalog) {
         const box = boxCatalog.all?.find(img => img.id === imageId);
         if (box) return box.imageUrl;
       }
 
-      // Fallback to default images
+      // Fallback to hardcoded default images
       const image = DEFAULT_BOX_IMAGES.find(img => img.id === imageId);
       if (image) return image.imageUrl;
 
@@ -629,28 +632,46 @@
 
     // Get all available box images (unified loader)
     const getAllAvailableBoxImages = async (userSettings) => {
-      const defaults = getDefaultBoxImages();
-
+      let defaults = [];
       let seasonal = [];
       let store = [];
+      let premium = [];
       let userUploaded = [];
 
       if (firebaseEnabled) {
-        [seasonal, store, userUploaded] = await Promise.all([
+        // Fetch all sources from Firebase in parallel
+        const results = await Promise.all([
+          fetchDefaultBoxes(),
           fetchSeasonalBoxes(),
           fetchStoreBoxes(),
+          userSettings.tier === 'paid'
+            ? fetchPremiumBoxes()
+            : Promise.resolve([]),
           userSettings.tier === 'paid' && userSettings.uid
             ? fetchUserUploadedBoxes(userSettings.uid)
             : Promise.resolve([])
         ]);
+
+        defaults = results[0];
+        seasonal = results[1];
+        store = results[2];
+        premium = results[3];
+        userUploaded = results[4];
+      }
+
+      // Fall back to hardcoded defaults ONLY if Firebase
+      // returned nothing (offline, not configured, etc.)
+      if (defaults.length === 0) {
+        defaults = getDefaultBoxImages();
       }
 
       return {
         defaults,
         seasonal,
         store,
+        premium,
         userUploaded,
-        all: [...defaults, ...seasonal, ...store, ...userUploaded]
+        all: [...defaults, ...seasonal, ...store, ...premium, ...userUploaded]
       };
     };
 
@@ -684,24 +705,19 @@
 
     // Check if user owns a box
     const userOwnsBox = (boxId, userSettings) => {
-      const box = DEFAULT_BOX_IMAGES.find(b => b.id === boxId);
+      // Hardcoded default boxes are always available
+      const hardcodedDefault = DEFAULT_BOX_IMAGES.find(b => b.id === boxId);
+      if (hardcodedDefault) return true;
 
-      // Default boxes are always available to everyone
-      if (box && box.source === BOX_SOURCES.DEFAULT) return true;
-
-      // User's own uploaded boxes (premium only)
+      // User's own uploaded boxes
       if (userSettings.uploadedBoxes && userSettings.uploadedBoxes.includes(boxId)) return true;
 
-      // Individually purchased boxes (free AND premium users)
+      // Individually purchased boxes
       if (userSettings.ownedBoxes && userSettings.ownedBoxes.includes(boxId)) return true;
 
-      // Premium users get access to all store/seasonal boxes without purchasing
-      // (but NOT user-uploaded boxes from other users)
-      if (userSettings.tier === 'paid') {
-        // Check if it's a store or seasonal box
-        // This will be checked dynamically when catalog loads
-        return false; // Will be overridden in ImagePicker for premium users
-      }
+      // NOTE: Firebase default boxes and premium boxes are handled
+      // by canUserUseBox in the ImagePicker component, not here.
+      // This function is for ownership checks only.
 
       return false;
     };
@@ -1813,7 +1829,11 @@
         const canUse = canUserUseBox(image);
 
         if (canUse) {
-          onSelectImage(image.id);
+          // Store the full URL for Firebase boxes, ID for hardcoded
+          const imageRef = image.imageUrl && image.imageUrl.startsWith('http')
+            ? image.imageUrl
+            : image.id;
+          onSelectImage(imageRef);
         } else {
           // Show purchase modal for locked boxes (works for free and premium users)
           setShowPurchaseModal(image);
@@ -1822,14 +1842,19 @@
 
       // Check if user can use this specific box
       const canUserUseBox = (image) => {
-        // Default boxes - always free
-        if (image.source === BOX_SOURCES.DEFAULT) return true;
+        // Default boxes (hardcoded OR from Firebase) - always free
+        if (image.source === BOX_SOURCES.DEFAULT || image.source === 'default') return true;
+
+        // Premium boxes - free for premium users only
+        if (image.source === BOX_SOURCES.PREMIUM || image.source === 'premium') {
+          return userSettings.tier === 'paid';
+        }
 
         // User's own uploads
         if (image.source === BOX_SOURCES.USER_UPLOADED &&
             userSettings.uploadedBoxes?.includes(image.id)) return true;
 
-        // Purchased boxes (free or premium users who bought it)
+        // Purchased boxes
         if (userSettings.ownedBoxes?.includes(image.id)) return true;
 
         return false;

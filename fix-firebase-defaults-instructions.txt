@@ -1,0 +1,200 @@
+====================================================================
+FIX FIREBASE DEFAULT BOXES NOT SHOWING IN APP
+====================================================================
+
+CONTEXT:
+- Default boxes uploaded via box-admin.html don't appear in the
+  main app's ImagePicker
+- Root cause: The hardcoded DEFAULT_BOX_IMAGES array always
+  takes priority. When Firebase returns defaults, they get
+  overridden or the app still shows the hardcoded ones
+- Fix: Keep hardcoded defaults ONLY as a fallback when Firebase
+  is unavailable. When Firebase has defaults, use those instead
+
+====================================================================
+CHANGES NEEDED IN index.html
+====================================================================
+
+--------------------------------------------------------------------
+CHANGE 1: UPDATE getAllAvailableBoxImages TO PREFER FIREBASE
+--------------------------------------------------------------------
+
+Find the getAllAvailableBoxImages function and replace it
+entirely with:
+
+    const getAllAvailableBoxImages = async (userSettings) => {
+      let defaults = [];
+      let seasonal = [];
+      let store = [];
+      let premium = [];
+      let userUploaded = [];
+
+      if (firebaseEnabled) {
+        // Fetch all sources from Firebase in parallel
+        const results = await Promise.all([
+          fetchDefaultBoxes(),
+          fetchSeasonalBoxes(),
+          fetchStoreBoxes(),
+          userSettings.tier === 'paid'
+            ? fetchPremiumBoxes()
+            : Promise.resolve([]),
+          userSettings.tier === 'paid' && userSettings.uid
+            ? fetchUserUploadedBoxes(userSettings.uid)
+            : Promise.resolve([])
+        ]);
+
+        defaults = results[0];
+        seasonal = results[1];
+        store = results[2];
+        premium = results[3];
+        userUploaded = results[4];
+      }
+
+      // Fall back to hardcoded defaults ONLY if Firebase
+      // returned nothing (offline, not configured, etc.)
+      if (defaults.length === 0) {
+        defaults = getDefaultBoxImages();
+      }
+
+      return {
+        defaults,
+        seasonal,
+        store,
+        premium,
+        userUploaded,
+        all: [...defaults, ...seasonal, ...store, ...premium, ...userUploaded]
+      };
+    };
+
+--------------------------------------------------------------------
+CHANGE 2: UPDATE getBoxImageUrl TO CHECK CATALOG FIRST
+--------------------------------------------------------------------
+
+The current getBoxImageUrl checks hardcoded defaults as a
+fallback. We need it to also handle Firebase doc IDs (which
+are auto-generated strings, not "chest" or "skull_bone").
+
+Find the getBoxImageUrl function and replace entirely with:
+
+    const getBoxImageUrl = (imageId, boxCatalog = null) => {
+      // If imageId is already a full URL, return it directly
+      if (imageId && imageId.startsWith('http')) return imageId;
+
+      // Try to find in provided catalog first (includes Firebase boxes)
+      if (boxCatalog) {
+        const box = boxCatalog.all?.find(img => img.id === imageId);
+        if (box) return box.imageUrl;
+      }
+
+      // Fallback to hardcoded default images
+      const image = DEFAULT_BOX_IMAGES.find(img => img.id === imageId);
+      if (image) return image.imageUrl;
+
+      return null;
+    };
+
+--------------------------------------------------------------------
+CHANGE 3: UPDATE userOwnsBox TO HANDLE FIREBASE DEFAULTS
+--------------------------------------------------------------------
+
+Firebase default boxes have auto-generated IDs that won't match
+the hardcoded array. We need to check by source type too.
+
+Find the userOwnsBox function and replace entirely with:
+
+    const userOwnsBox = (boxId, userSettings) => {
+      // Hardcoded default boxes are always available
+      const hardcodedDefault = DEFAULT_BOX_IMAGES.find(b => b.id === boxId);
+      if (hardcodedDefault) return true;
+
+      // User's own uploaded boxes
+      if (userSettings.uploadedBoxes && userSettings.uploadedBoxes.includes(boxId)) return true;
+
+      // Individually purchased boxes
+      if (userSettings.ownedBoxes && userSettings.ownedBoxes.includes(boxId)) return true;
+
+      // NOTE: Firebase default boxes and premium boxes are handled
+      // by canUserUseBox in the ImagePicker component, not here.
+      // This function is for ownership checks only.
+
+      return false;
+    };
+
+--------------------------------------------------------------------
+CHANGE 4: UPDATE canUserUseBox IN ImagePicker
+--------------------------------------------------------------------
+
+In the ImagePicker component, find the canUserUseBox function
+and replace entirely with:
+
+      const canUserUseBox = (image) => {
+        // Default boxes (hardcoded OR from Firebase) - always free
+        if (image.source === BOX_SOURCES.DEFAULT || image.source === 'default') return true;
+
+        // Premium boxes - free for premium users only
+        if (image.source === BOX_SOURCES.PREMIUM || image.source === 'premium') {
+          return userSettings.tier === 'paid';
+        }
+
+        // User's own uploads
+        if (image.source === BOX_SOURCES.USER_UPLOADED &&
+            userSettings.uploadedBoxes?.includes(image.id)) return true;
+
+        // Purchased boxes
+        if (userSettings.ownedBoxes?.includes(image.id)) return true;
+
+        return false;
+      };
+
+--------------------------------------------------------------------
+CHANGE 5: PASS boxCatalog TO BoxOpener AND BoxCard
+--------------------------------------------------------------------
+
+The BoxOpener uses getBoxImageUrl to display the chest image,
+but it doesn't have access to the boxCatalog so Firebase URLs
+won't resolve. The simplest fix is to store the imageUrl
+directly on the box when it's created.
+
+This is actually already handled IF the user selects a Firebase
+box — because boxImageId gets set to the Firebase doc ID. But
+getBoxImageUrl can't find it without the catalog.
+
+The cleanest fix: When a box is created with a Firebase image,
+store the FULL imageUrl as boxImageId instead of just the doc ID.
+
+In the ImagePicker component, find where handleImageClick calls
+onSelectImage:
+
+        if (canUse) {
+          onSelectImage(image.id);
+
+Replace with:
+
+        if (canUse) {
+          // Store the full URL for Firebase boxes, ID for hardcoded
+          const imageRef = image.imageUrl && image.imageUrl.startsWith('http')
+            ? image.imageUrl
+            : image.id;
+          onSelectImage(imageRef);
+
+This way, boxes created with Firebase images store the full URL
+as their boxImageId, and getBoxImageUrl handles it via the
+"starts with http" check.
+
+====================================================================
+SUMMARY
+====================================================================
+
+1. getAllAvailableBoxImages: Firebase defaults take priority
+2. getBoxImageUrl: Check catalog first, handle full URLs
+3. userOwnsBox: Handle Firebase doc IDs
+4. canUserUseBox: Handle both source constant and string
+5. ImagePicker: Store full URL for Firebase boxes
+
+After these changes:
+- Boxes uploaded via admin panel show in Defaults tab
+- Hardcoded defaults only appear if Firebase is offline
+- Existing boxes with hardcoded image IDs still work
+- New boxes store the Firebase URL directly
+
+FILES CHANGED: Only index.html
