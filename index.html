@@ -2182,6 +2182,7 @@
       const [boxName, setBoxName] = useState(editingBox ? editingBox.name : '');
       const [items, setItems] = useState(editingBox ? editingBox.items : []);
       const [maxPulls, setMaxPulls] = useState(editingBox && editingBox.maxPulls ? editingBox.maxPulls.toString() : '');
+      const [maxPullsPerUser, setMaxPullsPerUser] = useState(editingBox && editingBox.maxPullsPerUser ? editingBox.maxPullsPerUser.toString() : '');
       const [boxType, setBoxType] = useState(editingBox ? editingBox.type : 'local');
       const [editingItem, setEditingItem] = useState(null);
       const [hideContents, setHideContents] = useState(editingBox ? editingBox.hideContents || false : false);
@@ -2236,6 +2237,7 @@
           name: boxName.trim(),
           items,
           maxPulls: maxPulls ? parseInt(maxPulls) : null,
+          maxPullsPerUser: maxPullsPerUser ? parseInt(maxPullsPerUser) : null,
           type: boxType,
           shareCode: editingBox ? editingBox.shareCode : generateShareCode(),
           pullHistory: editingBox ? editingBox.pullHistory : [],
@@ -2259,6 +2261,7 @@
               isSharedRef: true,
               items: boxData.items,
               maxPulls: boxData.maxPulls,
+              maxPullsPerUser: boxData.maxPullsPerUser,
               pullHistory: [],
               createdAt: boxData.createdAt,
               boxImageId: boxData.boxImageId,
@@ -2352,13 +2355,22 @@
                 </div>
               </div>
 
-              <div style={{ marginTop: '1rem', maxWidth: '250px' }}>
+              <div style={{ marginTop: '1rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', maxWidth: '500px' }}>
                 <Input
                   type="number"
-                  label="Max Pulls (Optional)"
+                  label="Max Pulls Total (Optional)"
                   placeholder="Unlimited"
                   value={maxPulls}
                   onChange={(e) => setMaxPulls(e.target.value)}
+                  min="1"
+                  fullWidth
+                />
+                <Input
+                  type="number"
+                  label="Max Pulls Per Person (Optional)"
+                  placeholder="Unlimited"
+                  value={maxPullsPerUser}
+                  onChange={(e) => setMaxPullsPerUser(e.target.value)}
                   min="1"
                   fullWidth
                 />
@@ -2483,7 +2495,16 @@
       }, [box.shareCode, box.type]);
 
       const remainingPulls = box.maxPulls ? box.maxPulls - pullHistory.length : null;
-      const canPull = !box.maxPulls || pullHistory.length < box.maxPulls;
+
+      // Calculate per-user remaining pulls
+      const currentUserName = userName || 'You';
+      const userPullCount = pullHistory.filter(p => p.userName === currentUserName).length;
+      const remainingUserPulls = box.maxPullsPerUser ? box.maxPullsPerUser - userPullCount : null;
+
+      // Can pull only if BOTH limits allow it
+      const totalLimitOk = !box.maxPulls || pullHistory.length < box.maxPulls;
+      const userLimitOk = !box.maxPullsPerUser || userPullCount < box.maxPullsPerUser;
+      const canPull = totalLimitOk && userLimitOk;
 
       // Calculate current odds with dynamic adjustment
       const currentOdds = calculateDynamicOdds(box.items, pullHistory);
@@ -2496,7 +2517,11 @@
         }
 
         if (!canPull) {
-          error('No pulls remaining!');
+          if (!userLimitOk) {
+            error('You have used all your pulls!');
+          } else {
+            error('No pulls remaining!');
+          }
           return;
         }
 
@@ -2656,19 +2681,34 @@
                 </button>
               )}
             </div>
-            {remainingPulls !== null && (
-              <div style={{
-                padding: '0.5rem 1rem',
-                background: remainingPulls === 0 ? 'rgba(239, 68, 68, 0.2)' : 'rgba(59, 130, 246, 0.2)',
-                border: `1px solid ${remainingPulls === 0 ? '#ef4444' : '#3b82f6'}`,
-                borderRadius: '8px',
-                fontSize: '0.875rem',
-                fontWeight: 600,
-                color: remainingPulls === 0 ? '#fca5a5' : '#93c5fd',
-              }}>
-                {remainingPulls} Pulls Left
-              </div>
-            )}
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+              {remainingPulls !== null && (
+                <div style={{
+                  padding: '0.5rem 1rem',
+                  background: remainingPulls === 0 ? 'rgba(239, 68, 68, 0.2)' : 'rgba(59, 130, 246, 0.2)',
+                  border: `1px solid ${remainingPulls === 0 ? '#ef4444' : '#3b82f6'}`,
+                  borderRadius: '8px',
+                  fontSize: '0.875rem',
+                  fontWeight: 600,
+                  color: remainingPulls === 0 ? '#fca5a5' : '#93c5fd',
+                }}>
+                  {remainingPulls} Total Left
+                </div>
+              )}
+              {remainingUserPulls !== null && (
+                <div style={{
+                  padding: '0.5rem 1rem',
+                  background: remainingUserPulls === 0 ? 'rgba(239, 68, 68, 0.2)' : 'rgba(139, 92, 246, 0.2)',
+                  border: `1px solid ${remainingUserPulls === 0 ? '#ef4444' : '#8b5cf6'}`,
+                  borderRadius: '8px',
+                  fontSize: '0.875rem',
+                  fontWeight: 600,
+                  color: remainingUserPulls === 0 ? '#fca5a5' : '#c4b5fd',
+                }}>
+                  You: {remainingUserPulls} Left
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Main Opening Area */}
@@ -3075,6 +3115,7 @@
               isVisitor: true,  // THIS IS THE KEY FLAG
               items: box.items,
               maxPulls: box.maxPulls,
+              maxPullsPerUser: box.maxPullsPerUser || null,
               pullHistory: [],  // will be fetched from Firestore
               createdAt: box.createdAt,
               boxImageId: box.boxImageId,
