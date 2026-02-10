@@ -2060,8 +2060,7 @@
                 <div style={{ display: 'flex', gap: '1rem' }}>
                   <button
                     style={{
-                      flex: 1,
-                      padding: '1rem',
+                      padding: '0.75rem 1.5rem',
                       background: boxType === 'local' ? 'linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)' : 'rgba(15, 22, 36, 0.6)',
                       border: `2px solid ${boxType === 'local' ? '#3b82f6' : 'rgba(59, 130, 246, 0.2)'}`,
                       borderRadius: '12px',
@@ -2072,13 +2071,12 @@
                     }}
                     onClick={() => setBoxType('local')}
                   >
-                    💻 Local Box
+                    Local
                     {!canCreateLocal && <div style={{ fontSize: '0.75rem', marginTop: '0.25rem', opacity: 0.8 }}>(Limit reached)</div>}
                   </button>
                   <button
                     style={{
-                      flex: 1,
-                      padding: '1rem',
+                      padding: '0.75rem 1.5rem',
                       background: boxType === 'shared' ? 'linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)' : 'rgba(15, 22, 36, 0.6)',
                       border: `2px solid ${boxType === 'shared' ? '#3b82f6' : 'rgba(59, 130, 246, 0.2)'}`,
                       borderRadius: '12px',
@@ -2091,13 +2089,13 @@
                     onClick={() => setBoxType('shared')}
                     disabled={!isPaidUser}
                   >
-                    🌐 Shared Box
+                    Shared
                     {!isPaidUser && <div style={{ fontSize: '0.75rem', marginTop: '0.25rem', opacity: 0.8 }}>(Premium only)</div>}
                   </button>
                 </div>
               </div>
 
-              <div style={{ marginTop: '1rem' }}>
+              <div style={{ marginTop: '1rem', maxWidth: '250px' }}>
                 <Input
                   type="number"
                   label="Max Pulls (Optional)"
