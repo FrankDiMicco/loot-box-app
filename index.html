@@ -2921,12 +2921,41 @@
         return () => window.removeEventListener('hashchange', handleHashChange);
       }, []);
 
-      const loadData = () => {
+      const loadData = async () => {
         const loadedBoxes = getAllBoxes();
         const settings = getUserSettings();
         const unreadCount = getUnreadCount();
 
-        setBoxes(loadedBoxes);
+        // Fetch fresh pull counts for shared boxes from Firestore
+        const updatedBoxes = await Promise.all(
+          loadedBoxes.map(async (box) => {
+            if (box.type === 'shared' && box.shareCode) {
+              try {
+                const freshBox = await fetchSharedBox(box.shareCode);
+                if (freshBox) {
+                  return {
+                    ...box,
+                    pullHistory: freshBox.pullHistory || [],
+                    items: freshBox.items || box.items,
+                    name: freshBox.name || box.name,
+                  };
+                }
+              } catch (err) {
+                console.error('Error fetching shared box:', err);
+              }
+            }
+            return box;
+          })
+        );
+
+        // Persist updated shared box data back to localStorage
+        updatedBoxes.forEach((box) => {
+          if (box.type === 'shared' && box.shareCode) {
+            saveBox(box);
+          }
+        });
+
+        setBoxes(updatedBoxes);
         setUserSettings(settings);
         setNotificationCount(unreadCount);
       };
