@@ -417,7 +417,6 @@
     const STORAGE_KEYS = {
       BOXES: 'lootBoxes',
       USER_SETTINGS: 'userSettings',
-      NOTIFICATIONS: 'notifications',
     };
 
     const getAllBoxes = () => {
@@ -513,10 +512,6 @@
       const boxes = getAllBoxes();
       const currentCount = boxes.filter(box => box.type === 'local').length;
       return currentCount < MAX_FREE_BOXES;
-    };
-
-    const getUnreadCount = () => {
-      return 0; // Placeholder
     };
 
     // ========== FIREBASE BOX CATALOG SERVICE ==========
@@ -3139,7 +3134,6 @@
       const [activeFilter, setActiveFilter] = useState('All');
       const [boxes, setBoxes] = useState([]);
       const [userSettings, setUserSettings] = useState(null);
-      const [notificationCount, setNotificationCount] = useState(0);
       const [editingBox, setEditingBox] = useState(null);
       const [openingBox, setOpeningBox] = useState(null);
       const { showToast, ToastContainer, success, error, info } = useToast();
@@ -3210,7 +3204,6 @@
       const loadData = async () => {
         const loadedBoxes = getAllBoxes();
         const settings = getUserSettings();
-        const unreadCount = getUnreadCount();
 
         // Fetch fresh pull counts for shared boxes from Firestore
         const updatedBoxes = await Promise.all(
@@ -3243,7 +3236,6 @@
 
         setBoxes(updatedBoxes);
         setUserSettings(settings);
-        setNotificationCount(unreadCount);
       };
 
       const loadSharedBox = async (shareCode) => {
