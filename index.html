@@ -763,10 +763,24 @@
       return db.collection('sharedBoxes').doc(shareCode).onSnapshot((doc) => {
         if (doc.exists) {
           callback({ id: doc.id, ...doc.data() });
+        } else {
+          callback(null);
         }
       }, (error) => {
         console.error('Error in shared box listener:', error);
       });
+    };
+
+    // Delete a shared box from Firestore
+    const deleteSharedBox = async (shareCode) => {
+      if (!firebaseEnabled || !db) return false;
+      try {
+        await db.collection('sharedBoxes').doc(shareCode).delete();
+        return true;
+      } catch (error) {
+        console.error('Error deleting shared box from Firestore:', error);
+        return false;
+      }
     };
 
     // ========== COMPONENTS - COMMON ==========
@@ -2341,6 +2355,12 @@
       useEffect(() => {
         if (box.type === 'shared' && box.shareCode) {
           const unsubscribe = subscribeToSharedBox(box.shareCode, (updatedBox) => {
+            if (updatedBox === null) {
+              // Box was deleted by creator
+              info('This box has been deleted by its creator');
+              onBack();
+              return;
+            }
             setPullHistory(updatedBox.pullHistory || []);
           });
           return () => unsubscribe();
@@ -2860,7 +2880,7 @@
           setOpeningBox(box);
           setMode('open');
         } else {
-          error('Box not found or link is invalid');
+          error('This box no longer exists or the link is invalid');
         }
       };
 
@@ -2874,15 +2894,27 @@
         setMode('edit');
       };
 
-      const handleDeleteBox = (boxId) => {
+      const handleDeleteBox = async (boxId) => {
+        const box = boxes.find(b => b.id === boxId);
+
+        // If shared box, delete from Firestore first
+        if (box && box.type === 'shared' && box.shareCode) {
+          const deleted = await deleteSharedBox(box.shareCode);
+          if (!deleted) {
+            error('Failed to delete shared box from server');
+            return;
+          }
+        }
+
+        // Delete from localStorage
         deleteBox(boxId);
-        
+
         // If we're currently viewing the deleted box, go back to home
         if (openingBox && openingBox.id === boxId) {
           setOpeningBox(null);
           setMode('home');
         }
-        
+
         loadData();
         success('Box deleted successfully');
       };

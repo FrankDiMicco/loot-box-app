@@ -1,0 +1,157 @@
+====================================================================
+SHARED BOX DELETION - CLAUDE CODE INSTRUCTIONS
+====================================================================
+
+CONTEXT:
+- Shared boxes are stored in Firestore under 'sharedBoxes' collection
+- They also have a local reference in localStorage
+- When the creator deletes a shared box, we need to:
+  1. Delete the Firestore document
+  2. Delete the local reference
+  3. Handle other users who have it open
+  4. Handle stale links gracefully
+
+====================================================================
+CHANGES NEEDED IN index.html
+====================================================================
+
+--------------------------------------------------------------------
+STEP 1: ADD FIRESTORE DELETE FUNCTION
+--------------------------------------------------------------------
+
+Add this near the other shared box Firestore functions
+(saveSharedBox, fetchSharedBox, etc.):
+
+const deleteSharedBox = async (shareCode) => {
+  if (!firebaseEnabled || !db) return false;
+  try {
+    await db.collection('sharedBoxes').doc(shareCode).delete();
+    return true;
+  } catch (error) {
+    console.error('Error deleting shared box from Firestore:', error);
+    return false;
+  }
+};
+
+--------------------------------------------------------------------
+STEP 2: UPDATE handleDeleteBox IN APP COMPONENT
+--------------------------------------------------------------------
+
+Find handleDeleteBox in the App component. Currently it only
+calls deleteBox() which removes from localStorage. Update it
+to also delete from Firestore if the box is shared:
+
+const handleDeleteBox = async (boxId) => {
+  const box = boxes.find(b => b.id === boxId);
+
+  // If shared box, delete from Firestore first
+  if (box && box.type === 'shared' && box.shareCode) {
+    const deleted = await deleteSharedBox(box.shareCode);
+    if (!deleted) {
+      error('Failed to delete shared box from server');
+      return;
+    }
+  }
+
+  // Delete from localStorage
+  deleteBox(boxId);
+
+  // If we're currently viewing the deleted box, go back to home
+  if (openingBox && openingBox.id === boxId) {
+    setOpeningBox(null);
+    setMode('home');
+  }
+
+  loadData();
+  success('Box deleted successfully');
+};
+
+--------------------------------------------------------------------
+STEP 3: HANDLE DELETION IN REAL-TIME LISTENER
+--------------------------------------------------------------------
+
+In the BoxOpener component, update the subscribeToSharedBox
+listener to detect when a document is deleted. The onSnapshot
+callback receives a doc - if doc.exists is false, the box
+was deleted.
+
+Find the existing useEffect that sets up the listener and
+update it:
+
+useEffect(() => {
+  if (box.type === 'shared' && box.shareCode) {
+    const unsubscribe = subscribeToSharedBox(box.shareCode, (updatedBox) => {
+      if (updatedBox === null) {
+        // Box was deleted by creator
+        info('This box has been deleted by its creator');
+        onBack();
+        return;
+      }
+      setPullHistory(updatedBox.pullHistory || []);
+    });
+    return () => unsubscribe();
+  }
+}, [box.shareCode, box.type]);
+
+ALSO update the subscribeToSharedBox function itself to pass
+null when the document no longer exists:
+
+const subscribeToSharedBox = (shareCode, callback) => {
+  if (!firebaseEnabled || !db) return () => {};
+  return db.collection('sharedBoxes').doc(shareCode).onSnapshot((doc) => {
+    if (doc.exists) {
+      callback({ id: doc.id, ...doc.data() });
+    } else {
+      callback(null);
+    }
+  }, (error) => {
+    console.error('Error in shared box listener:', error);
+  });
+};
+
+--------------------------------------------------------------------
+STEP 4: HANDLE STALE LINKS GRACEFULLY
+--------------------------------------------------------------------
+
+The loadSharedBox function in the App component already handles
+this partially. Make sure it shows a clear message:
+
+const loadSharedBox = async (shareCode) => {
+  const box = await fetchSharedBox(shareCode);
+  if (box) {
+    setOpeningBox(box);
+    setMode('open');
+  } else {
+    error('This box no longer exists or the link is invalid');
+  }
+};
+
+This should already be in place. Just verify the error message
+is user-friendly.
+
+====================================================================
+TESTING CHECKLIST
+====================================================================
+
+1. Create a shared box
+2. Copy the share link
+3. Open the link in a second browser/incognito window
+4. In the second window, verify the box loads and you can pull
+5. Go back to the creator's view and DELETE the box
+6. Verify the second browser shows "box has been deleted" message
+   and goes back to home (or a friendly state)
+7. Try opening the share link again in a new tab
+8. Verify it shows "box no longer exists" message
+9. Verify the box is gone from the creator's local list
+10. Check Firestore console - document should be gone from sharedBoxes
+
+====================================================================
+FILES CHANGED
+====================================================================
+
+Only index.html:
+- New deleteSharedBox Firestore function
+- Updated handleDeleteBox in App to delete from Firestore
+- Updated subscribeToSharedBox to handle deleted docs
+- Updated BoxOpener listener to detect deletion
+- Verified loadSharedBox error message
