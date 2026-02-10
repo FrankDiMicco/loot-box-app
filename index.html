@@ -2921,6 +2921,39 @@
         return () => window.removeEventListener('hashchange', handleHashChange);
       }, []);
 
+      useEffect(() => {
+        // Subscribe to real-time updates for all shared boxes
+        const unsubscribers = [];
+
+        boxes.forEach((box) => {
+          if (box.type === 'shared' && box.shareCode) {
+            const unsub = subscribeToSharedBox(box.shareCode, (updatedBox) => {
+              if (updatedBox) {
+                setBoxes(prev => prev.map(b => {
+                  if (b.shareCode === box.shareCode) {
+                    const updated = {
+                      ...b,
+                      pullHistory: updatedBox.pullHistory || [],
+                      items: updatedBox.items || b.items,
+                      name: updatedBox.name || b.name,
+                    };
+                    // Also persist to localStorage
+                    saveBox(updated);
+                    return updated;
+                  }
+                  return b;
+                }));
+              }
+            });
+            unsubscribers.push(unsub);
+          }
+        });
+
+        return () => {
+          unsubscribers.forEach(unsub => unsub());
+        };
+      }, [boxes.filter(b => b.type === 'shared').map(b => b.shareCode).join(',')]);
+
       const loadData = async () => {
         const loadedBoxes = getAllBoxes();
         const settings = getUserSettings();
