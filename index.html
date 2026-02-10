@@ -2396,7 +2396,11 @@
       const [isOpening, setIsOpening] = useState(false);
       const [currentPull, setCurrentPull] = useState(null);
       const [showResult, setShowResult] = useState(false);
-      const [userName, setUserName] = useState('');
+      const [userName, setUserName] = useState(() => {
+        try {
+          return localStorage.getItem('lootBoxUserName') || '';
+        } catch { return ''; }
+      });
       const [needsName, setNeedsName] = useState(false);
 
       // Real-time listener for shared boxes
@@ -2494,6 +2498,9 @@
       const handleNameSubmit = (e) => {
         e.preventDefault();
         if (userName.trim()) {
+          try {
+            localStorage.setItem('lootBoxUserName', userName.trim());
+          } catch {}
           setNeedsName(false);
           handleOpen();
         }
