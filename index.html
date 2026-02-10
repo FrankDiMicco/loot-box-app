@@ -520,6 +520,42 @@
 
     // ========== FIREBASE BOX CATALOG SERVICE ==========
 
+    // Fetch default boxes from Firebase
+    const fetchDefaultBoxes = async () => {
+      if (!firebaseEnabled || !db) return [];
+      try {
+        const snapshot = await db.collection('boxCatalog')
+          .where('source', '==', BOX_SOURCES.DEFAULT)
+          .where('active', '==', true)
+          .get();
+        return snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+      } catch (error) {
+        console.error('Error fetching default boxes:', error);
+        return [];
+      }
+    };
+
+    // Fetch premium boxes from Firebase
+    const fetchPremiumBoxes = async () => {
+      if (!firebaseEnabled || !db) return [];
+      try {
+        const snapshot = await db.collection('boxCatalog')
+          .where('source', '==', BOX_SOURCES.PREMIUM)
+          .where('active', '==', true)
+          .get();
+        return snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+      } catch (error) {
+        console.error('Error fetching premium boxes:', error);
+        return [];
+      }
+    };
+
     // Fetch seasonal boxes from Firebase
     const fetchSeasonalBoxes = async () => {
       if (!firebaseEnabled || !db) return [];
