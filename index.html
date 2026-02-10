@@ -2483,16 +2483,36 @@
                     fontFamily: 'inherit',
                     transition: 'all 0.2s ease',
                   }}
-                  onClick={() => {
+                  onClick={async () => {
                     const url = `${window.location.origin}${window.location.pathname}#/box/${box.shareCode}`;
-                    navigator.clipboard.writeText(url).then(() => {
-                      success('Link copied to clipboard!');
-                    });
+
+                    // Use native share sheet on mobile, clipboard on desktop
+                    if (navigator.share) {
+                      try {
+                        await navigator.share({
+                          title: box.name,
+                          text: `Open my loot box "${box.name}" and try your luck!`,
+                          url: url,
+                        });
+                      } catch (err) {
+                        // User cancelled share - that's fine, do nothing
+                        if (err.name !== 'AbortError') {
+                          console.error('Share failed:', err);
+                        }
+                      }
+                    } else {
+                      // Desktop fallback - copy to clipboard
+                      try {
+                        await navigator.clipboard.writeText(url);
+                        success('Link copied to clipboard!');
+                      } catch (err) {
+                        // Final fallback for older browsers
+                        prompt('Copy this link:', url);
+                      }
+                    }
                   }}
-                  onMouseEnter={(e) => e.target.style.transform = 'translateY(-2px)'}
-                  onMouseLeave={(e) => e.target.style.transform = 'translateY(0)'}
                 >
-                  📋 Copy Share Link
+                  Share Box
                 </button>
               )}
             </div>
