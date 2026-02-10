@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Box Catalog Admin</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg-primary: #0a0e1a;
+      --bg-secondary: #0f1624;
+      --bg-card: rgba(26, 31, 53, 0.6);
+      --border: rgba(59, 130, 246, 0.2);
+      --border-hover: rgba(59, 130, 246, 0.5);
+      --brand: #3b82f6;
+      --brand-dark: #1e40af;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --success: #10b981;
+      --error: #ef4444;
+      --gold: #f59e0b;
+      --pink: #ec4899;
+      --purple: #8b5cf6;
+      --radius: 12px;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(135deg, var(--bg-primary) 0%, #1a1f35 100%);
+      color: var(--text);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: rgba(15, 22, 36, 0.5); }
+    ::-webkit-scrollbar-thumb { background: rgba(59, 130, 246, 0.3); border-radius: 8px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(59, 130, 246, 0.6); }
+
+    .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+
+    /* Header */
+    .header {
+      margin-bottom: 2rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .header h1 {
+      font-size: 2.25rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 50%, #93c5fd 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.5rem;
+    }
+    .header p { color: var(--text-muted); font-size: 0.9rem; }
+
+    /* Stats */
+    .stats {
+      display: flex;
+      gap: 0.75rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+    }
+    .stat {
+      padding: 0.75rem 1.25rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      backdrop-filter: blur(12px);
+    }
+    .stat-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .stat-label { font-size: 0.8rem; color: var(--text-muted); }
+    .stat-count { font-size: 1.25rem; font-weight: 700; color: var(--text); }
+
+    /* Card */
+    .card {
+      background: var(--bg-card);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+    }
+    .card h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 1.5rem;
+    }
+
+    /* Form */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+    }
+    .form-full { grid-column: 1 / -1; }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+    .form-group label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .form-group input,
+    .form-group select {
+      padding: 0.7rem 0.9rem;
+      font-size: 0.95rem;
+      font-family: inherit;
+      color: var(--text);
+      background: rgba(15, 22, 36, 0.8);
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+    .form-group input:focus,
+    .form-group select:focus {
+      border-color: var(--brand);
+      box-shadow: 0 0 16px rgba(59, 130, 246, 0.15);
+    }
+    .form-group input::placeholder { color: var(--text-dim); }
+
+    /* Upload zone */
+    .upload-zone {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      background: rgba(15, 22, 36, 0.4);
+      position: relative;
+      overflow: hidden;
+    }
+    .upload-zone:hover {
+      border-color: var(--brand);
+      background: rgba(59, 130, 246, 0.05);
+    }
+    .upload-zone.has-image { padding: 0; }
+    .upload-zone img {
+      max-width: 100%;
+      max-height: 200px;
+      object-fit: contain;
+      display: block;
+      margin: 0 auto;
+    }
+    .upload-zone input { display: none; }
+    .upload-icon { font-size: 2.5rem; margin-bottom: 0.5rem; opacity: 0.6; }
+    .upload-text { color: var(--text-muted); font-size: 0.85rem; }
+    .upload-hint { color: var(--text-dim); font-size: 0.75rem; margin-top: 0.25rem; }
+
+    /* Source selector */
+    .source-selector {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .source-btn {
+      padding: 0.6rem 1.2rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      font-family: inherit;
+      color: var(--text-muted);
+      background: rgba(15, 22, 36, 0.6);
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .source-btn:hover { border-color: var(--border-hover); color: var(--text); }
+    .source-btn.active {
+      color: #fff;
+      border-color: var(--brand);
+    }
+    .source-btn.active[data-source="default"] { background: linear-gradient(135deg, var(--brand-dark), var(--brand)); }
+    .source-btn.active[data-source="seasonal"] { background: linear-gradient(135deg, var(--pink), var(--purple)); }
+    .source-btn.active[data-source="store"] { background: linear-gradient(135deg, var(--gold), #d97706); }
+    .source-btn.active[data-source="premium"] { background: linear-gradient(135deg, var(--gold), var(--pink)); }
+
+    /* Checkbox */
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      cursor: pointer;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+    .checkbox-row input {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--brand);
+      cursor: pointer;
+    }
+
+    /* Buttons */
+    .btn {
+      padding: 0.75rem 1.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+      font-family: inherit;
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: all 0.25s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+    .btn:hover { transform: translateY(-2px); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--brand-dark), var(--brand));
+      box-shadow: 0 4px 16px rgba(30, 64, 175, 0.4);
+    }
+    .btn-danger {
+      background: linear-gradient(135deg, #dc2626, var(--error));
+      box-shadow: 0 4px 16px rgba(239, 68, 68, 0.3);
+    }
+    .btn-ghost {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+    .btn-ghost:hover { border-color: var(--brand); color: var(--text); }
+    .btn-sm { padding: 0.5rem 1rem; font-size: 0.8rem; border-radius: 8px; }
+    .btn-row { display: flex; gap: 0.75rem; margin-top: 1.5rem; }
+
+    /* Filter tabs */
+    .filter-tabs {
+      display: flex;
+      gap: 0.5rem;
+      padding: 0.4rem;
+      background: rgba(15, 22, 36, 0.8);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .filter-tab {
+      flex: 1;
+      min-width: 80px;
+      padding: 0.6rem 1rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      font-family: inherit;
+      color: var(--text-muted);
+      background: transparent;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: center;
+    }
+    .filter-tab:hover { color: var(--text); }
+    .filter-tab.active {
+      color: #fff;
+      background: linear-gradient(135deg, var(--brand-dark), var(--brand));
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+
+    /* Box grid */
+    .box-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 1.25rem;
+    }
+    .box-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      transition: all 0.25s ease;
+    }
+    .box-card:hover {
+      border-color: var(--border-hover);
+      transform: translateY(-3px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    }
+    .box-card-image {
+      width: 100%;
+      height: 160px;
+      background: linear-gradient(135deg, rgba(30, 64, 175, 0.15), rgba(59, 130, 246, 0.15));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    .box-card-image img {
+      max-width: 90%;
+      max-height: 140px;
+      object-fit: contain;
+    }
+    .box-card-body { padding: 1rem; }
+    .box-card-name {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 0.5rem;
+    }
+    .box-card-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      margin-bottom: 0.75rem;
+    }
+    .box-card-meta span {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+    }
+
+    /* Badges */
+    .badge {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: #fff;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .badge-default { background: linear-gradient(135deg, var(--brand-dark), var(--brand)); }
+    .badge-seasonal { background: linear-gradient(135deg, var(--pink), var(--purple)); }
+    .badge-store { background: linear-gradient(135deg, var(--gold), #d97706); }
+    .badge-premium { background: linear-gradient(135deg, var(--gold), var(--pink)); }
+    .badge-active { background: var(--success); }
+    .badge-inactive { background: var(--error); }
+    .badge-expired { background: var(--error); }
+    .badge-free { background: rgba(59, 130, 246, 0.3); border: 1px solid var(--brand); }
+    .badge-row { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
+
+    .box-card-actions {
+      display: flex;
+      gap: 0.5rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid var(--border);
+    }
+    .box-card-actions .btn { flex: 1; }
+
+    /* Active toggle on card */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.5rem;
+    }
+    .toggle {
+      width: 40px;
+      height: 22px;
+      background: rgba(100, 116, 139, 0.4);
+      border-radius: 11px;
+      position: relative;
+      cursor: pointer;
+      transition: background 0.2s ease;
+      border: none;
+    }
+    .toggle.on { background: var(--success); }
+    .toggle::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 18px;
+      height: 18px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform 0.2s ease;
+    }
+    .toggle.on::after { transform: translateX(18px); }
+
+    /* Confirm dialog overlay */
+    .overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+    }
+    .overlay.hidden { display: none; }
+    .dialog {
+      background: #1a1f35;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem;
+      max-width: 400px;
+      width: 90%;
+    }
+    .dialog h3 { font-size: 1.25rem; margin-bottom: 0.75rem; }
+    .dialog p { color: var(--text-muted); margin-bottom: 1.5rem; line-height: 1.5; }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translate(-50%, 80px);
+      padding: 1rem 1.5rem;
+      border-radius: var(--radius);
+      color: #fff;
+      font-weight: 500;
+      font-size: 0.9rem;
+      z-index: 9999;
+      opacity: 0;
+      transition: all 0.3s ease;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      min-width: 280px;
+      text-align: center;
+    }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+    .toast.success { background: linear-gradient(135deg, rgba(16, 185, 129, 0.95), rgba(5, 150, 105, 0.95)); }
+    .toast.error { background: linear-gradient(135deg, rgba(239, 68, 68, 0.95), rgba(220, 38, 38, 0.95)); }
+
+    /* Loading */
+    .loading { text-align: center; padding: 3rem; color: var(--text-dim); }
+    .empty { text-align: center; padding: 3rem; color: var(--text-dim); }
+    .empty-icon { font-size: 3rem; margin-bottom: 0.75rem; opacity: 0.4; }
+
+    /* Progress bar */
+    .progress-bar {
+      width: 100%;
+      height: 6px;
+      background: rgba(15, 22, 36, 0.8);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 0.75rem;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--brand), var(--success));
+      border-radius: 3px;
+      transition: width 0.3s ease;
+    }
+
+    @media (max-width: 768px) {
+      .container { padding: 1rem; }
+      .form-grid { grid-template-columns: 1fr; }
+      .box-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+      .stats { gap: 0.5rem; }
+      .stat { padding: 0.5rem 0.75rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <h1>Box Catalog Admin</h1>
+      <p>Upload and manage chest box images for the Loot Box Creator marketplace.</p>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats" id="statsBar"></div>
+
+    <!-- Add / Edit Form -->
+    <div class="card" id="formCard">
+      <h2 id="formTitle">Add New Box</h2>
+      <div class="form-grid">
+        <!-- Image Upload -->
+        <div class="form-group form-full">
+          <label>Box Image</label>
+          <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+            <div id="uploadPlaceholder">
+              <div class="upload-icon">📦</div>
+              <div class="upload-text">Click to upload an image</div>
+              <div class="upload-hint">PNG, JPG, WEBP — max 5MB</div>
+            </div>
+            <img id="imagePreview" style="display:none;" alt="Preview">
+            <input type="file" id="fileInput" accept="image/*" onchange="handleFileSelect(event)">
+          </div>
+        </div>
+
+        <!-- Name -->
+        <div class="form-group">
+          <label>Box Name</label>
+          <input type="text" id="boxName" placeholder="e.g., Golden Treasure Chest">
+        </div>
+
+        <!-- Source Type -->
+        <div class="form-group">
+          <label>Source Type</label>
+          <div class="source-selector">
+            <button class="source-btn active" data-source="default" onclick="setSource('default')">Default</button>
+            <button class="source-btn" data-source="seasonal" onclick="setSource('seasonal')">Seasonal</button>
+            <button class="source-btn" data-source="store" onclick="setSource('store')">Store</button>
+            <button class="source-btn" data-source="premium" onclick="setSource('premium')">Premium</button>
+          </div>
+        </div>
+
+        <!-- Price (seasonal/store only) -->
+        <div class="form-group" id="priceGroup" style="display:none;">
+          <label>Price (USD)</label>
+          <input type="number" id="boxPrice" placeholder="0.99" step="0.01" min="0">
+        </div>
+
+        <!-- Seasonal fields -->
+        <div class="form-group" id="seasonalLabelGroup" style="display:none;">
+          <label>Seasonal Label</label>
+          <input type="text" id="seasonalLabel" placeholder="e.g., Valentine's, Halloween">
+        </div>
+        <div class="form-group" id="seasonalStartGroup" style="display:none;">
+          <label>Start Date</label>
+          <input type="datetime-local" id="seasonalStart">
+        </div>
+        <div class="form-group" id="seasonalEndGroup" style="display:none;">
+          <label>End Date</label>
+          <input type="datetime-local" id="seasonalEnd">
+        </div>
+
+        <!-- Active -->
+        <div class="form-group">
+          <label>&nbsp;</label>
+          <label class="checkbox-row">
+            <input type="checkbox" id="boxActive" checked>
+            <span>Active — visible in the app</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Progress bar (hidden by default) -->
+      <div class="progress-bar" id="progressBar" style="display:none;">
+        <div class="progress-bar-fill" id="progressFill" style="width:0%"></div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" id="submitBtn" onclick="handleSubmit()">Upload &amp; Save</button>
+        <button class="btn btn-ghost" id="cancelEditBtn" style="display:none;" onclick="cancelEdit()">Cancel Edit</button>
+      </div>
+    </div>
+
+    <!-- Existing Boxes -->
+    <div class="card">
+      <h2>Existing Boxes</h2>
+      <div class="filter-tabs" id="filterTabs">
+        <button class="filter-tab active" data-filter="all" onclick="setFilter('all')">All</button>
+        <button class="filter-tab" data-filter="default" onclick="setFilter('default')">Default</button>
+        <button class="filter-tab" data-filter="seasonal" onclick="setFilter('seasonal')">Seasonal</button>
+        <button class="filter-tab" data-filter="store" onclick="setFilter('store')">Store</button>
+        <button class="filter-tab" data-filter="premium" onclick="setFilter('premium')">Premium</button>
+      </div>
+      <div id="boxGrid" class="box-grid">
+        <div class="loading">Loading boxes...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete confirmation dialog -->
+  <div class="overlay hidden" id="deleteOverlay">
+    <div class="dialog">
+      <h3>Delete Box?</h3>
+      <p id="deleteMessage">Are you sure you want to delete this box? This will remove the image and catalog entry permanently.</p>
+      <div style="display:flex;gap:0.75rem;">
+        <button class="btn btn-ghost" style="flex:1;" onclick="closeDeleteDialog()">Cancel</button>
+        <button class="btn btn-danger" style="flex:1;" id="confirmDeleteBtn" onclick="confirmDelete()">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ========== FIREBASE INIT ==========
+    const firebaseConfig = {
+      apiKey: "AIzaSyCo5QnH9iEZL7fprJxs96y9WMq5dk1uxd8",
+      authDomain: "lootbox-app-dd5fa.firebaseapp.com",
+      projectId: "lootbox-app-dd5fa",
+      storageBucket: "lootbox-app-dd5fa.firebasestorage.app",
+      messagingSenderId: "16386037455",
+      appId: "1:16386037455:web:df2ef3eb25929357dfc9ba",
+      measurementId: "G-3KSR19L05G"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const storage = firebase.storage();
+
+    // ========== STATE ==========
+    let allBoxes = [];
+    let currentFilter = 'all';
+    let currentSource = 'default';
+    let selectedFile = null;
+    let editingBoxId = null;
+    let editingBoxData = null;
+    let deleteTargetId = null;
+    let deleteTargetStoragePath = null;
+
+    // ========== INIT ==========
+    document.addEventListener('DOMContentLoaded', () => {
+      loadBoxes();
+    });
+
+    // ========== SOURCE SELECTOR ==========
+    function setSource(source) {
+      currentSource = source;
+
+      // Update buttons
+      document.querySelectorAll('.source-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.source === source);
+      });
+
+      // Show/hide conditional fields
+      const isSeasonal = source === 'seasonal';
+      const hasCost = source === 'seasonal' || source === 'store';
+
+      document.getElementById('priceGroup').style.display = hasCost ? '' : 'none';
+      document.getElementById('seasonalLabelGroup').style.display = isSeasonal ? '' : 'none';
+      document.getElementById('seasonalStartGroup').style.display = isSeasonal ? '' : 'none';
+      document.getElementById('seasonalEndGroup').style.display = isSeasonal ? '' : 'none';
+    }
+
+    // ========== FILE UPLOAD ==========
+    function handleFileSelect(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      if (file.size > 5 * 1024 * 1024) {
+        showToast('Image must be under 5MB', 'error');
+        return;
+      }
+
+      if (!file.type.startsWith('image/')) {
+        showToast('Please select an image file', 'error');
+        return;
+      }
+
+      selectedFile = file;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const preview = document.getElementById('imagePreview');
+        const placeholder = document.getElementById('uploadPlaceholder');
+        preview.src = e.target.result;
+        preview.style.display = 'block';
+        placeholder.style.display = 'none';
+        document.getElementById('uploadZone').classList.add('has-image');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // ========== FORM SUBMIT ==========
+    async function handleSubmit() {
+      const name = document.getElementById('boxName').value.trim();
+
+      if (!name) {
+        showToast('Please enter a box name', 'error');
+        return;
+      }
+
+      if (!selectedFile && !editingBoxId) {
+        showToast('Please select an image', 'error');
+        return;
+      }
+
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = true;
+      btn.textContent = editingBoxId ? 'Saving...' : 'Uploading...';
+
+      const progressBar = document.getElementById('progressBar');
+      const progressFill = document.getElementById('progressFill');
+      progressBar.style.display = '';
+      progressFill.style.width = '0%';
+
+      try {
+        let imageUrl = editingBoxData?.imageUrl || '';
+        let storagePath = editingBoxData?.storagePath || '';
+
+        // Upload new image if selected
+        if (selectedFile) {
+          const fileName = `box-catalog/${currentSource}/${Date.now()}_${selectedFile.name}`;
+          const ref = storage.ref().child(fileName);
+
+          const uploadTask = ref.put(selectedFile);
+
+          await new Promise((resolve, reject) => {
+            uploadTask.on('state_changed',
+              (snapshot) => {
+                const pct = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                progressFill.style.width = pct + '%';
+              },
+              reject,
+              resolve
+            );
+          });
+
+          imageUrl = await uploadTask.snapshot.ref.getDownloadURL();
+
+          // Delete old image if editing and replacing
+          if (editingBoxId && editingBoxData?.storagePath) {
+            try {
+              await storage.ref().child(editingBoxData.storagePath).delete();
+            } catch (e) {
+              console.warn('Could not delete old image:', e);
+            }
+          }
+
+          storagePath = fileName;
+        }
+
+        // Build document data
+        const hasCost = currentSource === 'seasonal' || currentSource === 'store';
+        const isSeasonal = currentSource === 'seasonal';
+
+        const boxData = {
+          name: name,
+          source: currentSource,
+          imageUrl: imageUrl,
+          storagePath: storagePath,
+          price: hasCost ? parseFloat(document.getElementById('boxPrice').value) || 0 : null,
+          seasonalInfo: isSeasonal ? {
+            label: document.getElementById('seasonalLabel').value.trim() || 'Seasonal',
+            startDate: document.getElementById('seasonalStart').value
+              ? new Date(document.getElementById('seasonalStart').value).getTime()
+              : Date.now(),
+            endDate: document.getElementById('seasonalEnd').value
+              ? new Date(document.getElementById('seasonalEnd').value).getTime()
+              : Date.now() + (30 * 86400000),
+          } : null,
+          active: document.getElementById('boxActive').checked,
+        };
+
+        if (editingBoxId) {
+          // Update existing
+          await db.collection('boxCatalog').doc(editingBoxId).update(boxData);
+          showToast(`"${name}" updated successfully!`, 'success');
+        } else {
+          // Create new
+          boxData.createdAt = Date.now();
+          await db.collection('boxCatalog').add(boxData);
+          showToast(`"${name}" added to catalog!`, 'success');
+        }
+
+        resetForm();
+        await loadBoxes();
+
+      } catch (error) {
+        console.error('Error:', error);
+        showToast('Error: ' + error.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Upload & Save';
+        progressBar.style.display = 'none';
+      }
+    }
+
+    // ========== EDIT ==========
+    function startEdit(boxId) {
+      const box = allBoxes.find(b => b.id === boxId);
+      if (!box) return;
+
+      editingBoxId = boxId;
+      editingBoxData = box;
+      selectedFile = null;
+
+      // Scroll to form
+      document.getElementById('formCard').scrollIntoView({ behavior: 'smooth' });
+
+      // Update form title and buttons
+      document.getElementById('formTitle').textContent = `Edit: ${box.name}`;
+      document.getElementById('submitBtn').textContent = 'Save Changes';
+      document.getElementById('cancelEditBtn').style.display = '';
+
+      // Fill fields
+      document.getElementById('boxName').value = box.name || '';
+      setSource(box.source || 'default');
+
+      if (box.price !== null && box.price !== undefined) {
+        document.getElementById('boxPrice').value = box.price;
+      }
+      if (box.seasonalInfo) {
+        document.getElementById('seasonalLabel').value = box.seasonalInfo.label || '';
+        if (box.seasonalInfo.startDate) {
+          document.getElementById('seasonalStart').value = toDatetimeLocal(box.seasonalInfo.startDate);
+        }
+        if (box.seasonalInfo.endDate) {
+          document.getElementById('seasonalEnd').value = toDatetimeLocal(box.seasonalInfo.endDate);
+        }
+      }
+      document.getElementById('boxActive').checked = box.active !== false;
+
+      // Show current image
+      if (box.imageUrl) {
+        const preview = document.getElementById('imagePreview');
+        const placeholder = document.getElementById('uploadPlaceholder');
+        preview.src = box.imageUrl;
+        preview.style.display = 'block';
+        placeholder.style.display = 'none';
+        document.getElementById('uploadZone').classList.add('has-image');
+      }
+    }
+
+    function cancelEdit() {
+      editingBoxId = null;
+      editingBoxData = null;
+      resetForm();
+    }
+
+    // ========== DELETE ==========
+    function startDelete(boxId) {
+      const box = allBoxes.find(b => b.id === boxId);
+      if (!box) return;
+
+      deleteTargetId = boxId;
+      deleteTargetStoragePath = box.storagePath || null;
+      document.getElementById('deleteMessage').textContent =
+        `Are you sure you want to delete "${box.name}"? This will remove the image and catalog entry permanently.`;
+      document.getElementById('deleteOverlay').classList.remove('hidden');
+    }
+
+    function closeDeleteDialog() {
+      document.getElementById('deleteOverlay').classList.add('hidden');
+      deleteTargetId = null;
+      deleteTargetStoragePath = null;
+    }
+
+    async function confirmDelete() {
+      if (!deleteTargetId) return;
+
+      const btn = document.getElementById('confirmDeleteBtn');
+      btn.disabled = true;
+      btn.textContent = 'Deleting...';
+
+      try {
+        // Delete image from Storage
+        if (deleteTargetStoragePath) {
+          try {
+            await storage.ref().child(deleteTargetStoragePath).delete();
+          } catch (e) {
+            console.warn('Could not delete image from storage:', e);
+          }
+        }
+
+        // Delete Firestore doc
+        await db.collection('boxCatalog').doc(deleteTargetId).delete();
+
+        showToast('Box deleted', 'success');
+        closeDeleteDialog();
+        await loadBoxes();
+
+      } catch (error) {
+        showToast('Error deleting: ' + error.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Delete';
+      }
+    }
+
+    // ========== TOGGLE ACTIVE ==========
+    async function toggleActive(boxId) {
+      const box = allBoxes.find(b => b.id === boxId);
+      if (!box) return;
+
+      const newActive = !box.active;
+      try {
+        await db.collection('boxCatalog').doc(boxId).update({ active: newActive });
+        box.active = newActive;
+        renderBoxes();
+        showToast(`${box.name} ${newActive ? 'activated' : 'deactivated'}`, 'success');
+      } catch (error) {
+        showToast('Error toggling: ' + error.message, 'error');
+      }
+    }
+
+    // ========== FILTER ==========
+    function setFilter(filter) {
+      currentFilter = filter;
+      document.querySelectorAll('.filter-tab').forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.filter === filter);
+      });
+      renderBoxes();
+    }
+
+    // ========== LOAD & RENDER ==========
+    async function loadBoxes() {
+      const grid = document.getElementById('boxGrid');
+      grid.innerHTML = '<div class="loading">Loading boxes...</div>';
+
+      try {
+        const snapshot = await db.collection('boxCatalog').get();
+        allBoxes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        // Sort: default > premium > seasonal > store, then newest first
+        const sourceOrder = { default: 0, premium: 1, seasonal: 2, store: 3 };
+        allBoxes.sort((a, b) => {
+          const orderDiff = (sourceOrder[a.source] ?? 9) - (sourceOrder[b.source] ?? 9);
+          if (orderDiff !== 0) return orderDiff;
+          return (b.createdAt || 0) - (a.createdAt || 0);
+        });
+
+        renderBoxes();
+        renderStats();
+
+      } catch (error) {
+        grid.innerHTML = `<div class="empty"><div class="empty-icon">⚠️</div>Error loading boxes: ${error.message}</div>`;
+      }
+    }
+
+    function renderStats() {
+      const counts = { total: allBoxes.length, default: 0, seasonal: 0, store: 0, premium: 0 };
+      allBoxes.forEach(b => {
+        if (b.active !== false && counts[b.source] !== undefined) counts[b.source]++;
+      });
+
+      const statsBar = document.getElementById('statsBar');
+      statsBar.innerHTML = `
+        <div class="stat">
+          <div class="stat-dot" style="background:var(--brand)"></div>
+          <div><div class="stat-count">${counts.total}</div><div class="stat-label">Total</div></div>
+        </div>
+        <div class="stat">
+          <div class="stat-dot" style="background:var(--brand)"></div>
+          <div><div class="stat-count">${counts.default}</div><div class="stat-label">Default</div></div>
+        </div>
+        <div class="stat">
+          <div class="stat-dot" style="background:var(--pink)"></div>
+          <div><div class="stat-count">${counts.seasonal}</div><div class="stat-label">Seasonal</div></div>
+        </div>
+        <div class="stat">
+          <div class="stat-dot" style="background:var(--gold)"></div>
+          <div><div class="stat-count">${counts.store}</div><div class="stat-label">Store</div></div>
+        </div>
+        <div class="stat">
+          <div class="stat-dot" style="background:var(--pink)"></div>
+          <div><div class="stat-count">${counts.premium}</div><div class="stat-label">Premium</div></div>
+        </div>
+      `;
+    }
+
+    function renderBoxes() {
+      const grid = document.getElementById('boxGrid');
+      let filtered = currentFilter === 'all'
+        ? allBoxes
+        : allBoxes.filter(b => b.source === currentFilter);
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `<div class="empty" style="grid-column:1/-1;"><div class="empty-icon">📦</div>No boxes in this category</div>`;
+        return;
+      }
+
+      grid.innerHTML = filtered.map(box => {
+        const badgeClass = `badge-${box.source}`;
+        const isExpired = box.seasonalInfo?.endDate && Date.now() > box.seasonalInfo.endDate;
+        const priceText = box.price !== null && box.price !== undefined
+          ? `$${box.price.toFixed(2)}`
+          : 'Free';
+
+        let metaHtml = `<span>Price: ${priceText}</span>`;
+        if (box.seasonalInfo) {
+          metaHtml += `<span>Label: ${box.seasonalInfo.label || '—'}</span>`;
+          if (box.seasonalInfo.endDate) {
+            metaHtml += `<span>Ends: ${new Date(box.seasonalInfo.endDate).toLocaleDateString()}</span>`;
+          }
+        }
+        metaHtml += `<span>Created: ${box.createdAt ? new Date(box.createdAt).toLocaleDateString() : '—'}</span>`;
+
+        return `
+          <div class="box-card">
+            <div class="box-card-image">
+              <img src="${box.imageUrl || ''}" alt="${box.name}" onerror="this.style.display='none';this.parentElement.innerHTML='<div style=\\'font-size:3rem;opacity:0.3\\'>📦</div>'">
+            </div>
+            <div class="box-card-body">
+              <div class="box-card-name">${box.name || 'Unnamed'}</div>
+              <div class="badge-row">
+                <span class="badge ${badgeClass}">${box.source}</span>
+                ${box.active !== false ? '<span class="badge badge-active">Active</span>' : '<span class="badge badge-inactive">Inactive</span>'}
+                ${isExpired ? '<span class="badge badge-expired">Expired</span>' : ''}
+              </div>
+              <div class="box-card-meta">${metaHtml}</div>
+              <div class="toggle-row">
+                <span style="font-size:0.75rem;color:var(--text-dim)">Active</span>
+                <button class="toggle ${box.active !== false ? 'on' : ''}" onclick="toggleActive('${box.id}')"></button>
+              </div>
+              <div class="box-card-actions">
+                <button class="btn btn-ghost btn-sm" onclick="startEdit('${box.id}')">Edit</button>
+                <button class="btn btn-danger btn-sm" onclick="startDelete('${box.id}')">Delete</button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ========== RESET FORM ==========
+    function resetForm() {
+      editingBoxId = null;
+      editingBoxData = null;
+      selectedFile = null;
+
+      document.getElementById('formTitle').textContent = 'Add New Box';
+      document.getElementById('submitBtn').textContent = 'Upload & Save';
+      document.getElementById('cancelEditBtn').style.display = 'none';
+
+      document.getElementById('boxName').value = '';
+      document.getElementById('boxPrice').value = '';
+      document.getElementById('seasonalLabel').value = '';
+      document.getElementById('seasonalStart').value = '';
+      document.getElementById('seasonalEnd').value = '';
+      document.getElementById('boxActive').checked = true;
+      document.getElementById('fileInput').value = '';
+
+      const preview = document.getElementById('imagePreview');
+      const placeholder = document.getElementById('uploadPlaceholder');
+      preview.style.display = 'none';
+      preview.src = '';
+      placeholder.style.display = '';
+      document.getElementById('uploadZone').classList.remove('has-image');
+
+      setSource('default');
+    }
+
+    // ========== HELPERS ==========
+    function toDatetimeLocal(timestamp) {
+      const d = new Date(timestamp);
+      return d.getFullYear() + '-' +
+        String(d.getMonth() + 1).padStart(2, '0') + '-' +
+        String(d.getDate()).padStart(2, '0') + 'T' +
+        String(d.getHours()).padStart(2, '0') + ':' +
+        String(d.getMinutes()).padStart(2, '0');
+    }
+
+    let toastTimer = null;
+    function showToast(message, type = 'success') {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.className = `toast ${type}`;
+      clearTimeout(toastTimer);
+      requestAnimationFrame(() => {
+        toast.classList.add('show');
+        toastTimer = setTimeout(() => {
+          toast.classList.remove('show');
+        }, 3000);
+      });
+    }
+  </script>
+</body>
+</html>
