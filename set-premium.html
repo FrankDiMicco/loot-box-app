@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Set Premium Tier</title>
+</head>
+<body>
+  <h1>Click button to set Premium tier</h1>
+  <button onclick="setPremium()" style="padding: 20px; font-size: 18px;">Set to Premium</button>
+  <p id="status"></p>
+  
+  <script>
+    function setPremium() {
+      try {
+        const settings = localStorage.getItem('userSettings');
+        const parsed = settings ? JSON.parse(settings) : {};
+        parsed.tier = 'paid';
+        localStorage.setItem('userSettings', JSON.stringify(parsed));
+        document.getElementById('status').innerHTML = '✓ Set to Premium! Close this and refresh your app.';
+      } catch(e) {
+        document.getElementById('status').innerHTML = 'Error: ' + e.message;
+      }
+    }
+  </script>
+</body>
+</html>

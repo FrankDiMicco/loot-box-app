@@ -254,6 +254,25 @@ HIGH PRIORITY
   - Purchase confirmations
   - Badge count on header icon
 
+☐ Item Image Uploads (Premium Feature)
+  - Allow users to upload images for individual items (perfect for D&D items, game skins, etc.)
+  - Multiple upload methods:
+    * Upload from phone/computer camera roll
+    * Take photo directly in app
+    * Both options available
+  - Firebase Storage with automatic compression:
+    * Compress images from 2-5MB → 200-300KB
+    * Maintains good quality for mobile viewing
+    * Keeps storage costs negligible (pennies per month)
+  - Image display locations:
+    * Pull result screen (big reveal with actual item image)
+    * Odds panel (32px thumbnails)
+    * Pull history (24px icons)
+    * Item list when editing (40px thumbnails)
+  - Premium users only (free users get text-only items)
+  - Item schema includes: imageUrl field (stores Firebase Storage URL)
+  - Cost-effective: ~$0.005/month per 1,000 compressed images
+
 
 MEDIUM PRIORITY
 --------------------------------------------------------------------------------

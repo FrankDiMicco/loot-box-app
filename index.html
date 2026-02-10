@@ -956,16 +956,27 @@
           </h1>
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <div style={{
-              padding: '0.5rem 1rem',
-              background: userTier === 'paid' ? 'linear-gradient(135deg, #f59e0b 0%, #ec4899 100%)' : 'rgba(26, 31, 53, 0.6)',
-              border: `1px solid ${userTier === 'paid' ? '#f59e0b' : 'rgba(59, 130, 246, 0.2)'}`,
-              borderRadius: '12px',
-              fontSize: '0.875rem',
-              fontWeight: 600,
-              color: '#ffffff',
-              textTransform: 'uppercase',
-            }}>
+            <div
+              style={{
+                padding: '0.5rem 1rem',
+                background: userTier === 'paid' ? 'linear-gradient(135deg, #f59e0b 0%, #ec4899 100%)' : 'rgba(26, 31, 53, 0.6)',
+                border: `1px solid ${userTier === 'paid' ? '#f59e0b' : 'rgba(59, 130, 246, 0.2)'}`,
+                borderRadius: '12px',
+                fontSize: '0.875rem',
+                fontWeight: 600,
+                color: '#ffffff',
+                textTransform: 'uppercase',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+              }}
+              onClick={() => {
+                const settings = getUserSettings();
+                const newTier = settings.tier === 'paid' ? 'free' : 'paid';
+                saveUserSettings({ ...settings, tier: newTier });
+                window.location.reload();
+              }}
+              title="Click to toggle tier (for testing)"
+            >
               {userTier === 'paid' ? '⭐ Premium' : 'Free'}
             </div>
 
@@ -1300,10 +1311,10 @@
     };
 
     // ItemCreator (simplified)
-    const ItemCreator = ({ items, onAddItem, editingItem, onUpdateItem, onCancelEdit }) => {
-      const [itemForm, setItemForm] = useState({ name: '', percentage: '', color: '#3b82f6', maxQuantity: '' });
-      const remainingPercentage = editingItem 
-        ? getRemainingPercentage(items.filter(i => i.id !== editingItem.id)) 
+    const ItemCreator = ({ items, onAddItem, editingItem, onUpdateItem, onCancelEdit, userSettings }) => {
+      const [itemForm, setItemForm] = useState({ name: '', percentage: '', color: '#3b82f6', maxQuantity: '', imageUrl: '' });
+      const remainingPercentage = editingItem
+        ? getRemainingPercentage(items.filter(i => i.id !== editingItem.id))
         : getRemainingPercentage(items);
 
       // Pre-fill form when editing
@@ -1314,6 +1325,7 @@
             percentage: editingItem.percentage.toString(),
             color: editingItem.color,
             maxQuantity: editingItem.maxQuantity ? editingItem.maxQuantity.toString() : '',
+            imageUrl: editingItem.imageUrl || '',
           });
         }
       }, [editingItem]);
@@ -1328,6 +1340,7 @@
           percentage: parseFloat(itemForm.percentage),
           color: itemForm.color,
           maxQuantity: itemForm.maxQuantity ? parseInt(itemForm.maxQuantity) : null,
+          imageUrl: itemForm.imageUrl || null,
         };
 
         if (editingItem) {
@@ -1336,14 +1349,14 @@
           onAddItem(itemData);
         }
 
-        setItemForm({ name: '', percentage: '', color: itemForm.color, maxQuantity: '' });
+        setItemForm({ name: '', percentage: '', color: itemForm.color, maxQuantity: '', imageUrl: '' });
       };
 
       const handleCancel = () => {
         if (editingItem && onCancelEdit) {
           onCancelEdit();
         }
-        setItemForm({ name: '', percentage: '', color: '#3b82f6', maxQuantity: '' });
+        setItemForm({ name: '', percentage: '', color: '#3b82f6', maxQuantity: '', imageUrl: '' });
       };
 
       const predefinedColors = ['#1e40af', '#3b82f6', '#60a5fa', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
@@ -1478,13 +1491,27 @@
                   borderRadius: '8px',
                 }}
               >
-                <span style={{
-                  width: '12px',
-                  height: '12px',
-                  borderRadius: '50%',
-                  background: item.color,
-                  boxShadow: `0 0 8px ${item.color}80`,
-                }} />
+                {item.imageUrl ? (
+                  <img
+                    src={item.imageUrl}
+                    alt={item.name}
+                    style={{
+                      width: '40px',
+                      height: '40px',
+                      objectFit: 'contain',
+                      borderRadius: '6px',
+                      border: `1px solid ${item.color}40`,
+                    }}
+                  />
+                ) : (
+                  <span style={{
+                    width: '12px',
+                    height: '12px',
+                    borderRadius: '50%',
+                    background: item.color,
+                    boxShadow: `0 0 8px ${item.color}80`,
+                  }} />
+                )}
 
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: '1rem', fontWeight: 600, color: '#e2e8f0' }}>
@@ -2155,12 +2182,13 @@
             </Card>
           </div>
 
-          <ItemCreator 
-            items={items} 
+          <ItemCreator
+            items={items}
             onAddItem={handleAddItem}
             editingItem={editingItem}
             onUpdateItem={handleUpdateItem}
             onCancelEdit={handleCancelEdit}
+            userSettings={userSettings}
           />
           <div style={{ marginBottom: '2rem' }}>
             <ItemList 
@@ -2250,6 +2278,7 @@
             itemName: selectedItem.name,
             percentage: selectedItem.percentage,
             color: selectedItem.color,
+            imageUrl: selectedItem.imageUrl || null,
             timestamp: Date.now(),
             userName: userName || 'You',
           };
@@ -2261,7 +2290,7 @@
           // Save pull to box
           const newHistory = [...pullHistory, pull];
           setPullHistory(newHistory);
-          
+
           const updatedBox = { ...box, pullHistory: newHistory };
           saveBox(updatedBox);
           onBoxUpdate && onBoxUpdate(updatedBox);
@@ -2367,12 +2396,28 @@
                 width: '100%',
                 maxWidth: '500px',
               }}>
-                <div style={{
-                  fontSize: '4rem',
-                  marginBottom: '1rem',
-                }}>
-                  🎁
-                </div>
+                {currentPull.imageUrl ? (
+                  <div style={{
+                    width: '200px',
+                    height: '200px',
+                    margin: '0 auto 1rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}>
+                    <img
+                      src={currentPull.imageUrl}
+                      alt={currentPull.itemName}
+                      style={{
+                        maxWidth: '100%',
+                        maxHeight: '100%',
+                        objectFit: 'contain',
+                        borderRadius: '12px',
+                        filter: 'drop-shadow(0 0 20px rgba(0, 0, 0, 0.5))',
+                      }}
+                    />
+                  </div>
+                ) : null}
                 <h3 style={{
                   fontSize: '2rem',
                   fontWeight: 700,
@@ -2476,13 +2521,27 @@
                           borderRadius: '8px',
                         }}
                       >
-                        <span style={{
-                          width: '10px',
-                          height: '10px',
-                          borderRadius: '50%',
-                          background: item.color,
-                          boxShadow: `0 0 8px ${item.color}80`,
-                        }} />
+                        {item.imageUrl ? (
+                          <img
+                            src={item.imageUrl}
+                            alt={item.name}
+                            style={{
+                              width: '32px',
+                              height: '32px',
+                              objectFit: 'contain',
+                              borderRadius: '4px',
+                              border: `1px solid ${item.color}40`,
+                            }}
+                          />
+                        ) : (
+                          <span style={{
+                            width: '10px',
+                            height: '10px',
+                            borderRadius: '50%',
+                            background: item.color,
+                            boxShadow: `0 0 8px ${item.color}80`,
+                          }} />
+                        )}
                         <span style={{ flex: 1, fontSize: '0.875rem', color: '#cbd5e1' }}>
                           {box.hideContents ? '???' : item.name}
                         </span>
@@ -2536,12 +2595,26 @@
                           fontSize: '0.875rem',
                         }}
                       >
-                        <span style={{
-                          width: '8px',
-                          height: '8px',
-                          borderRadius: '50%',
-                          background: pull.color,
-                        }} />
+                        {pull.imageUrl && !shouldHideItemName ? (
+                          <img
+                            src={pull.imageUrl}
+                            alt={pull.itemName}
+                            style={{
+                              width: '24px',
+                              height: '24px',
+                              objectFit: 'contain',
+                              borderRadius: '3px',
+                              border: `1px solid ${pull.color}40`,
+                            }}
+                          />
+                        ) : (
+                          <span style={{
+                            width: '8px',
+                            height: '8px',
+                            borderRadius: '50%',
+                            background: pull.color,
+                          }} />
+                        )}
                         <span style={{ color: '#cbd5e1' }}>
                           {shouldHideItemName ? 'Mystery Item' : pull.itemName}
                         </span>
