@@ -491,6 +491,16 @@
       }
     };
 
+    const saveUserSettings = (settings) => {
+      try {
+        localStorage.setItem(STORAGE_KEYS.USER_SETTINGS, JSON.stringify(settings));
+        return true;
+      } catch (error) {
+        console.error('Error saving user settings:', error);
+        return false;
+      }
+    };
+
     const canCreateLocalBox = () => {
       const settings = getUserSettings();
       if (settings.tier === 'paid') return true;
@@ -694,6 +704,69 @@
       }
 
       return false;
+    };
+
+    // ========== FIRESTORE FUNCTIONS FOR SHARED BOXES ==========
+
+    // Save a shared box to Firestore
+    const saveSharedBox = async (box) => {
+      if (!firebaseEnabled || !db) {
+        throw new Error('Firebase not available');
+      }
+      try {
+        await db.collection('sharedBoxes').doc(box.shareCode).set({
+          ...box,
+          updatedAt: Date.now()
+        });
+        return true;
+      } catch (error) {
+        console.error('Error saving shared box:', error);
+        throw error;
+      }
+    };
+
+    // Fetch a shared box by share code
+    const fetchSharedBox = async (shareCode) => {
+      if (!firebaseEnabled || !db) return null;
+      try {
+        const doc = await db.collection('sharedBoxes').doc(shareCode).get();
+        if (doc.exists) {
+          return { id: doc.id, ...doc.data() };
+        }
+        return null;
+      } catch (error) {
+        console.error('Error fetching shared box:', error);
+        return null;
+      }
+    };
+
+    // Add a pull to a shared box in Firestore
+    const addPullToSharedBox = async (shareCode, pull) => {
+      if (!firebaseEnabled || !db) {
+        throw new Error('Firebase not available');
+      }
+      try {
+        await db.collection('sharedBoxes').doc(shareCode).update({
+          pullHistory: firebase.firestore.FieldValue.arrayUnion(pull),
+          updatedAt: Date.now()
+        });
+        return true;
+      } catch (error) {
+        console.error('Error adding pull:', error);
+        throw error;
+      }
+    };
+
+    // Listen to real-time updates on a shared box
+    const subscribeToSharedBox = (shareCode, callback) => {
+      if (!firebaseEnabled || !db) return () => {};
+      return db.collection('sharedBoxes').doc(shareCode).onSnapshot((doc) => {
+        if (doc.exists) {
+          callback({ id: doc.id, ...doc.data() });
+        }
+      }, (error) => {
+        console.error('Error in shared box listener:', error);
+      });
     };
 
     // ========== COMPONENTS - COMMON ==========
@@ -1570,7 +1643,7 @@
     };
 
     // ImagePicker Component
-    const ImagePicker = ({ selectedImageId, onSelectImage, userSettings }) => {
+    const ImagePicker = ({ selectedImageId, onSelectImage, userSettings, success, error, info }) => {
       const [activeTab, setActiveTab] = useState('defaults');
       const [boxCatalog, setBoxCatalog] = useState(null);
       const [loading, setLoading] = useState(true);
@@ -1621,13 +1694,13 @@
 
       const handlePurchase = async (box) => {
         if (!firebaseEnabled) {
-          alert('Purchase feature requires Firebase configuration');
+          error('Purchase feature requires Firebase configuration');
           setShowPurchaseModal(null);
           return;
         }
 
         if (!userSettings.uid) {
-          alert('Please sign in to purchase boxes');
+          error('Please sign in to purchase boxes');
           setShowPurchaseModal(null);
           return;
         }
@@ -1644,11 +1717,11 @@
           };
           localStorage.setItem(STORAGE_KEYS.USER_SETTINGS, JSON.stringify(updatedSettings));
 
-          alert(`Successfully purchased ${box.name}!`);
+          success(`Successfully purchased ${box.name}!`);
           await loadBoxCatalog(); // Refresh catalog
           setShowPurchaseModal(null);
-        } catch (error) {
-          alert(`Purchase failed: ${error.message}`);
+        } catch (err) {
+          error(`Purchase failed: ${err.message}`);
         }
       };
 
@@ -1657,27 +1730,27 @@
         if (!file) return;
 
         if (userSettings.tier !== 'paid') {
-          alert('Custom box uploads are a premium feature!');
+          error('Custom box uploads are a premium feature!');
           return;
         }
 
         if (!firebaseEnabled) {
-          alert('Upload feature requires Firebase configuration');
+          error('Upload feature requires Firebase configuration');
           return;
         }
 
         if (!userSettings.uid) {
-          alert('Please sign in to upload custom boxes');
+          error('Please sign in to upload custom boxes');
           return;
         }
 
         setUploading(true);
         try {
           const uploadedBox = await uploadUserBox(file, { name: file.name }, userSettings.uid);
-          alert(`Successfully uploaded ${uploadedBox.name}!`);
+          success(`Successfully uploaded ${uploadedBox.name}!`);
           await loadBoxCatalog(); // Refresh catalog
-        } catch (error) {
-          alert(`Upload failed: ${error.message}`);
+        } catch (err) {
+          error(`Upload failed: ${err.message}`);
         } finally {
           setUploading(false);
         }
@@ -1980,7 +2053,7 @@
     };
 
     // BoxCreator
-    const BoxCreator = ({ onComplete, onCancel, editingBox = null }) => {
+    const BoxCreator = ({ onComplete, onCancel, editingBox = null, success, error, info }) => {
       const [boxName, setBoxName] = useState(editingBox ? editingBox.name : '');
       const [items, setItems] = useState(editingBox ? editingBox.items : []);
       const [maxPulls, setMaxPulls] = useState(editingBox && editingBox.maxPulls ? editingBox.maxPulls.toString() : '');
@@ -2011,25 +2084,25 @@
         setEditingItem(null);
       };
 
-      const handleCreate = () => {
+      const handleCreate = async () => {
         if (!boxName.trim()) {
-          alert('Please enter a box name');
+          error('Please enter a box name');
           return;
         }
 
         if (items.length === 0) {
-          alert('Please add at least one item');
+          error('Please add at least one item');
           return;
         }
 
         const validation = validatePercentages(items);
         if (!validation.valid) {
-          alert(`Percentages must add up to 100%. ${validation.message}`);
+          error(`Percentages must add up to 100%. ${validation.message}`);
           return;
         }
 
         if (boxType === 'local' && !editingBox && !canCreateLocal) {
-          alert('Free users can only create 5 local boxes!');
+          error('Free users can only create 5 local boxes!');
           return;
         }
 
@@ -2047,7 +2120,36 @@
           hideOdds: hideOdds,
         };
 
-        saveBox(boxData);
+        // If shared box, save to Firestore
+        if (boxType === 'shared' || (editingBox && editingBox.type === 'shared')) {
+          try {
+            await saveSharedBox(boxData);
+
+            // Save lightweight reference locally for creator
+            const localRef = {
+              id: boxData.id,
+              name: boxData.name,
+              type: 'shared',
+              shareCode: boxData.shareCode,
+              isSharedRef: true,
+              items: boxData.items,
+              maxPulls: boxData.maxPulls,
+              pullHistory: [],
+              createdAt: boxData.createdAt,
+              boxImageId: boxData.boxImageId,
+              hideContents: boxData.hideContents,
+              hideOdds: boxData.hideOdds,
+            };
+            saveBox(localRef);
+          } catch (err) {
+            error('Failed to save shared box: ' + err.message);
+            return;
+          }
+        } else {
+          // Local box - save only to localStorage
+          saveBox(boxData);
+        }
+
         onComplete && onComplete(boxData);
       };
 
@@ -2077,6 +2179,9 @@
                   selectedImageId={boxImageId}
                   onSelectImage={setBoxImageId}
                   userSettings={userSettings}
+                  success={success}
+                  error={error}
+                  info={info}
                 />
               </div>
 
@@ -2224,13 +2329,23 @@
     };
 
     // BoxOpener Component
-    const BoxOpener = ({ box, onBack, onBoxUpdate }) => {
+    const BoxOpener = ({ box, onBack, onBoxUpdate, success, error, info }) => {
       const [pullHistory, setPullHistory] = useState(box.pullHistory || []);
       const [isOpening, setIsOpening] = useState(false);
       const [currentPull, setCurrentPull] = useState(null);
       const [showResult, setShowResult] = useState(false);
       const [userName, setUserName] = useState('');
       const [needsName, setNeedsName] = useState(false);
+
+      // Real-time listener for shared boxes
+      useEffect(() => {
+        if (box.type === 'shared' && box.shareCode) {
+          const unsubscribe = subscribeToSharedBox(box.shareCode, (updatedBox) => {
+            setPullHistory(updatedBox.pullHistory || []);
+          });
+          return () => unsubscribe();
+        }
+      }, [box.shareCode, box.type]);
 
       const remainingPulls = box.maxPulls ? box.maxPulls - pullHistory.length : null;
       const canPull = !box.maxPulls || pullHistory.length < box.maxPulls;
@@ -2246,12 +2361,12 @@
         }
 
         if (!canPull) {
-          alert('No pulls remaining!');
+          error('No pulls remaining!');
           return;
         }
 
         if (currentOdds.length === 0) {
-          alert('All items have been claimed!');
+          error('All items have been claimed!');
           return;
         }
 
@@ -2272,7 +2387,7 @@
         }
 
         // Simulate opening animation (2 seconds)
-        setTimeout(() => {
+        setTimeout(async () => {
           const pull = {
             itemId: selectedItem.id,
             itemName: selectedItem.name,
@@ -2288,12 +2403,23 @@
           setShowResult(true);
 
           // Save pull to box
-          const newHistory = [...pullHistory, pull];
-          setPullHistory(newHistory);
+          if (box.type === 'shared') {
+            try {
+              await addPullToSharedBox(box.shareCode, pull);
+              // The real-time listener will update pullHistory automatically
+            } catch (err) {
+              console.error('Failed to save pull:', err);
+              error('Failed to save pull to shared box');
+            }
+          } else {
+            // Local box - save to localStorage
+            const newHistory = [...pullHistory, pull];
+            setPullHistory(newHistory);
 
-          const updatedBox = { ...box, pullHistory: newHistory };
-          saveBox(updatedBox);
-          onBoxUpdate && onBoxUpdate(updatedBox);
+            const updatedBox = { ...box, pullHistory: newHistory };
+            saveBox(updatedBox);
+            onBoxUpdate && onBoxUpdate(updatedBox);
+          }
         }, 2000);
       };
 
@@ -2339,9 +2465,37 @@
           {/* Header */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem' }}>
             <Button variant="ghost" onClick={onBack}>← Back</Button>
-            <h2 style={{ fontSize: '2rem', fontWeight: 700, color: '#e2e8f0', margin: 0 }}>
-              {box.name}
-            </h2>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+              <h2 style={{ fontSize: '2rem', fontWeight: 700, color: '#e2e8f0', margin: 0 }}>
+                {box.name}
+              </h2>
+              {box.type === 'shared' && box.shareCode && (
+                <button
+                  style={{
+                    padding: '0.5rem 1rem',
+                    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                    border: 'none',
+                    borderRadius: '8px',
+                    color: '#ffffff',
+                    fontSize: '0.875rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                    transition: 'all 0.2s ease',
+                  }}
+                  onClick={() => {
+                    const url = `${window.location.origin}${window.location.pathname}#/box/${box.shareCode}`;
+                    navigator.clipboard.writeText(url).then(() => {
+                      success('Link copied to clipboard!');
+                    });
+                  }}
+                  onMouseEnter={(e) => e.target.style.transform = 'translateY(-2px)'}
+                  onMouseLeave={(e) => e.target.style.transform = 'translateY(0)'}
+                >
+                  📋 Copy Share Link
+                </button>
+              )}
+            </div>
             {remainingPulls !== null && (
               <div style={{
                 padding: '0.5rem 1rem',
@@ -2649,16 +2803,45 @@
 
       useEffect(() => {
         loadData();
+
+        // Check for shared box URL
+        const hash = window.location.hash;
+        const match = hash.match(/^#\/box\/([A-Z0-9]{6})$/);
+        if (match) {
+          const shareCode = match[1];
+          loadSharedBox(shareCode);
+        }
+
+        // Listen for hash changes
+        const handleHashChange = () => {
+          const hash = window.location.hash;
+          const match = hash.match(/^#\/box\/([A-Z0-9]{6})$/);
+          if (match) {
+            loadSharedBox(match[1]);
+          }
+        };
+        window.addEventListener('hashchange', handleHashChange);
+        return () => window.removeEventListener('hashchange', handleHashChange);
       }, []);
 
       const loadData = () => {
         const loadedBoxes = getAllBoxes();
         const settings = getUserSettings();
         const unreadCount = getUnreadCount();
-        
+
         setBoxes(loadedBoxes);
         setUserSettings(settings);
         setNotificationCount(unreadCount);
+      };
+
+      const loadSharedBox = async (shareCode) => {
+        const box = await fetchSharedBox(shareCode);
+        if (box) {
+          setOpeningBox(box);
+          setMode('open');
+        } else {
+          error('Box not found or link is invalid');
+        }
       };
 
       const handleCreateBox = () => {
@@ -2696,8 +2879,19 @@
         setEditingBox(null);
       };
 
-      const handleOpenBox = (box) => {
-        setOpeningBox(box);
+      const handleOpenBox = async (box) => {
+        if (box.type === 'shared' && box.shareCode) {
+          // Fetch latest from Firestore
+          const freshBox = await fetchSharedBox(box.shareCode);
+          if (freshBox) {
+            setOpeningBox(freshBox);
+          } else {
+            setOpeningBox(box); // Fallback to local
+            error('Could not fetch latest data');
+          }
+        } else {
+          setOpeningBox(box);
+        }
         setMode('open');
       };
 
@@ -2775,18 +2969,24 @@
           )}
 
           {(mode === 'create' || mode === 'edit') && (
-            <BoxCreator 
-              onComplete={handleBoxSaved} 
+            <BoxCreator
+              onComplete={handleBoxSaved}
               onCancel={handleCancel}
               editingBox={editingBox}
+              success={success}
+              error={error}
+              info={info}
             />
           )}
 
           {mode === 'open' && openingBox && (
-            <BoxOpener 
+            <BoxOpener
               box={openingBox}
               onBack={handleCloseOpener}
               onBoxUpdate={handleBoxUpdate}
+              success={success}
+              error={error}
+              info={info}
             />
           )}
 

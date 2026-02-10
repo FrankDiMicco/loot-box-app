@@ -1,0 +1,369 @@
+====================================================================
+SHARED LOOT BOXES - CLAUDE CODE INSTRUCTIONS
+====================================================================
+
+CONTEXT:
+- This is a single-file React app (index.html) with Firebase Firestore
+- Firebase is already initialized and working (config is in the file)
+- Local boxes work fine via localStorage
+- We need shared boxes to work via Firestore with shareable URL links
+- No Firebase Auth yet - users just enter a display name before pulling
+- Creator edits locally and pushes to Firestore
+- Pull history syncs in real-time from Firestore
+
+====================================================================
+BUGS TO FIX FIRST
+====================================================================
+
+1. Add the missing saveUserSettings function. It's called in the Header
+   component when toggling tier but never defined. Add it near the other
+   localStorage helpers (getUserSettings, etc.):
+
+   const saveUserSettings = (settings) => {
+     try {
+       localStorage.setItem(STORAGE_KEYS.USER_SETTINGS, JSON.stringify(settings));
+       return true;
+     } catch (error) {
+       console.error('Error saving user settings:', error);
+       return false;
+     }
+   };
+
+2. Replace all alert() calls with the existing toast system. The app
+   already has useToast/showToast but many places still use alert().
+   Pass the toast functions down via props or context where needed.
+   Affected locations:
+   - BoxCreator: validation alerts
+   - ImagePicker: purchase alerts, upload alerts
+   - BoxOpener: "No pulls remaining" and "All items claimed" alerts
+
+====================================================================
+SHARED BOX FEATURE - IMPLEMENTATION
+====================================================================
+
+OVERVIEW:
+When a user creates a "shared" box:
+1. Box saves to Firestore collection 'sharedBoxes' (NOT localStorage)
+2. User gets a shareable URL link
+3. Anyone with the link can view the box and pull from it
+4. Pull history updates in Firestore in real-time
+5. Creator also sees the box in their local list (with a reference to Firestore doc)
+
+URL FORMAT:
+Use URL hash routing since this is a single HTML file:
+  https://yourdomain.com/index.html#/box/{shareCode}
+
+Where shareCode is the existing 6-char code from generateShareCode().
+
+--------------------------------------------------------------------
+STEP 1: FIRESTORE FUNCTIONS FOR SHARED BOXES
+--------------------------------------------------------------------
+
+Add these functions near the existing Firebase service layer:
+
+// Save a shared box to Firestore
+const saveSharedBox = async (box) => {
+  if (!firebaseEnabled || !db) {
+    throw new Error('Firebase not available');
+  }
+  try {
+    await db.collection('sharedBoxes').doc(box.shareCode).set({
+      ...box,
+      updatedAt: Date.now()
+    });
+    return true;
+  } catch (error) {
+    console.error('Error saving shared box:', error);
+    throw error;
+  }
+};
+
+// Fetch a shared box by share code
+const fetchSharedBox = async (shareCode) => {
+  if (!firebaseEnabled || !db) return null;
+  try {
+    const doc = await db.collection('sharedBoxes').doc(shareCode).get();
+    if (doc.exists) {
+      return { id: doc.id, ...doc.data() };
+    }
+    return null;
+  } catch (error) {
+    console.error('Error fetching shared box:', error);
+    return null;
+  }
+};
+
+// Add a pull to a shared box in Firestore
+const addPullToSharedBox = async (shareCode, pull) => {
+  if (!firebaseEnabled || !db) {
+    throw new Error('Firebase not available');
+  }
+  try {
+    await db.collection('sharedBoxes').doc(shareCode).update({
+      pullHistory: firebase.firestore.FieldValue.arrayUnion(pull),
+      updatedAt: Date.now()
+    });
+    return true;
+  } catch (error) {
+    console.error('Error adding pull:', error);
+    throw error;
+  }
+};
+
+// Listen to real-time updates on a shared box
+const subscribeToSharedBox = (shareCode, callback) => {
+  if (!firebaseEnabled || !db) return () => {};
+  return db.collection('sharedBoxes').doc(shareCode).onSnapshot((doc) => {
+    if (doc.exists) {
+      callback({ id: doc.id, ...doc.data() });
+    }
+  }, (error) => {
+    console.error('Error in shared box listener:', error);
+  });
+};
+
+--------------------------------------------------------------------
+STEP 2: UPDATE BOX CREATOR FOR SHARED BOXES
+--------------------------------------------------------------------
+
+In the BoxCreator component, update the handleCreate function:
+
+When boxType === 'shared':
+- Call saveSharedBox(boxData) to push to Firestore
+- ALSO save a lightweight reference in localStorage so the creator
+  sees it in their box list. The local reference should include:
+    {
+      id: boxData.id,
+      name: boxData.name,
+      type: 'shared',
+      shareCode: boxData.shareCode,
+      isSharedRef: true,  // flag to know this is a Firestore box
+      items: boxData.items,
+      maxPulls: boxData.maxPulls,
+      pullHistory: [],  // will be fetched from Firestore
+      createdAt: boxData.createdAt,
+      boxImageId: boxData.boxImageId,
+      hideContents: boxData.hideContents,
+      hideOdds: boxData.hideOdds,
+    }
+
+When boxType === 'local':
+- Keep existing behavior (localStorage only, no change)
+
+--------------------------------------------------------------------
+STEP 3: URL ROUTING
+--------------------------------------------------------------------
+
+Add simple hash-based routing in the App component.
+
+On mount (in the existing useEffect), check window.location.hash:
+
+useEffect(() => {
+  loadData();
+
+  // Check for shared box URL
+  const hash = window.location.hash;
+  const match = hash.match(/^#\/box\/([A-Z0-9]{6})$/);
+  if (match) {
+    const shareCode = match[1];
+    loadSharedBox(shareCode);
+  }
+
+  // Listen for hash changes
+  const handleHashChange = () => {
+    const hash = window.location.hash;
+    const match = hash.match(/^#\/box\/([A-Z0-9]{6})$/);
+    if (match) {
+      loadSharedBox(match[1]);
+    }
+  };
+  window.addEventListener('hashchange', handleHashChange);
+  return () => window.removeEventListener('hashchange', handleHashChange);
+}, []);
+
+Add the loadSharedBox function in the App component:
+
+const loadSharedBox = async (shareCode) => {
+  const box = await fetchSharedBox(shareCode);
+  if (box) {
+    setOpeningBox(box);
+    setMode('open');
+  } else {
+    error('Box not found or link is invalid');
+  }
+};
+
+--------------------------------------------------------------------
+STEP 4: UPDATE BOX OPENER FOR SHARED BOXES
+--------------------------------------------------------------------
+
+The BoxOpener component needs to handle shared boxes differently:
+
+1. REAL-TIME LISTENER:
+   When opening a shared box (box.type === 'shared'), set up a
+   Firestore real-time listener using subscribeToSharedBox.
+   Update pullHistory from the listener so all users see new pulls.
+
+   Add to BoxOpener:
+
+   useEffect(() => {
+     if (box.type === 'shared' && box.shareCode) {
+       const unsubscribe = subscribeToSharedBox(box.shareCode, (updatedBox) => {
+         setPullHistory(updatedBox.pullHistory || []);
+       });
+       return () => unsubscribe();
+     }
+   }, [box.shareCode, box.type]);
+
+2. SAVE PULLS TO FIRESTORE:
+   In the handleOpen function, when the box is shared, save the pull
+   to Firestore using addPullToSharedBox instead of just localStorage.
+
+   Replace the pull saving logic:
+
+   // After the pull is determined (inside the setTimeout):
+   if (box.type === 'shared') {
+     try {
+       await addPullToSharedBox(box.shareCode, pull);
+       // The real-time listener will update pullHistory automatically
+     } catch (err) {
+       // Show error toast
+       console.error('Failed to save pull:', err);
+     }
+   } else {
+     // Existing local save logic
+     const newHistory = [...pullHistory, pull];
+     setPullHistory(newHistory);
+     const updatedBox = { ...box, pullHistory: newHistory };
+     saveBox(updatedBox);
+     onBoxUpdate && onBoxUpdate(updatedBox);
+   }
+
+   NOTE: The setTimeout callback needs to be async for this to work.
+
+--------------------------------------------------------------------
+STEP 5: SHARE LINK UI
+--------------------------------------------------------------------
+
+Add a share link button in the BoxOpener header area, visible only
+for shared boxes:
+
+After the box name heading in BoxOpener, add:
+
+{box.type === 'shared' && box.shareCode && (
+  <button
+    style={{
+      padding: '0.5rem 1rem',
+      background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+      border: 'none',
+      borderRadius: '8px',
+      color: '#ffffff',
+      fontSize: '0.875rem',
+      fontWeight: 600,
+      cursor: 'pointer',
+    }}
+    onClick={() => {
+      const url = `${window.location.origin}${window.location.pathname}#/box/${box.shareCode}`;
+      navigator.clipboard.writeText(url).then(() => {
+        // Show success toast - you'll need to pass toast down or use context
+        alert('Link copied!'); // Replace with toast
+      });
+    }}
+  >
+    Copy Share Link
+  </button>
+)}
+
+Also show the share link on the BoxCard for shared boxes so the
+creator can copy it from the home screen too.
+
+--------------------------------------------------------------------
+STEP 6: UPDATE BOX CARD FOR SHARED BOXES
+--------------------------------------------------------------------
+
+When the creator clicks a shared box from their home screen:
+- Fetch the latest data from Firestore (using fetchSharedBox)
+- Then open the BoxOpener with the Firestore data
+
+Update handleOpenBox in the App component:
+
+const handleOpenBox = async (box) => {
+  if (box.type === 'shared' && box.shareCode) {
+    // Fetch latest from Firestore
+    const freshBox = await fetchSharedBox(box.shareCode);
+    if (freshBox) {
+      setOpeningBox(freshBox);
+    } else {
+      setOpeningBox(box); // Fallback to local
+      error('Could not fetch latest data');
+    }
+  } else {
+    setOpeningBox(box);
+  }
+  setMode('open');
+};
+
+--------------------------------------------------------------------
+STEP 7: EDITING SHARED BOXES
+--------------------------------------------------------------------
+
+When the creator edits a shared box:
+- The BoxCreator saves changes locally AND pushes to Firestore
+- Update handleCreate in BoxCreator:
+
+  if (boxType === 'shared' || (editingBox && editingBox.type === 'shared')) {
+    try {
+      await saveSharedBox(boxData);
+    } catch (err) {
+      // Show error, don't complete
+      alert('Failed to save shared box: ' + err.message);
+      return;
+    }
+  }
+  saveBox(boxData); // Also save locally
+  onComplete && onComplete(boxData);
+
+====================================================================
+FIRESTORE RULES
+====================================================================
+
+The current Firestore is in test mode (expires in 30 days).
+For now that's fine. When you set up real rules later, the
+sharedBoxes collection should allow:
+- Anyone can READ any shared box (that's the point)
+- Anyone can UPDATE pullHistory (to add pulls)
+- Only the creator can UPDATE other fields or DELETE
+
+====================================================================
+TESTING CHECKLIST
+====================================================================
+
+1. Create a shared box (must be premium tier)
+2. Verify it appears in Firestore console under 'sharedBoxes'
+3. Verify it appears in your local box list with "Shared" badge
+4. Open the shared box and verify the share link button appears
+5. Copy the share link
+6. Open the link in an incognito/different browser
+7. Verify the box loads, name prompt appears
+8. Pull from the shared box
+9. Verify the pull appears in BOTH browser windows in real-time
+10. Edit the shared box as creator, verify changes push to Firestore
+11. Verify local-only boxes still work normally (no regression)
+
+====================================================================
+FILES CHANGED
+====================================================================
+
+Only index.html needs changes. All modifications are in the
+<script type="text/babel"> section.
+
+Summary of additions:
+- saveUserSettings function (bug fix)
+- 4 new Firestore functions (save, fetch, addPull, subscribe)
+- URL hash routing in App useEffect
+- loadSharedBox function in App
+- Updated BoxCreator handleCreate for shared boxes
+- Updated BoxOpener for real-time sync and Firestore pulls
+- Share link button in BoxOpener
+- Updated handleOpenBox in App for Firestore fetch
+- Replace alert() calls with toast system
