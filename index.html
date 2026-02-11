@@ -831,6 +831,75 @@
       }
     };
 
+    // ========== BOX TEMPLATES ==========
+
+    const saveBoxTemplate = async (box) => {
+      if (!firebaseEnabled || !db) return null;
+      try {
+        const shareCode = generateShareCode();
+        const templateData = {
+          templateId: shareCode,
+          name: box.name,
+          items: (box.items || []).map(item => ({
+            id: item.id,
+            name: item.name,
+            percentage: item.percentage,
+            color: item.color,
+            maxQuantity: item.maxQuantity || null,
+            imageUrl: item.imageUrl || null,
+          })),
+          boxImageId: box.boxImageId || null,
+          hideContents: box.hideContents || false,
+          hideOdds: box.hideOdds || false,
+          maxPulls: box.maxPulls || null,
+          createdBy: getUserSettings().displayName || 'Anonymous',
+          createdAt: Date.now(),
+          shareCode: shareCode,
+          expiresAt: null,
+        };
+        await db.collection('boxTemplates').doc(shareCode).set(templateData);
+        return shareCode;
+      } catch (error) {
+        console.error('Error saving box template:', error);
+        return null;
+      }
+    };
+
+    const fetchBoxTemplate = async (shareCode) => {
+      if (!firebaseEnabled || !db) return null;
+      try {
+        const doc = await db.collection('boxTemplates').doc(shareCode).get();
+        if (doc.exists) {
+          return doc.data();
+        }
+        return null;
+      } catch (error) {
+        console.error('Error fetching box template:', error);
+        return null;
+      }
+    };
+
+    const importBoxFromTemplate = (templateData) => {
+      const newBox = {
+        id: Date.now().toString(),
+        name: templateData.name,
+        items: templateData.items || [],
+        boxImageId: templateData.boxImageId || null,
+        hideContents: templateData.hideContents || false,
+        hideOdds: templateData.hideOdds || false,
+        maxPulls: templateData.maxPulls || null,
+        pullHistory: [],
+        type: 'local',
+        createdAt: Date.now(),
+        templateSource: {
+          name: templateData.createdBy,
+          shareCode: templateData.shareCode,
+        },
+      };
+      saveBox(newBox);
+      return newBox;
+    };
+
     // ========== COMPONENTS - COMMON ==========
     
     // Button Component
@@ -1248,6 +1317,36 @@
         setShowDeleteConfirm(true);
       };
 
+      const handleShareTemplate = async (e) => {
+        e.stopPropagation();
+        const shareCode = await saveBoxTemplate(box);
+        if (!shareCode) {
+          success && success('Failed to create template');
+          return;
+        }
+        const url = `${window.location.origin}${window.location.pathname}#/template/${shareCode}`;
+        if (navigator.share) {
+          try {
+            await navigator.share({
+              title: box.name,
+              text: `Import my loot box template "${box.name}"!`,
+              url: url,
+            });
+          } catch (err) {
+            if (err.name !== 'AbortError') {
+              console.error('Share failed:', err);
+            }
+          }
+        } else {
+          try {
+            await navigator.clipboard.writeText(url);
+            success && success('Template link copied!');
+          } catch (err) {
+            prompt('Copy this link:', url);
+          }
+        }
+      };
+
       const handleShare = async (e) => {
         e.stopPropagation();
         if (!box.shareCode) return;
@@ -1486,35 +1585,66 @@
                 </span>
               )}
             </div>
-            {box.type === 'shared' && box.shareCode && (
-              <button
-                style={{
-                  padding: '0.4rem 1rem',
-                  fontSize: '0.75rem',
-                  fontWeight: 700,
-                  color: '#ffffff',
-                  background: 'linear-gradient(135deg, #4169e1 0%, #1e40af 100%)',
-                  border: 'none',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  textTransform: 'uppercase',
-                  boxShadow: '0 0 20px rgba(65, 105, 225, 0.6), 0 0 40px rgba(65, 105, 225, 0.3)',
-                  transition: 'all 0.3s ease',
-                  fontFamily: 'inherit',
-                }}
-                onClick={handleShare}
-                onMouseEnter={(e) => {
-                  e.target.style.transform = 'scale(1.05)';
-                  e.target.style.boxShadow = '0 0 30px rgba(65, 105, 225, 0.8), 0 0 60px rgba(65, 105, 225, 0.4)';
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.transform = 'scale(1)';
-                  e.target.style.boxShadow = '0 0 20px rgba(65, 105, 225, 0.6), 0 0 40px rgba(65, 105, 225, 0.3)';
-                }}
-              >
-                Share
-              </button>
-            )}
+            <div style={{ display: 'flex', gap: '0.5rem', marginLeft: 'auto' }}>
+              {!box.isVisitor && (
+                <button
+                  style={{
+                    padding: '0.4rem 1rem',
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                    color: '#ffffff',
+                    background: 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    textTransform: 'uppercase',
+                    boxShadow: '0 0 20px rgba(6, 182, 212, 0.6), 0 0 40px rgba(6, 182, 212, 0.3)',
+                    transition: 'all 0.3s ease',
+                    fontFamily: 'inherit',
+                  }}
+                  onClick={handleShareTemplate}
+                  onMouseEnter={(e) => {
+                    e.target.style.transform = 'scale(1.05)';
+                    e.target.style.boxShadow = '0 0 30px rgba(6, 182, 212, 0.8), 0 0 60px rgba(6, 182, 212, 0.4)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.transform = 'scale(1)';
+                    e.target.style.boxShadow = '0 0 20px rgba(6, 182, 212, 0.6), 0 0 40px rgba(6, 182, 212, 0.3)';
+                  }}
+                >
+                  Template
+                </button>
+              )}
+              {box.type === 'shared' && box.shareCode && (
+                <button
+                  style={{
+                    padding: '0.4rem 1rem',
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                    color: '#ffffff',
+                    background: 'linear-gradient(135deg, #4169e1 0%, #1e40af 100%)',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    textTransform: 'uppercase',
+                    boxShadow: '0 0 20px rgba(65, 105, 225, 0.6), 0 0 40px rgba(65, 105, 225, 0.3)',
+                    transition: 'all 0.3s ease',
+                    fontFamily: 'inherit',
+                  }}
+                  onClick={handleShare}
+                  onMouseEnter={(e) => {
+                    e.target.style.transform = 'scale(1.05)';
+                    e.target.style.boxShadow = '0 0 30px rgba(65, 105, 225, 0.8), 0 0 60px rgba(65, 105, 225, 0.4)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.transform = 'scale(1)';
+                    e.target.style.boxShadow = '0 0 20px rgba(65, 105, 225, 0.6), 0 0 40px rgba(65, 105, 225, 0.3)';
+                  }}
+                >
+                  Share
+                </button>
+              )}
+            </div>
           </div>
         </Card>
 
@@ -2784,60 +2914,117 @@
                 </div>
               )}
 
-              {/* Share button - matches BoxCard style */}
-              {box.type === 'shared' && box.shareCode && (
-                <button
-                  style={{
-                    marginLeft: 'auto',
-                    padding: '0.5rem 1.25rem',
-                    fontSize: '0.8rem',
-                    fontWeight: 700,
-                    color: '#ffffff',
-                    background: 'linear-gradient(135deg, #4169e1 0%, #1e40af 100%)',
-                    border: 'none',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    textTransform: 'uppercase',
-                    boxShadow: '0 0 20px rgba(65, 105, 225, 0.6), 0 0 40px rgba(65, 105, 225, 0.3)',
-                    transition: 'all 0.3s ease',
-                    fontFamily: 'inherit',
-                  }}
-                  onClick={async () => {
-                    const url = `${window.location.origin}${window.location.pathname}#/box/${box.shareCode}`;
-
-                    if (navigator.share) {
-                      try {
-                        await navigator.share({
-                          title: box.name,
-                          text: `Open my loot box "${box.name}" and try your luck!`,
-                          url: url,
-                        });
-                      } catch (err) {
-                        if (err.name !== 'AbortError') {
-                          console.error('Share failed:', err);
+              {/* Template and Share buttons */}
+              <div style={{ display: 'flex', gap: '0.5rem', marginLeft: 'auto' }}>
+                {!box.isVisitor && (
+                  <button
+                    style={{
+                      padding: '0.5rem 1.25rem',
+                      fontSize: '0.8rem',
+                      fontWeight: 700,
+                      color: '#ffffff',
+                      background: 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)',
+                      border: 'none',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      textTransform: 'uppercase',
+                      boxShadow: '0 0 20px rgba(6, 182, 212, 0.6), 0 0 40px rgba(6, 182, 212, 0.3)',
+                      transition: 'all 0.3s ease',
+                      fontFamily: 'inherit',
+                    }}
+                    onClick={async () => {
+                      const shareCode = await saveBoxTemplate(box);
+                      if (!shareCode) {
+                        error('Failed to create template');
+                        return;
+                      }
+                      const url = `${window.location.origin}${window.location.pathname}#/template/${shareCode}`;
+                      if (navigator.share) {
+                        try {
+                          await navigator.share({
+                            title: box.name,
+                            text: `Import my loot box template "${box.name}"!`,
+                            url: url,
+                          });
+                        } catch (err) {
+                          if (err.name !== 'AbortError') {
+                            console.error('Share failed:', err);
+                          }
+                        }
+                      } else {
+                        try {
+                          await navigator.clipboard.writeText(url);
+                          success('Template link copied!');
+                        } catch (err) {
+                          prompt('Copy this link:', url);
                         }
                       }
-                    } else {
-                      try {
-                        await navigator.clipboard.writeText(url);
-                        success('Link copied to clipboard!');
-                      } catch (err) {
-                        prompt('Copy this link:', url);
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.transform = 'scale(1.05)';
+                      e.target.style.boxShadow = '0 0 30px rgba(6, 182, 212, 0.8), 0 0 60px rgba(6, 182, 212, 0.4)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.transform = 'scale(1)';
+                      e.target.style.boxShadow = '0 0 20px rgba(6, 182, 212, 0.6), 0 0 40px rgba(6, 182, 212, 0.3)';
+                    }}
+                  >
+                    Template
+                  </button>
+                )}
+                {box.type === 'shared' && box.shareCode && (
+                  <button
+                    style={{
+                      padding: '0.5rem 1.25rem',
+                      fontSize: '0.8rem',
+                      fontWeight: 700,
+                      color: '#ffffff',
+                      background: 'linear-gradient(135deg, #4169e1 0%, #1e40af 100%)',
+                      border: 'none',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      textTransform: 'uppercase',
+                      boxShadow: '0 0 20px rgba(65, 105, 225, 0.6), 0 0 40px rgba(65, 105, 225, 0.3)',
+                      transition: 'all 0.3s ease',
+                      fontFamily: 'inherit',
+                    }}
+                    onClick={async () => {
+                      const url = `${window.location.origin}${window.location.pathname}#/box/${box.shareCode}`;
+
+                      if (navigator.share) {
+                        try {
+                          await navigator.share({
+                            title: box.name,
+                            text: `Open my loot box "${box.name}" and try your luck!`,
+                            url: url,
+                          });
+                        } catch (err) {
+                          if (err.name !== 'AbortError') {
+                            console.error('Share failed:', err);
+                          }
+                        }
+                      } else {
+                        try {
+                          await navigator.clipboard.writeText(url);
+                          success('Link copied to clipboard!');
+                        } catch (err) {
+                          prompt('Copy this link:', url);
+                        }
                       }
-                    }
-                  }}
-                  onMouseEnter={(e) => {
-                    e.target.style.transform = 'scale(1.05)';
-                    e.target.style.boxShadow = '0 0 30px rgba(65, 105, 225, 0.8), 0 0 60px rgba(65, 105, 225, 0.4)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.transform = 'scale(1)';
-                    e.target.style.boxShadow = '0 0 20px rgba(65, 105, 225, 0.6), 0 0 40px rgba(65, 105, 225, 0.3)';
-                  }}
-                >
-                  Share
-                </button>
-              )}
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.transform = 'scale(1.05)';
+                      e.target.style.boxShadow = '0 0 30px rgba(65, 105, 225, 0.8), 0 0 60px rgba(65, 105, 225, 0.4)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.transform = 'scale(1)';
+                      e.target.style.boxShadow = '0 0 20px rgba(65, 105, 225, 0.6), 0 0 40px rgba(65, 105, 225, 0.3)';
+                    }}
+                  >
+                    Share
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
@@ -3136,6 +3323,7 @@
       const [userSettings, setUserSettings] = useState(null);
       const [editingBox, setEditingBox] = useState(null);
       const [openingBox, setOpeningBox] = useState(null);
+      const [pendingTemplate, setPendingTemplate] = useState(null);
       const { showToast, ToastContainer, success, error, info } = useToast();
 
       // Tick every 30 seconds to keep expiration badges fresh
@@ -3144,6 +3332,35 @@
         const timer = setInterval(() => setTick(t => t + 1), 30000);
         return () => clearInterval(timer);
       }, []);
+
+      const loadTemplate = async (shareCode) => {
+        const templateData = await fetchBoxTemplate(shareCode);
+        if (templateData) {
+          setPendingTemplate(templateData);
+        } else {
+          error('Template not found or link expired');
+        }
+        window.location.hash = '';
+      };
+
+      const handleConfirmImport = () => {
+        if (!pendingTemplate) return;
+
+        if (!canCreateLocalBox()) {
+          error("You've reached the free tier limit of 5 local boxes. Delete a box or upgrade to Premium to import this template.");
+          setPendingTemplate(null);
+          return;
+        }
+
+        importBoxFromTemplate(pendingTemplate);
+        setPendingTemplate(null);
+        loadData();
+        success('Box imported successfully!');
+      };
+
+      const handleCancelImport = () => {
+        setPendingTemplate(null);
+      };
 
       useEffect(() => {
         loadData();
@@ -3156,12 +3373,22 @@
           loadSharedBox(shareCode);
         }
 
+        // Check for template URL
+        const templateMatch = hash.match(/^#\/template\/([A-Z0-9]{6})$/);
+        if (templateMatch) {
+          loadTemplate(templateMatch[1]);
+        }
+
         // Listen for hash changes
         const handleHashChange = () => {
           const hash = window.location.hash;
           const match = hash.match(/^#\/box\/([A-Z0-9]{6})$/);
           if (match) {
             loadSharedBox(match[1]);
+          }
+          const templateMatch = hash.match(/^#\/template\/([A-Z0-9]{6})$/);
+          if (templateMatch) {
+            loadTemplate(templateMatch[1]);
           }
         };
         window.addEventListener('hashchange', handleHashChange);
@@ -3465,6 +3692,78 @@
               error={error}
               info={info}
             />
+          )}
+
+          {/* Template Import Confirmation Dialog */}
+          {pendingTemplate && (
+            <div style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'rgba(0, 0, 0, 0.7)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 1000,
+              padding: '1rem',
+            }}>
+              <Card style={{ maxWidth: '450px', width: '100%' }}>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#e2e8f0', marginBottom: '0.5rem' }}>
+                  Import Box Template?
+                </h3>
+                <p style={{ color: '#94a3b8', fontSize: '0.875rem', marginBottom: '1rem' }}>
+                  Import "{pendingTemplate.name}" by {pendingTemplate.createdBy}? This will create a new local box with the same items and settings.
+                </p>
+
+                <div style={{ marginBottom: '1rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', color: '#94a3b8', marginBottom: '0.5rem' }}>
+                    <span>Items:</span>
+                    <span style={{ fontWeight: 600, color: '#cbd5e1' }}>{(pendingTemplate.items || []).length}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', color: '#94a3b8', marginBottom: '0.75rem' }}>
+                    <span>Created by:</span>
+                    <span style={{ fontWeight: 600, color: '#cbd5e1' }}>{pendingTemplate.createdBy}</span>
+                  </div>
+
+                  <div style={{
+                    maxHeight: '200px',
+                    overflowY: 'auto',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.25rem',
+                  }}>
+                    {(pendingTemplate.items || []).map((item, idx) => (
+                      <div key={idx} style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        padding: '0.35rem 0.5rem',
+                        background: 'rgba(15, 22, 36, 0.4)',
+                        borderRadius: '6px',
+                        fontSize: '0.8rem',
+                      }}>
+                        <span style={{
+                          width: '8px',
+                          height: '8px',
+                          borderRadius: '50%',
+                          background: item.color || '#3b82f6',
+                          flexShrink: 0,
+                        }} />
+                        <span style={{ color: '#cbd5e1', flex: 1 }}>{item.name}</span>
+                        <span style={{ color: '#64748b' }}>{item.percentage}%</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '1rem' }}>
+                  <Button variant="ghost" onClick={handleCancelImport} fullWidth>Cancel</Button>
+                  <Button variant="primary" onClick={handleConfirmImport} fullWidth>Import</Button>
+                </div>
+              </Card>
+            </div>
           )}
 
           <ToastContainer />

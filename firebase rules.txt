@@ -15,5 +15,9 @@ service cloud.firestore {
     match /users/{userId} {
       allow read, write: if true;
     }
+    match /boxTemplates/{templateId} {
+      allow read: if true;
+      allow write: if true;
+    }
   }
 }
