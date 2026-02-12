@@ -1317,63 +1317,39 @@
         setShowDeleteConfirm(true);
       };
 
-      const handleShareTemplate = async (e) => {
-        e.stopPropagation();
-        const shareCode = await saveBoxTemplate(box);
-        if (!shareCode) {
-          success && success('Failed to create template');
-          return;
-        }
-        const url = `${window.location.origin}${window.location.pathname}#/template/${shareCode}`;
-        if (navigator.share) {
-          try {
-            await navigator.share({
-              title: box.name,
-              text: `Import my loot box template "${box.name}"!`,
-              url: url,
-            });
-          } catch (err) {
-            if (err.name !== 'AbortError') {
-              console.error('Share failed:', err);
-            }
-          }
-        } else {
-          try {
-            await navigator.clipboard.writeText(url);
-            success && success('Template link copied!');
-          } catch (err) {
-            prompt('Copy this link:', url);
-          }
-        }
-      };
-
       const handleShare = async (e) => {
         e.stopPropagation();
-        if (!box.shareCode) return;
 
-        const url = `${window.location.origin}${window.location.pathname}#/box/${box.shareCode}`;
+        let url;
+        if (box.type === 'local') {
+          const shareCode = await saveBoxTemplate(box);
+          if (!shareCode) {
+            success && success('Failed to share box');
+            return;
+          }
+          url = `${window.location.origin}${window.location.pathname}#/template/${shareCode}`;
+        } else {
+          if (!box.shareCode) return;
+          url = `${window.location.origin}${window.location.pathname}#/box/${box.shareCode}`;
+        }
 
-        // Use native share sheet on mobile, clipboard on desktop
         if (navigator.share) {
           try {
             await navigator.share({
               title: box.name,
-              text: `Open my loot box "${box.name}" and try your luck!`,
+              text: `Check out my loot box "${box.name}"!`,
               url: url,
             });
           } catch (err) {
-            // User cancelled share - that's fine, do nothing
             if (err.name !== 'AbortError') {
               console.error('Share failed:', err);
             }
           }
         } else {
-          // Desktop fallback - copy to clipboard
           try {
             await navigator.clipboard.writeText(url);
-            success && success('Link copied to clipboard!');
+            success && success('Share link copied!');
           } catch (err) {
-            // Final fallback for older browsers
             prompt('Copy this link:', url);
           }
         }
@@ -1585,66 +1561,35 @@
                 </span>
               )}
             </div>
-            <div style={{ display: 'flex', gap: '0.5rem', marginLeft: 'auto' }}>
-              {!box.isVisitor && (
-                <button
-                  style={{
-                    padding: '0.4rem 1rem',
-                    fontSize: '0.75rem',
-                    fontWeight: 700,
-                    color: '#ffffff',
-                    background: 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)',
-                    border: 'none',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    textTransform: 'uppercase',
-                    boxShadow: '0 0 20px rgba(6, 182, 212, 0.6), 0 0 40px rgba(6, 182, 212, 0.3)',
-                    transition: 'all 0.3s ease',
-                    fontFamily: 'inherit',
-                  }}
-                  onClick={handleShareTemplate}
-                  onMouseEnter={(e) => {
-                    e.target.style.transform = 'scale(1.05)';
-                    e.target.style.boxShadow = '0 0 30px rgba(6, 182, 212, 0.8), 0 0 60px rgba(6, 182, 212, 0.4)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.transform = 'scale(1)';
-                    e.target.style.boxShadow = '0 0 20px rgba(6, 182, 212, 0.6), 0 0 40px rgba(6, 182, 212, 0.3)';
-                  }}
-                >
-                  Template
-                </button>
-              )}
-              {box.type === 'shared' && box.shareCode && (
-                <button
-                  style={{
-                    padding: '0.4rem 1rem',
-                    fontSize: '0.75rem',
-                    fontWeight: 700,
-                    color: '#ffffff',
-                    background: 'linear-gradient(135deg, #4169e1 0%, #1e40af 100%)',
-                    border: 'none',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    textTransform: 'uppercase',
-                    boxShadow: '0 0 20px rgba(65, 105, 225, 0.6), 0 0 40px rgba(65, 105, 225, 0.3)',
-                    transition: 'all 0.3s ease',
-                    fontFamily: 'inherit',
-                  }}
-                  onClick={handleShare}
-                  onMouseEnter={(e) => {
-                    e.target.style.transform = 'scale(1.05)';
-                    e.target.style.boxShadow = '0 0 30px rgba(65, 105, 225, 0.8), 0 0 60px rgba(65, 105, 225, 0.4)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.transform = 'scale(1)';
-                    e.target.style.boxShadow = '0 0 20px rgba(65, 105, 225, 0.6), 0 0 40px rgba(65, 105, 225, 0.3)';
-                  }}
-                >
-                  Share
-                </button>
-              )}
-            </div>
+            {!box.isVisitor && (
+              <button
+                style={{
+                  padding: '0.4rem 1rem',
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                  color: '#ffffff',
+                  background: 'linear-gradient(135deg, #4169e1 0%, #1e40af 100%)',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  textTransform: 'uppercase',
+                  boxShadow: '0 0 20px rgba(65, 105, 225, 0.6), 0 0 40px rgba(65, 105, 225, 0.3)',
+                  transition: 'all 0.3s ease',
+                  fontFamily: 'inherit',
+                }}
+                onClick={handleShare}
+                onMouseEnter={(e) => {
+                  e.target.style.transform = 'scale(1.05)';
+                  e.target.style.boxShadow = '0 0 30px rgba(65, 105, 225, 0.8), 0 0 60px rgba(65, 105, 225, 0.4)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.transform = 'scale(1)';
+                  e.target.style.boxShadow = '0 0 20px rgba(65, 105, 225, 0.6), 0 0 40px rgba(65, 105, 225, 0.3)';
+                }}
+              >
+                Share
+              </button>
+            )}
           </div>
         </Card>
 
@@ -2914,117 +2859,71 @@
                 </div>
               )}
 
-              {/* Template and Share buttons */}
-              <div style={{ display: 'flex', gap: '0.5rem', marginLeft: 'auto' }}>
-                {!box.isVisitor && (
-                  <button
-                    style={{
-                      padding: '0.5rem 1.25rem',
-                      fontSize: '0.8rem',
-                      fontWeight: 700,
-                      color: '#ffffff',
-                      background: 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)',
-                      border: 'none',
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                      textTransform: 'uppercase',
-                      boxShadow: '0 0 20px rgba(6, 182, 212, 0.6), 0 0 40px rgba(6, 182, 212, 0.3)',
-                      transition: 'all 0.3s ease',
-                      fontFamily: 'inherit',
-                    }}
-                    onClick={async () => {
+              {/* Share button */}
+              {!box.isVisitor && (
+                <button
+                  style={{
+                    marginLeft: 'auto',
+                    padding: '0.5rem 1.25rem',
+                    fontSize: '0.8rem',
+                    fontWeight: 700,
+                    color: '#ffffff',
+                    background: 'linear-gradient(135deg, #4169e1 0%, #1e40af 100%)',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    textTransform: 'uppercase',
+                    boxShadow: '0 0 20px rgba(65, 105, 225, 0.6), 0 0 40px rgba(65, 105, 225, 0.3)',
+                    transition: 'all 0.3s ease',
+                    fontFamily: 'inherit',
+                  }}
+                  onClick={async () => {
+                    let url;
+                    if (box.type === 'local') {
                       const shareCode = await saveBoxTemplate(box);
                       if (!shareCode) {
-                        error('Failed to create template');
+                        error('Failed to share box');
                         return;
                       }
-                      const url = `${window.location.origin}${window.location.pathname}#/template/${shareCode}`;
-                      if (navigator.share) {
-                        try {
-                          await navigator.share({
-                            title: box.name,
-                            text: `Import my loot box template "${box.name}"!`,
-                            url: url,
-                          });
-                        } catch (err) {
-                          if (err.name !== 'AbortError') {
-                            console.error('Share failed:', err);
-                          }
-                        }
-                      } else {
-                        try {
-                          await navigator.clipboard.writeText(url);
-                          success('Template link copied!');
-                        } catch (err) {
-                          prompt('Copy this link:', url);
-                        }
-                      }
-                    }}
-                    onMouseEnter={(e) => {
-                      e.target.style.transform = 'scale(1.05)';
-                      e.target.style.boxShadow = '0 0 30px rgba(6, 182, 212, 0.8), 0 0 60px rgba(6, 182, 212, 0.4)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.transform = 'scale(1)';
-                      e.target.style.boxShadow = '0 0 20px rgba(6, 182, 212, 0.6), 0 0 40px rgba(6, 182, 212, 0.3)';
-                    }}
-                  >
-                    Template
-                  </button>
-                )}
-                {box.type === 'shared' && box.shareCode && (
-                  <button
-                    style={{
-                      padding: '0.5rem 1.25rem',
-                      fontSize: '0.8rem',
-                      fontWeight: 700,
-                      color: '#ffffff',
-                      background: 'linear-gradient(135deg, #4169e1 0%, #1e40af 100%)',
-                      border: 'none',
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                      textTransform: 'uppercase',
-                      boxShadow: '0 0 20px rgba(65, 105, 225, 0.6), 0 0 40px rgba(65, 105, 225, 0.3)',
-                      transition: 'all 0.3s ease',
-                      fontFamily: 'inherit',
-                    }}
-                    onClick={async () => {
-                      const url = `${window.location.origin}${window.location.pathname}#/box/${box.shareCode}`;
+                      url = `${window.location.origin}${window.location.pathname}#/template/${shareCode}`;
+                    } else {
+                      if (!box.shareCode) return;
+                      url = `${window.location.origin}${window.location.pathname}#/box/${box.shareCode}`;
+                    }
 
-                      if (navigator.share) {
-                        try {
-                          await navigator.share({
-                            title: box.name,
-                            text: `Open my loot box "${box.name}" and try your luck!`,
-                            url: url,
-                          });
-                        } catch (err) {
-                          if (err.name !== 'AbortError') {
-                            console.error('Share failed:', err);
-                          }
-                        }
-                      } else {
-                        try {
-                          await navigator.clipboard.writeText(url);
-                          success('Link copied to clipboard!');
-                        } catch (err) {
-                          prompt('Copy this link:', url);
+                    if (navigator.share) {
+                      try {
+                        await navigator.share({
+                          title: box.name,
+                          text: `Check out my loot box "${box.name}"!`,
+                          url: url,
+                        });
+                      } catch (err) {
+                        if (err.name !== 'AbortError') {
+                          console.error('Share failed:', err);
                         }
                       }
-                    }}
-                    onMouseEnter={(e) => {
-                      e.target.style.transform = 'scale(1.05)';
-                      e.target.style.boxShadow = '0 0 30px rgba(65, 105, 225, 0.8), 0 0 60px rgba(65, 105, 225, 0.4)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.transform = 'scale(1)';
-                      e.target.style.boxShadow = '0 0 20px rgba(65, 105, 225, 0.6), 0 0 40px rgba(65, 105, 225, 0.3)';
-                    }}
-                  >
-                    Share
-                  </button>
-                )}
-              </div>
+                    } else {
+                      try {
+                        await navigator.clipboard.writeText(url);
+                        success('Share link copied!');
+                      } catch (err) {
+                        prompt('Copy this link:', url);
+                      }
+                    }
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.transform = 'scale(1.05)';
+                    e.target.style.boxShadow = '0 0 30px rgba(65, 105, 225, 0.8), 0 0 60px rgba(65, 105, 225, 0.4)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.transform = 'scale(1)';
+                    e.target.style.boxShadow = '0 0 20px rgba(65, 105, 225, 0.6), 0 0 40px rgba(65, 105, 225, 0.3)';
+                  }}
+                >
+                  Share
+                </button>
+              )}
             </div>
           </div>
 
