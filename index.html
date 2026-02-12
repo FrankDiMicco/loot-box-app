@@ -2188,7 +2188,7 @@
 
               {activeBoxes.map(image => {
                 const canUse = canUserUseBox(image);
-                const isSelected = selectedImageId === image.id;
+                const isSelected = selectedImageId === image.id || selectedImageId === image.imageUrl;
                 const isSeasonal = image.source === BOX_SOURCES.SEASONAL;
                 const isStore = image.source === BOX_SOURCES.STORE;
                 const isUserUpload = image.source === BOX_SOURCES.USER_UPLOADED;
