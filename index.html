@@ -1432,32 +1432,71 @@
                 <span style={{ fontSize: '4rem' }}>📦</span>
               )}
 
-              {/* Top overlay - dark gradient for text readability */}
+              {/* Pill badges - top left */}
               <div style={{
                 position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                height: '50%',
-                background: 'linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, transparent 100%)',
-                pointerEvents: 'none',
-              }} />
-
-              {/* Box name - top left */}
-              <div style={{
-                position: 'absolute',
-                top: '0.75rem',
-                left: '0.75rem',
-                right: '5rem',
-                fontSize: isMobile ? '1rem' : '1.1rem',
-                fontWeight: 700,
-                color: '#ffffff',
-                textShadow: '0 1px 4px rgba(0,0,0,0.5)',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
+                top: '0.5rem',
+                left: '0.5rem',
+                display: 'flex',
+                gap: '0.4rem',
+                flexWrap: 'wrap',
               }}>
-                {box.name}
+                <span style={{
+                  padding: '0.2rem 0.6rem',
+                  background: 'rgba(59, 130, 246, 0.7)',
+                  backdropFilter: 'blur(4px)',
+                  borderRadius: '6px',
+                  fontSize: '0.65rem',
+                  fontWeight: 700,
+                  color: '#ffffff',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.03em',
+                }}>
+                  {items.length} {items.length === 1 ? 'Item' : 'Items'}
+                </span>
+                <span style={{
+                  padding: '0.2rem 0.6rem',
+                  background: 'rgba(59, 130, 246, 0.7)',
+                  backdropFilter: 'blur(4px)',
+                  borderRadius: '6px',
+                  fontSize: '0.65rem',
+                  fontWeight: 700,
+                  color: '#ffffff',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.03em',
+                }}>
+                  {pullHistory.length} {pullHistory.length === 1 ? 'Pull' : 'Pulls'}
+                </span>
+                {box.type === 'shared' && !box.isVisitor && (
+                  <span style={{
+                    padding: '0.2rem 0.6rem',
+                    background: 'rgba(139, 92, 246, 0.8)',
+                    backdropFilter: 'blur(4px)',
+                    borderRadius: '6px',
+                    fontSize: '0.65rem',
+                    fontWeight: 700,
+                    color: '#ffffff',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.03em',
+                  }}>
+                    Group
+                  </span>
+                )}
+                {box.isVisitor && (
+                  <span style={{
+                    padding: '0.2rem 0.6rem',
+                    background: 'rgba(16, 185, 129, 0.8)',
+                    backdropFilter: 'blur(4px)',
+                    borderRadius: '6px',
+                    fontSize: '0.65rem',
+                    fontWeight: 700,
+                    color: '#ffffff',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.03em',
+                  }}>
+                    Joined
+                  </span>
+                )}
               </div>
 
               {/* Edit + Delete buttons - top right */}
@@ -1504,85 +1543,35 @@
                 </button>
               </div>
 
-              {/* Pill badges - below name, left aligned */}
+              {/* Bottom gradient overlay for name readability */}
               <div style={{
                 position: 'absolute',
-                top: '2.25rem',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                height: '40%',
+                background: 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 100%)',
+                pointerEvents: 'none',
+                zIndex: 1,
+              }} />
+
+              {/* Box name - bottom center */}
+              <div style={{
+                position: 'absolute',
+                bottom: '0.75rem',
                 left: '0.75rem',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.35rem',
+                right: '0.75rem',
+                textAlign: 'center',
+                fontSize: isMobile ? '1rem' : '1.1rem',
+                fontWeight: 700,
+                color: '#ffffff',
+                textShadow: '0 2px 8px rgba(0,0,0,0.7)',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                zIndex: 2,
               }}>
-                {/* Items + Pulls row */}
-                <div style={{
-                  display: 'flex',
-                  gap: '0.4rem',
-                }}>
-                  <span style={{
-                    padding: '0.2rem 0.6rem',
-                    background: 'rgba(59, 130, 246, 0.7)',
-                    backdropFilter: 'blur(4px)',
-                    borderRadius: '6px',
-                    fontSize: '0.65rem',
-                    fontWeight: 700,
-                    color: '#ffffff',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.03em',
-                  }}>
-                    {items.length} {items.length === 1 ? 'Item' : 'Items'}
-                  </span>
-                  <span style={{
-                    padding: '0.2rem 0.6rem',
-                    background: 'rgba(59, 130, 246, 0.7)',
-                    backdropFilter: 'blur(4px)',
-                    borderRadius: '6px',
-                    fontSize: '0.65rem',
-                    fontWeight: 700,
-                    color: '#ffffff',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.03em',
-                  }}>
-                    {pullHistory.length} {pullHistory.length === 1 ? 'Pull' : 'Pulls'}
-                  </span>
-                </div>
-
-                {/* Group badge - only for shared/community boxes */}
-                {box.type === 'shared' && !box.isVisitor && (
-                  <div style={{ display: 'flex' }}>
-                    <span style={{
-                      padding: '0.2rem 0.6rem',
-                      background: 'rgba(139, 92, 246, 0.8)',
-                      backdropFilter: 'blur(4px)',
-                      borderRadius: '6px',
-                      fontSize: '0.65rem',
-                      fontWeight: 700,
-                      color: '#ffffff',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.03em',
-                    }}>
-                      Group
-                    </span>
-                  </div>
-                )}
-
-                {/* Joined badge - for visitor boxes */}
-                {box.isVisitor && (
-                  <div style={{ display: 'flex' }}>
-                    <span style={{
-                      padding: '0.2rem 0.6rem',
-                      background: 'rgba(16, 185, 129, 0.8)',
-                      backdropFilter: 'blur(4px)',
-                      borderRadius: '6px',
-                      fontSize: '0.65rem',
-                      fontWeight: 700,
-                      color: '#ffffff',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.03em',
-                    }}>
-                      Joined
-                    </span>
-                  </div>
-                )}
+                {box.name.length > 24 ? box.name.substring(0, 24) + '...' : box.name}
               </div>
 
             </div>

@@ -1,0 +1,168 @@
+================================================================================
+TWEAK: Box Card - Move name to bottom center, pills to top left
+================================================================================
+
+Reference: Screenshot 34275.jpg showing current state after redesign.
+
+CURRENT STATE
+-------------
+- Box name: top-left, truncated with ellipsis
+- Item/Pull pills: below the name, left-aligned
+- Edit/Delete: top-right
+- Chest image: centered
+- Share: footer below image
+
+DESIRED LAYOUT
+--------------
+    ┌─────────────────────────────────┐
+    │ [1 Item] [3 Pulls]        ✏️ ✕ │  <- pills top-left, buttons top-right
+    │                                 │
+    │          (chest image)          │
+    │                                 │
+    │       Bedtime Stories           │  <- name bottom-center, overlaid
+    │            [Group]              │  <- group badge below name if shared
+    ├─────────────────────────────────┤
+    │            [Share]              │
+    └─────────────────────────────────┘
+
+
+CHANGES IN index.html - BoxCard component
+------------------------------------------
+
+CHANGE 1: Move pill badges to top-left
+
+Find the pill badges container (the div positioned absolute with
+top: '2.25rem', left: '0.75rem'). Change its position to:
+
+    position: 'absolute',
+    top: '0.5rem',
+    left: '0.5rem',
+    display: 'flex',
+    gap: '0.4rem',
+
+Remove the flexDirection: 'column' -- pills and any Group badge
+should now just be in a simple horizontal row at the top-left.
+
+Put items pill, pulls pill, and the Group/Joined badge (if applicable)
+all in this ONE row:
+
+    <div style={{
+      position: 'absolute',
+      top: '0.5rem',
+      left: '0.5rem',
+      display: 'flex',
+      gap: '0.4rem',
+      flexWrap: 'wrap',
+    }}>
+      <span style={{ /* items pill */ }}>
+        {items.length} {items.length === 1 ? 'Item' : 'Items'}
+      </span>
+      <span style={{ /* pulls pill */ }}>
+        {pullHistory.length} {pullHistory.length === 1 ? 'Pull' : 'Pulls'}
+      </span>
+      {box.type === 'shared' && !box.isVisitor && (
+        <span style={{ /* group pill - purple */ }}>Group</span>
+      )}
+      {box.isVisitor && (
+        <span style={{ /* joined pill - green */ }}>Joined</span>
+      )}
+    </div>
+
+
+CHANGE 2: Move box name to bottom-center overlay
+
+Remove the box name from the top-left position. Add it as a
+bottom-center overlay on the image area:
+
+    <div style={{
+      position: 'absolute',
+      bottom: '0.75rem',
+      left: '0.75rem',
+      right: '0.75rem',
+      textAlign: 'center',
+      fontSize: isMobile ? '1rem' : '1.1rem',
+      fontWeight: 700,
+      color: '#ffffff',
+      textShadow: '0 2px 8px rgba(0,0,0,0.7)',
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+      whiteSpace: 'nowrap',
+    }}>
+      {box.name.length > 24 ? box.name.substring(0, 24) + '...' : box.name}
+    </div>
+
+Also add a bottom gradient overlay for readability (similar to the
+top gradient but at the bottom):
+
+    <div style={{
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      height: '40%',
+      background: 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 100%)',
+      pointerEvents: 'none',
+    }} />
+
+Make sure the name div has a higher zIndex than the gradient overlay
+so the text renders on top. Set zIndex: 2 on the name div and
+zIndex: 1 on the gradient.
+
+
+CHANGE 3: Character limit on box name
+
+Apply a 24 character limit on display:
+    {box.name.length > 24 ? box.name.substring(0, 24) + '...' : box.name}
+
+This is just for DISPLAY on the card. The actual stored name can be
+longer -- it's only truncated visually here.
+
+Combined with textOverflow: 'ellipsis' as a fallback, names will
+always look clean on the card.
+
+
+CHANGE 4: Remove the top gradient overlay
+
+Since the name is no longer at the top, the top gradient overlay
+for text readability is less necessary. The pill badges have their
+own background (rgba blue) so they're readable without it.
+
+Find and REMOVE the top gradient div:
+
+    <div style={{
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      height: '50%',
+      background: 'linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, transparent 100%)',
+      ...
+    }} />
+
+This makes the top of the card cleaner and lets the chest image
+breathe more.
+
+
+CHANGE 5: Adjust edit/delete button position
+
+Keep edit/delete buttons at top-right but make sure they don't
+overlap with the pills. Current position should be fine:
+
+    position: 'absolute',
+    top: '0.5rem',
+    right: '0.5rem',
+
+
+================================================================================
+TESTING
+================================================================================
+1. Box card shows item/pull pills at top-left
+2. Edit/delete buttons at top-right
+3. Box name centered at bottom of image with dark gradient behind it
+4. Names longer than 24 characters are truncated with "..."
+5. Group badge (purple) appears in the top-left pill row for shared boxes
+6. Joined badge (green) appears for visitor boxes
+7. No LOCAL badge on any box
+8. Share button in footer below image
+9. Tapping the card opens the box
+10. Everything readable -- no text on busy image areas without contrast
