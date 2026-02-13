@@ -1,0 +1,223 @@
+================================================================================
+FEATURE: Creator-Controlled Participant Sharing Toggle
+================================================================================
+
+OVERVIEW
+--------
+Currently, visitors (participants) of shared boxes cannot see the Share button
+at all due to the `!box.isVisitor` condition. This change adds a toggle in box
+creation that lets the CREATOR decide whether participants can re-share the
+box link with others.
+
+Default: OFF (only creator can share) -- this is the safer default.
+
+
+================================================================================
+CHANGE 1: Add `allowParticipantSharing` field to box data model
+================================================================================
+
+In the BoxCreator component, add a new state variable:
+
+  const [allowParticipantSharing, setAllowParticipantSharing] = useState(
+    editingBox ? editingBox.allowParticipantSharing || false : false
+  );
+
+This field should only be visible/relevant when boxType === 'shared'.
+
+
+================================================================================
+CHANGE 2: Add toggle UI in BoxCreator (only shown for shared boxes)
+================================================================================
+
+In the BoxCreator component, AFTER the existing "Hide Odds" toggle (or after
+the expiration date input), add a new toggle row -- but ONLY when
+boxType === 'shared':
+
+  {boxType === 'shared' && (
+    <div style={{
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: '0.75rem 1rem',
+      background: 'rgba(30, 64, 175, 0.15)',
+      border: '1px solid rgba(59, 130, 246, 0.2)',
+      borderRadius: '8px',
+    }}>
+      <div>
+        <div style={{ color: '#e2e8f0', fontWeight: 600, fontSize: '0.9rem' }}>
+          Allow Participants to Share
+        </div>
+        <div style={{ color: '#94a3b8', fontSize: '0.75rem', marginTop: '0.25rem' }}>
+          Let people who join this box share the link with others
+        </div>
+      </div>
+      <label style={{
+        position: 'relative',
+        display: 'inline-block',
+        width: '44px',
+        height: '24px',
+        cursor: 'pointer',
+      }}>
+        <input
+          type="checkbox"
+          checked={allowParticipantSharing}
+          onChange={(e) => setAllowParticipantSharing(e.target.checked)}
+          style={{ opacity: 0, width: 0, height: 0 }}
+        />
+        <span style={{
+          position: 'absolute',
+          top: 0, left: 0, right: 0, bottom: 0,
+          background: allowParticipantSharing
+            ? 'linear-gradient(135deg, #4169e1, #1e40af)'
+            : 'rgba(100, 116, 139, 0.4)',
+          borderRadius: '12px',
+          transition: 'all 0.3s ease',
+        }}>
+          <span style={{
+            position: 'absolute',
+            height: '18px',
+            width: '18px',
+            left: allowParticipantSharing ? '22px' : '3px',
+            bottom: '3px',
+            background: '#fff',
+            borderRadius: '50%',
+            transition: 'all 0.3s ease',
+          }} />
+        </span>
+      </label>
+    </div>
+  )}
+
+Use the same toggle styling pattern already used for hideContents and hideOdds.
+
+
+================================================================================
+CHANGE 3: Include the new field in boxData when saving
+================================================================================
+
+In the handleCreate function inside BoxCreator, add the field to the boxData
+object:
+
+  const boxData = {
+    ...existing fields...
+    allowParticipantSharing: boxType === 'shared' ? allowParticipantSharing : false,
+  };
+
+Make sure it's also included in the localRef object that gets saved for the
+creator:
+
+  const localRef = {
+    ...existing fields...
+    allowParticipantSharing: boxData.allowParticipantSharing,
+  };
+
+And in the visitorRef object (in the loadSharedBox function in the App
+component):
+
+  const visitorRef = {
+    ...existing fields...
+    allowParticipantSharing: box.allowParticipantSharing || false,
+  };
+
+
+================================================================================
+CHANGE 4: Update Share button visibility on BoxCard
+================================================================================
+
+Find the Share button condition in the BoxCard component. Currently it reads:
+
+  {!box.isVisitor && (
+
+Change it to:
+
+  {(!box.isVisitor || box.allowParticipantSharing) && (
+
+This means the Share button shows if:
+  - You are the creator (not a visitor), OR
+  - The creator enabled participant sharing
+
+
+================================================================================
+CHANGE 5: Update Share button visibility in BoxOpener header
+================================================================================
+
+Find the same share button condition in the BoxOpener component header area.
+Apply the same logic change:
+
+  FROM: {!box.isVisitor && (
+  TO:   {(!box.isVisitor || box.allowParticipantSharing) && (
+
+For visitors who CAN share, the share button should always share the LIVE
+box link (not a template):
+
+  url = `${window.location.origin}${window.location.pathname}#/box/${box.shareCode}`
+
+This is correct because visitors are sharing the same shared box, not
+creating a template copy.
+
+
+================================================================================
+CHANGE 6: Ensure Firestore stores the new field
+================================================================================
+
+In the saveSharedBox Firebase function, make sure allowParticipantSharing is
+included in the document data being saved to Firestore. Check the function
+and confirm it spreads or explicitly includes this field.
+
+If saveSharedBox uses object spread like `...boxData`, it should work
+automatically. If it cherry-picks fields, add:
+
+  allowParticipantSharing: boxData.allowParticipantSharing || false,
+
+
+================================================================================
+CHANGE 7: Ensure fetchSharedBox returns the field
+================================================================================
+
+In fetchSharedBox, confirm the returned object includes
+allowParticipantSharing. If it spreads the Firestore document data, it
+should work automatically. If it constructs the object manually, add:
+
+  allowParticipantSharing: data.allowParticipantSharing || false,
+
+
+================================================================================
+ADDITIONAL IMPROVEMENT: Visual indicator for participants
+================================================================================
+
+When a visitor sees the Share button (because the creator allowed it), add
+a small visual cue so it's clear they're sharing an invite link, not owning
+the box. The button label should say "Invite" instead of "Share" for visitors:
+
+  {(!box.isVisitor || box.allowParticipantSharing) && (
+    <button ...>
+      {box.isVisitor ? 'Invite' : 'Share'}
+    </button>
+  )}
+
+This makes it clear to participants that they're inviting others to join.
+
+
+================================================================================
+TESTING
+================================================================================
+1. Create a shared box with "Allow Participants to Share" OFF (default)
+2. Share the box link and open it as a visitor in incognito
+3. Verify the visitor does NOT see a Share/Invite button on the box card
+4. Go back to the creator and edit the box, turn the toggle ON
+5. Refresh the visitor view
+6. Verify the visitor NOW sees an "Invite" button on the box card
+7. Click the Invite button as visitor -- should copy the live box URL
+8. Open that URL in another browser -- should join the same shared box
+9. Verify local boxes are unaffected (always show Share for creator only)
+10. Verify the toggle does NOT appear when creating local boxes
+11. Open a shared box as visitor and check BoxOpener header for same behavior
+12. Create a new shared box and confirm default is OFF
+
+
+================================================================================
+FIREBASE SECURITY RULES
+================================================================================
+No changes needed to Firebase Security Rules. The allowParticipantSharing
+field is just a boolean stored alongside existing box data. Read/write
+permissions remain the same as the existing shared box rules.

@@ -1583,7 +1583,7 @@
               display: 'flex',
               justifyContent: 'center',
             }}>
-              {!box.isVisitor && (
+              {(!box.isVisitor || box.allowParticipantSharing) && (
                 <button onClick={handleShare} style={{
                   width: '100%',
                   padding: '0.5rem',
@@ -1598,7 +1598,7 @@
                   transition: 'all 0.2s ease',
                   minHeight: '36px',
                 }}>
-                  Share
+                  {box.isVisitor ? 'Invite' : 'Share'}
                 </button>
               )}
             </div>
@@ -2364,6 +2364,9 @@
       const [editingItem, setEditingItem] = useState(null);
       const [hideContents, setHideContents] = useState(editingBox ? editingBox.hideContents || false : false);
       const [hideOdds, setHideOdds] = useState(editingBox ? editingBox.hideOdds || false : false);
+      const [allowParticipantSharing, setAllowParticipantSharing] = useState(
+        editingBox ? editingBox.allowParticipantSharing || false : false
+      );
       const [expiresAt, setExpiresAt] = useState(() => {
         if (editingBox && editingBox.expiresAt) {
           // Convert timestamp to datetime-local format for the input
@@ -2435,6 +2438,7 @@
           hideContents: hideContents,
           hideOdds: hideOdds,
           expiresAt: expiresAt ? new Date(expiresAt).getTime() : null,
+          allowParticipantSharing: boxType === 'shared' ? allowParticipantSharing : false,
         };
 
         // If shared box, save to Firestore
@@ -2458,6 +2462,7 @@
               hideContents: boxData.hideContents,
               hideOdds: boxData.hideOdds,
               expiresAt: boxData.expiresAt,
+              allowParticipantSharing: boxData.allowParticipantSharing,
             };
             saveBox(localRef);
           } catch (err) {
@@ -2645,6 +2650,63 @@
                     </div>
                   )}
                 </div>
+
+                {boxType === 'shared' && (
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '0.75rem 1rem',
+                    background: 'rgba(30, 64, 175, 0.15)',
+                    border: '1px solid rgba(59, 130, 246, 0.2)',
+                    borderRadius: '8px',
+                    marginTop: '0.75rem',
+                  }}>
+                    <div>
+                      <div style={{ color: '#e2e8f0', fontWeight: 600, fontSize: '0.9rem' }}>
+                        Allow Participants to Share
+                      </div>
+                      <div style={{ color: '#94a3b8', fontSize: '0.75rem', marginTop: '0.25rem' }}>
+                        Let people who join this box share the link with others
+                      </div>
+                    </div>
+                    <label style={{
+                      position: 'relative',
+                      display: 'inline-block',
+                      width: '44px',
+                      height: '24px',
+                      cursor: 'pointer',
+                      flexShrink: 0,
+                    }}>
+                      <input
+                        type="checkbox"
+                        checked={allowParticipantSharing}
+                        onChange={(e) => setAllowParticipantSharing(e.target.checked)}
+                        style={{ opacity: 0, width: 0, height: 0 }}
+                      />
+                      <span style={{
+                        position: 'absolute',
+                        top: 0, left: 0, right: 0, bottom: 0,
+                        background: allowParticipantSharing
+                          ? 'linear-gradient(135deg, #4169e1, #1e40af)'
+                          : 'rgba(100, 116, 139, 0.4)',
+                        borderRadius: '12px',
+                        transition: 'all 0.3s ease',
+                      }}>
+                        <span style={{
+                          position: 'absolute',
+                          height: '18px',
+                          width: '18px',
+                          left: allowParticipantSharing ? '22px' : '3px',
+                          bottom: '3px',
+                          background: '#fff',
+                          borderRadius: '50%',
+                          transition: 'all 0.3s ease',
+                        }} />
+                      </span>
+                    </label>
+                  </div>
+                )}
               </div>
             </Card>
           </div>
@@ -2933,7 +2995,7 @@
               )}
 
               {/* Share button */}
-              {!box.isVisitor && (
+              {(!box.isVisitor || box.allowParticipantSharing) && (
                 <button
                   style={{
                     marginLeft: 'auto',
@@ -2952,7 +3014,11 @@
                   }}
                   onClick={async () => {
                     let url;
-                    if (box.type === 'local') {
+                    if (box.isVisitor) {
+                      // Visitors always share the live box link
+                      if (!box.shareCode) return;
+                      url = `${window.location.origin}${window.location.pathname}#/box/${box.shareCode}`;
+                    } else if (box.type === 'local') {
                       const shareCode = await saveBoxTemplate(box);
                       if (!shareCode) {
                         error('Failed to share box');
@@ -2994,7 +3060,7 @@
                     e.target.style.boxShadow = '0 0 20px rgba(65, 105, 225, 0.6), 0 0 40px rgba(65, 105, 225, 0.3)';
                   }}
                 >
-                  Share
+                  {box.isVisitor ? 'Invite' : 'Share'}
                 </button>
               )}
             </div>
@@ -3533,6 +3599,7 @@
               hideContents: box.hideContents,
               hideOdds: box.hideOdds,
               expiresAt: box.expiresAt || null,
+              allowParticipantSharing: box.allowParticipantSharing || false,
             };
             saveBox(visitorRef);
             loadData();  // refresh the box list
