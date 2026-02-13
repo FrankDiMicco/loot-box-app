@@ -1397,238 +1397,224 @@
 
       return (
         <>
-          <Card hover onClick={onClick} style={isMobile ? { padding: '0.75rem' } : {}}>
-            <div style={{ position: 'relative' }}>
-              {/* Action buttons */}
-              {!box.isVisitor ? (
-                <div style={{
-                  position: 'absolute',
-                  top: '-0.5rem',
-                  right: '-0.5rem',
-                  display: 'flex',
-                  gap: '0.5rem',
-                  zIndex: 10,
-                }}>
-                  <button
-                    style={{
-                      width: '32px',
-                      height: '32px',
-                      background: 'rgba(26, 31, 53, 0.9)',
-                      border: '1px solid rgba(59, 130, 246, 0.3)',
-                      borderRadius: '8px',
-                      color: '#60a5fa',
-                      cursor: 'pointer',
-                      fontSize: '1rem',
-                      fontWeight: 600,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      transition: 'all 0.2s ease',
-                    }}
-                    onClick={handleEdit}
-                    onMouseEnter={(e) => {
-                      e.target.style.background = 'rgba(59, 130, 246, 0.2)';
-                      e.target.style.borderColor = '#60a5fa';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.background = 'rgba(26, 31, 53, 0.9)';
-                      e.target.style.borderColor = 'rgba(59, 130, 246, 0.3)';
-                    }}
-                    title="Edit box"
-                  >
-                    ✎
-                  </button>
-
-                  <button
-                    style={{
-                      width: '32px',
-                      height: '32px',
-                      background: 'rgba(26, 31, 53, 0.9)',
-                      border: '1px solid rgba(239, 68, 68, 0.3)',
-                      borderRadius: '8px',
-                      color: '#ef4444',
-                      cursor: 'pointer',
-                      fontSize: '1.125rem',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      transition: 'all 0.2s ease',
-                    }}
-                    onClick={handleDeleteClick}
-                    onMouseEnter={(e) => {
-                      e.target.style.background = 'rgba(239, 68, 68, 0.2)';
-                      e.target.style.borderColor = '#ef4444';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.background = 'rgba(26, 31, 53, 0.9)';
-                      e.target.style.borderColor = 'rgba(239, 68, 68, 0.3)';
-                    }}
-                    title="Delete box"
-                  >
-                    ×
-                  </button>
-                </div>
-              ) : (
-                <div style={{
-                  position: 'absolute',
-                  top: '-0.5rem',
-                  right: '-0.5rem',
-                  display: 'flex',
-                  gap: '0.5rem',
-                  zIndex: 10,
-                }}>
-                  <button
-                    style={{
-                      width: '32px',
-                      height: '32px',
-                      background: 'rgba(26, 31, 53, 0.9)',
-                      border: '1px solid rgba(148, 163, 184, 0.3)',
-                      borderRadius: '8px',
-                      color: '#94a3b8',
-                      cursor: 'pointer',
-                      fontSize: '1.125rem',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      transition: 'all 0.2s ease',
-                    }}
-                    onClick={handleDeleteClick}
-                    title="Remove from your feed"
-                  >
-                    ×
-                  </button>
-                </div>
-              )}
-
-            <div style={{
-            width: '100%',
-            height: isMobile ? '140px' : '180px',
-            marginBottom: isMobile ? '0.75rem' : '1rem',
+          <div style={{
+            background: 'rgba(26, 31, 53, 0.6)',
+            border: '1px solid rgba(59, 130, 246, 0.2)',
             borderRadius: '12px',
-            background: 'linear-gradient(135deg, rgba(30, 64, 175, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            border: '1px solid rgba(59, 130, 246, 0.3)',
             overflow: 'hidden',
+            transition: 'all 0.25s ease',
+            cursor: 'pointer',
           }}>
-            {box.boxImageId ? (
-              <img 
-                src={getBoxImageUrl(box.boxImageId)} 
-                alt={box.name}
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'contain',
-                }}
-              />
-            ) : (
-              <span style={{ fontSize: '4rem' }}>📦</span>
-            )}
-          </div>
-          </div>
 
-          <h3 style={{
-            fontSize: isMobile ? '1rem' : '1.25rem',
-            fontWeight: 600,
-            color: '#e2e8f0',
-            marginBottom: '0.75rem',
-            ...(isMobile ? { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } : {}),
-          }}>
-            {name}
-          </h3>
+            {/* Image area with overlays */}
+            <div onClick={onClick} style={{
+              position: 'relative',
+              width: '100%',
+              height: isMobile ? '220px' : '260px',
+              background: 'linear-gradient(135deg, rgba(30, 64, 175, 0.15), rgba(59, 130, 246, 0.15))',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: isMobile ? '0.75rem' : '0.875rem', color: '#94a3b8' }}>
-              <span>Items:</span>
-              <span style={{ fontWeight: 600, color: '#cbd5e1' }}>{items.length}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: isMobile ? '0.75rem' : '0.875rem', color: '#94a3b8' }}>
-              <span>Pulls:</span>
-              <span style={{ fontWeight: 600, color: '#cbd5e1' }}>
-                {pullHistory.length}{maxPulls ? ` / ${maxPulls}` : ''}
-              </span>
-            </div>
-          </div>
+              {/* Chest image */}
+              {box.boxImageId ? (
+                <img
+                  src={getBoxImageUrl(box.boxImageId)}
+                  alt={box.name}
+                  style={{
+                    maxWidth: '70%',
+                    maxHeight: '60%',
+                    objectFit: 'contain',
+                  }}
+                />
+              ) : (
+                <span style={{ fontSize: '4rem' }}>📦</span>
+              )}
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <span style={{
-                padding: '0.25rem 0.75rem',
-                fontSize: '0.75rem',
-                fontWeight: 600,
+              {/* Top overlay - dark gradient for text readability */}
+              <div style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                height: '50%',
+                background: 'linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, transparent 100%)',
+                pointerEvents: 'none',
+              }} />
+
+              {/* Box name - top left */}
+              <div style={{
+                position: 'absolute',
+                top: '0.75rem',
+                left: '0.75rem',
+                right: '5rem',
+                fontSize: isMobile ? '1rem' : '1.1rem',
+                fontWeight: 700,
                 color: '#ffffff',
-                background: type === 'shared'
-                  ? 'linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%)'
-                  : 'linear-gradient(135deg, #64748b 0%, #475569 100%)',
-                borderRadius: '6px',
-                textTransform: 'uppercase',
+                textShadow: '0 1px 4px rgba(0,0,0,0.5)',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
               }}>
-                {type === 'shared' ? '🌐 Shared' : '💻 Local'}
-              </span>
-              {box.isVisitor && (
-                <span style={{
-                  padding: '0.25rem 0.75rem',
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                  color: '#ffffff',
-                  background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
-                  borderRadius: '6px',
-                  textTransform: 'uppercase',
+                {box.name}
+              </div>
+
+              {/* Edit + Delete buttons - top right */}
+              <div style={{
+                position: 'absolute',
+                top: '0.5rem',
+                right: '0.5rem',
+                display: 'flex',
+                gap: '0.4rem',
+              }}>
+                {!box.isVisitor && onEdit && (
+                  <button onClick={handleEdit} style={{
+                    width: '32px',
+                    height: '32px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: 'rgba(30, 64, 175, 0.8)',
+                    border: '1px solid rgba(59, 130, 246, 0.3)',
+                    borderRadius: '8px',
+                    color: '#cbd5e1',
+                    cursor: 'pointer',
+                    fontSize: '0.85rem',
+                    backdropFilter: 'blur(4px)',
+                  }}>
+                    ✏️
+                  </button>
+                )}
+                <button onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(true); }} style={{
+                  width: '32px',
+                  height: '32px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: 'rgba(127, 29, 29, 0.8)',
+                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                  borderRadius: '8px',
+                  color: '#fca5a5',
+                  cursor: 'pointer',
+                  fontSize: '0.85rem',
+                  backdropFilter: 'blur(4px)',
                 }}>
-                  Joined
-                </span>
-              )}
-              {box.expiresAt && (
-                <span style={{
-                  padding: '0.25rem 0.75rem',
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                  color: '#ffffff',
-                  background: Date.now() > box.expiresAt
-                    ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
-                    : isExpiringSoon(box.expiresAt)
-                      ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'
-                      : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                  borderRadius: '6px',
+                  ✕
+                </button>
+              </div>
+
+              {/* Pill badges - below name, left aligned */}
+              <div style={{
+                position: 'absolute',
+                top: '2.25rem',
+                left: '0.75rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.35rem',
+              }}>
+                {/* Items + Pulls row */}
+                <div style={{
+                  display: 'flex',
+                  gap: '0.4rem',
                 }}>
-                  {Date.now() > box.expiresAt
-                    ? 'Expired'
-                    : formatExpirationCountdown(box.expiresAt)}
-                </span>
-              )}
+                  <span style={{
+                    padding: '0.2rem 0.6rem',
+                    background: 'rgba(59, 130, 246, 0.7)',
+                    backdropFilter: 'blur(4px)',
+                    borderRadius: '6px',
+                    fontSize: '0.65rem',
+                    fontWeight: 700,
+                    color: '#ffffff',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.03em',
+                  }}>
+                    {items.length} {items.length === 1 ? 'Item' : 'Items'}
+                  </span>
+                  <span style={{
+                    padding: '0.2rem 0.6rem',
+                    background: 'rgba(59, 130, 246, 0.7)',
+                    backdropFilter: 'blur(4px)',
+                    borderRadius: '6px',
+                    fontSize: '0.65rem',
+                    fontWeight: 700,
+                    color: '#ffffff',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.03em',
+                  }}>
+                    {pullHistory.length} {pullHistory.length === 1 ? 'Pull' : 'Pulls'}
+                  </span>
+                </div>
+
+                {/* Group badge - only for shared/community boxes */}
+                {box.type === 'shared' && !box.isVisitor && (
+                  <div style={{ display: 'flex' }}>
+                    <span style={{
+                      padding: '0.2rem 0.6rem',
+                      background: 'rgba(139, 92, 246, 0.8)',
+                      backdropFilter: 'blur(4px)',
+                      borderRadius: '6px',
+                      fontSize: '0.65rem',
+                      fontWeight: 700,
+                      color: '#ffffff',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.03em',
+                    }}>
+                      Group
+                    </span>
+                  </div>
+                )}
+
+                {/* Joined badge - for visitor boxes */}
+                {box.isVisitor && (
+                  <div style={{ display: 'flex' }}>
+                    <span style={{
+                      padding: '0.2rem 0.6rem',
+                      background: 'rgba(16, 185, 129, 0.8)',
+                      backdropFilter: 'blur(4px)',
+                      borderRadius: '6px',
+                      fontSize: '0.65rem',
+                      fontWeight: 700,
+                      color: '#ffffff',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.03em',
+                    }}>
+                      Joined
+                    </span>
+                  </div>
+                )}
+              </div>
+
             </div>
-            {!box.isVisitor && (
-              <button
-                style={{
-                  padding: '0.4rem 1rem',
-                  fontSize: '0.75rem',
-                  fontWeight: 700,
+            {/* End image area */}
+
+            {/* Footer - Share button only */}
+            <div style={{
+              padding: '0.6rem 0.75rem',
+              display: 'flex',
+              justifyContent: 'center',
+            }}>
+              {!box.isVisitor && (
+                <button onClick={handleShare} style={{
+                  width: '100%',
+                  padding: '0.5rem',
+                  fontSize: '0.8rem',
+                  fontWeight: 600,
+                  fontFamily: 'inherit',
                   color: '#ffffff',
-                  background: 'linear-gradient(135deg, #4169e1 0%, #1e40af 100%)',
+                  background: 'linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)',
                   border: 'none',
                   borderRadius: '8px',
                   cursor: 'pointer',
-                  textTransform: 'uppercase',
-                  boxShadow: '0 0 20px rgba(65, 105, 225, 0.6), 0 0 40px rgba(65, 105, 225, 0.3)',
-                  transition: 'all 0.3s ease',
-                  fontFamily: 'inherit',
-                }}
-                onClick={handleShare}
-                onMouseEnter={(e) => {
-                  e.target.style.transform = 'scale(1.05)';
-                  e.target.style.boxShadow = '0 0 30px rgba(65, 105, 225, 0.8), 0 0 60px rgba(65, 105, 225, 0.4)';
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.transform = 'scale(1)';
-                  e.target.style.boxShadow = '0 0 20px rgba(65, 105, 225, 0.6), 0 0 40px rgba(65, 105, 225, 0.3)';
-                }}
-              >
-                Share
-              </button>
-            )}
+                  transition: 'all 0.2s ease',
+                  minHeight: '36px',
+                }}>
+                  Share
+                </button>
+              )}
+            </div>
+
           </div>
-        </Card>
 
         <ConfirmDialog
           show={showDeleteConfirm}
