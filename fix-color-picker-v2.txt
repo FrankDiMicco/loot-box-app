@@ -1,0 +1,83 @@
+================================================================================
+UPDATE: Color picker - 5x5 grid, smaller tiles, more neutral/earth tones
+================================================================================
+
+This REPLACES the previous fix-color-picker.txt instructions.
+
+
+CHANGES IN index.html - ItemCreator component
+----------------------------------------------
+
+CHANGE 1: New 25-color palette
+
+Find the predefinedColors array in ItemCreator and replace with:
+
+    const predefinedColors = [
+      '#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16',
+      '#22c55e', '#10b981', '#06b6d4', '#3b82f6', '#1e40af',
+      '#6366f1', '#8b5cf6', '#a855f7', '#ec4899', '#f43f5e',
+      '#78716c', '#a8a29e', '#92400e', '#b45309', '#854d0e',
+      '#374151', '#6b7280', '#9ca3af', '#d4d4d8', '#ffffff',
+    ];
+
+Row 1 (brights):   red, orange, amber, yellow, lime
+Row 2 (cool):      green, emerald, cyan, blue, navy
+Row 3 (purples):   indigo, violet, purple, pink, rose
+Row 4 (earth):     stone, warm gray, brown, dark amber, dark gold
+Row 5 (neutrals):  charcoal, gray, silver, light gray, white
+
+
+CHANGE 2: 5x5 grid with smaller tiles
+
+Find the color picker grid container div. Replace its style with:
+
+    On mobile (isMobile):
+      display: 'grid'
+      gridTemplateColumns: 'repeat(5, 1fr)'
+      gap: '0.4rem'
+
+    On desktop:
+      display: 'grid'
+      gridTemplateColumns: 'repeat(5, 1fr)'
+      gap: '0.5rem'
+
+(Same 5 columns on both -- it's compact enough.)
+
+
+CHANGE 3: Smaller swatch buttons
+
+Find each color swatch button style. Replace the width/height with:
+
+      width: '100%'
+      aspectRatio: '1'
+      borderRadius: '6px'
+      border: '2px solid rgba(59, 130, 246, 0.2)'
+      cursor: 'pointer'
+      transition: 'all 0.15s ease'
+
+Remove any fixed width: '40px' or height: '40px'.
+
+The grid will auto-size them. On a 375px mobile screen, each tile
+will be roughly 60px. On desktop inside the card, roughly 50-60px.
+Both are comfortable for tapping.
+
+For the white swatch specifically, add a visible border so it doesn't
+disappear against light backgrounds:
+    If color === '#ffffff', set border to '2px solid rgba(148, 163, 184, 0.5)'
+    instead of the default blue border.
+
+Selected state stays the same:
+    transform: 'scale(1.1)'
+    boxShadow: '0 0 12px {color}'
+
+
+================================================================================
+TESTING
+================================================================================
+1. Open create box on mobile and desktop
+2. Color picker should show a clean 5x5 grid
+3. All 25 colors visible without scrolling or overflow
+4. Earth tones (brown, gray, charcoal) present in rows 4-5
+5. White swatch has a visible border
+6. Tiles are smaller than before but still easy to tap
+7. Selected highlight works on all colors including dark ones

@@ -1679,10 +1679,11 @@
       };
 
       const predefinedColors = [
-        '#ef4444', '#f97316', '#f59e0b', '#eab308',
-        '#84cc16', '#22c55e', '#10b981', '#06b6d4',
-        '#0ea5e9', '#3b82f6', '#1e40af', '#6366f1',
-        '#8b5cf6', '#a855f7', '#ec4899', '#f43f5e',
+        '#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16',
+        '#22c55e', '#10b981', '#06b6d4', '#3b82f6', '#1e40af',
+        '#6366f1', '#8b5cf6', '#a855f7', '#ec4899', '#f43f5e',
+        '#78716c', '#a8a29e', '#92400e', '#b45309', '#854d0e',
+        '#374151', '#6b7280', '#9ca3af', '#d4d4d8', '#ffffff',
       ];
 
       return (
@@ -1746,23 +1747,23 @@
               <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: '#cbd5e1', marginBottom: '0.5rem' }}>
                 Item Color
               </label>
-              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(4, 1fr)' : 'repeat(8, 1fr)', gap: '0.5rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: isMobile ? '0.4rem' : '0.5rem' }}>
                 {predefinedColors.map(color => (
                   <button
                     key={color}
                     type="button"
                     style={{
-                      width: isMobile ? '100%' : '40px',
-                      height: isMobile ? 'auto' : '40px',
-                      aspectRatio: isMobile ? '1' : undefined,
-                      minHeight: '32px',
+                      width: '100%',
+                      aspectRatio: '1',
                       background: color,
-                      borderRadius: '8px',
-                      border: '2px solid rgba(59, 130, 246, 0.3)',
+                      borderRadius: '6px',
+                      border: color === '#ffffff'
+                        ? '2px solid rgba(148, 163, 184, 0.5)'
+                        : '2px solid rgba(59, 130, 246, 0.2)',
                       cursor: 'pointer',
                       transform: itemForm.color === color ? 'scale(1.1)' : 'scale(1)',
                       boxShadow: itemForm.color === color ? `0 0 12px ${color}80` : 'none',
-                      transition: 'all 0.2s ease',
+                      transition: 'all 0.15s ease',
                     }}
                     onClick={() => setItemForm({ ...itemForm, color })}
                   />
