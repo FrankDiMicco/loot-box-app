@@ -1157,28 +1157,37 @@
     
     // Header
     const Header = ({ title = 'Loot Box Creator', onSettingsClick, userTier = 'free' }) => {
+      const isMobile = useIsMobile();
       return (
         <header style={{
           display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '1.5rem 0',
-          marginBottom: '2rem',
+          ...(isMobile ? {
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '0.75rem',
+            padding: '1rem',
+          } : {
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '1.5rem 0',
+          }),
+          marginBottom: isMobile ? '1rem' : '2rem',
           borderBottom: '1px solid rgba(59, 130, 246, 0.2)',
         }}>
           <h1 style={{
-            fontSize: '2.5rem',
+            fontSize: isMobile ? '1.75rem' : '2.5rem',
             fontWeight: 700,
             background: 'linear-gradient(135deg, #3b82f6 0%, #60a5fa 50%, #93c5fd 100%)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
             filter: 'drop-shadow(0 0 30px rgba(59, 130, 246, 0.4))',
             margin: 0,
+            ...(isMobile ? { textAlign: 'center', whiteSpace: 'nowrap' } : {}),
           }}>
             {title}
           </h1>
-          
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', justifyContent: 'center' }}>
             <div
               style={{
                 padding: '0.5rem 1rem',
@@ -1325,6 +1334,7 @@
 
     // BoxCard (simplified for brevity)
     const BoxCard = ({ box, onClick, onEdit, onDelete, success }) => {
+      const isMobile = useIsMobile();
       const { name, items = [], pullHistory = [], maxPulls, type = 'local' } = box;
       const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
@@ -1387,7 +1397,7 @@
 
       return (
         <>
-          <Card hover onClick={onClick}>
+          <Card hover onClick={onClick} style={isMobile ? { padding: '0.75rem' } : {}}>
             <div style={{ position: 'relative' }}>
               {/* Action buttons */}
               {!box.isVisitor ? (
@@ -1492,8 +1502,8 @@
 
             <div style={{
             width: '100%',
-            height: '180px',
-            marginBottom: '1rem',
+            height: isMobile ? '140px' : '180px',
+            marginBottom: isMobile ? '0.75rem' : '1rem',
             borderRadius: '12px',
             background: 'linear-gradient(135deg, rgba(30, 64, 175, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%)',
             display: 'flex',
@@ -1518,16 +1528,22 @@
           </div>
           </div>
 
-          <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#e2e8f0', marginBottom: '0.75rem' }}>
+          <h3 style={{
+            fontSize: isMobile ? '1rem' : '1.25rem',
+            fontWeight: 600,
+            color: '#e2e8f0',
+            marginBottom: '0.75rem',
+            ...(isMobile ? { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } : {}),
+          }}>
             {name}
           </h3>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', color: '#94a3b8' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: isMobile ? '0.75rem' : '0.875rem', color: '#94a3b8' }}>
               <span>Items:</span>
               <span style={{ fontWeight: 600, color: '#cbd5e1' }}>{items.length}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', color: '#94a3b8' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: isMobile ? '0.75rem' : '0.875rem', color: '#94a3b8' }}>
               <span>Pulls:</span>
               <span style={{ fontWeight: 600, color: '#cbd5e1' }}>
                 {pullHistory.length}{maxPulls ? ` / ${maxPulls}` : ''}
@@ -3367,6 +3383,7 @@
     // ========== MAIN APP ==========
     
     const App = () => {
+      const isMobile = useIsMobile();
       const [mode, setMode] = useState('home'); // home, create, edit, open
       const [activeFilter, setActiveFilter] = useState('All');
       const [boxes, setBoxes] = useState([]);
@@ -3673,7 +3690,7 @@
       if (!userSettings) return <div>Loading...</div>;
 
       return (
-        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem', minHeight: '100vh' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: isMobile ? '1rem' : '2rem', minHeight: '100vh' }}>
           <Header
             onSettingsClick={() => info('Settings coming soon!')}
             userTier={userSettings.tier}
@@ -3683,9 +3700,31 @@
             <>
               <FilterTabs activeFilter={activeFilter} onFilterChange={setActiveFilter} filters={['All', 'Shared', 'New', 'Local']} />
 
-              <Button variant="primary" size="lg" onClick={handleCreateBox} style={{ marginBottom: '2rem' }}>
+              <button
+                onClick={handleCreateBox}
+                style={{
+                  width: '100%',
+                  padding: isMobile ? '1rem 1.5rem' : '0.75rem 1.5rem',
+                  fontSize: isMobile ? '1.1rem' : '1rem',
+                  fontWeight: 700,
+                  fontFamily: 'inherit',
+                  color: '#ffffff',
+                  background: 'linear-gradient(135deg, #f59e0b 0%, #ef4444 50%, #ec4899 100%)',
+                  border: 'none',
+                  borderRadius: '14px',
+                  cursor: 'pointer',
+                  marginBottom: '1.5rem',
+                  boxShadow: '0 4px 20px rgba(245, 158, 11, 0.4), 0 0 40px rgba(245, 158, 11, 0.1)',
+                  letterSpacing: '0.02em',
+                  transition: 'all 0.25s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  minHeight: isMobile ? '56px' : '48px',
+                }}
+              >
                 + Create New Loot Box
-              </Button>
+              </button>
 
               {filteredBoxes.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '4rem 2rem', color: '#64748b' }}>
@@ -3703,9 +3742,9 @@
               ) : (
                 <div style={{
                   display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-                  gap: '1.5rem',
-                  marginTop: '2rem',
+                  gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(300px, 1fr))',
+                  gap: isMobile ? '1rem' : '1.5rem',
+                  marginTop: isMobile ? '1rem' : '2rem',
                 }}>
                   {filteredBoxes.map(box => (
                     <BoxCard
