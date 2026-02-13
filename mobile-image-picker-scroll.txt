@@ -1,0 +1,111 @@
+================================================================================
+ADDITION TO MOBILE UX: Horizontal scroll for box image picker
+================================================================================
+
+This is an ADDITION to mobile-ux-improvements.txt, specifically updating
+Section 12 (Image Picker Component). Apply this INSTEAD of the "3 columns"
+instruction for the image grid.
+
+
+CURRENT BEHAVIOR
+----------------
+The ImagePicker shows box images in a wrapping grid. On mobile this creates
+a long vertical list that pushes the item creator form way down the page.
+
+DESIRED BEHAVIOR
+----------------
+On mobile, the box image selection should be a HORIZONTAL scrolling row.
+Think Netflix-style thumbnail browsing -- one row, swipe left/right to
+see more options. This keeps the form compact and feels native on mobile.
+
+On desktop, keep the existing grid layout (no change).
+
+
+CHANGES IN index.html - ImagePicker component
+----------------------------------------------
+
+Find the container div that wraps the box image thumbnails in ImagePicker.
+This is the grid that displays all the selectable box images.
+
+On mobile (use the useIsMobile() hook from the main mobile instructions):
+
+1. Change the image grid container styles to:
+   - display: 'flex' (instead of grid)
+   - flexDirection: 'row'
+   - overflowX: 'auto'
+   - overflowY: 'hidden'
+   - gap: '0.75rem'
+   - paddingBottom: '0.75rem' (space for scrollbar/scroll indicator)
+   - WebkitOverflowScrolling: 'touch'
+   - scrollSnapType: 'x mandatory' (optional but nice -- snaps to items)
+   - msOverflowStyle: 'none' (hide scrollbar IE/Edge)
+   - scrollbarWidth: 'none' (hide scrollbar Firefox)
+
+2. Each image thumbnail wrapper should have:
+   - flexShrink: 0 (prevent images from squishing)
+   - width: '100px' (fixed width for consistent sizing)
+   - height: '100px'
+   - scrollSnapAlign: 'start' (if using scroll snap)
+
+3. Hide the scrollbar on mobile with CSS. Add to the <style> section:
+
+   .mobile-image-scroll::-webkit-scrollbar {
+     display: none;
+   }
+   .mobile-image-scroll {
+     -ms-overflow-style: none;
+     scrollbar-width: none;
+   }
+
+   Add className="mobile-image-scroll" to the image grid container
+   when on mobile.
+
+4. The selected image should have the same blue border highlight, but
+   also consider auto-scrolling the selected image into view on selection:
+
+   When an image is selected, if isMobile, use a ref to scroll it
+   into view:
+     selectedRef.current?.scrollIntoView({
+       behavior: 'smooth',
+       block: 'nearest',
+       inline: 'center'
+     });
+
+5. On DESKTOP, keep the existing grid layout unchanged. Only apply
+   the horizontal scroll on mobile.
+
+
+OPTIONAL ENHANCEMENT
+--------------------
+Add subtle left/right fade edges to hint that there's more content
+to scroll. On the container, add:
+
+   - position: 'relative' on a wrapper div
+   - Two pseudo-element-like gradient overlays on left and right edges
+   
+   Since we're in React with inline styles, use two small div overlays:
+   
+   Left fade:
+     position: 'absolute', left: 0, top: 0, bottom: 0, width: '20px',
+     background: 'linear-gradient(to right, rgba(10, 14, 26, 0.9), transparent)',
+     pointerEvents: 'none', zIndex: 1
+
+   Right fade:
+     position: 'absolute', right: 0, top: 0, bottom: 0, width: '20px',
+     background: 'linear-gradient(to left, rgba(10, 14, 26, 0.9), transparent)',
+     pointerEvents: 'none', zIndex: 1
+
+   Only show these on mobile.
+
+
+================================================================================
+TESTING
+================================================================================
+1. Open the app on mobile (or resize browser to < 768px)
+2. Tap "+ Create New Loot Box"
+3. Box image section should show as a horizontal scrollable row
+4. Swipe left/right to see all available box images
+5. Tap to select -- blue border should appear
+6. Selected image should scroll into center view
+7. On desktop (> 768px), images should still show as a grid
+8. Verify the fade edges appear on mobile (if implemented)

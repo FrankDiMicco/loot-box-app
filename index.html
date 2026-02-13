@@ -199,13 +199,21 @@
         transition-duration: 0.01ms !important;
       }
     }
+
+    .mobile-image-scroll::-webkit-scrollbar {
+      display: none;
+    }
+    .mobile-image-scroll {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
   </style>
 </head>
 <body>
   <div id="root"></div>
 
   <script type="text/babel" data-type="module">
-    const { useState, useEffect } = React;
+    const { useState, useEffect, useRef } = React;
 
     // ========== FIREBASE CONFIGURATION ==========
 
@@ -1097,6 +1105,17 @@
       );
     };
 
+    // useIsMobile Hook
+    const useIsMobile = (breakpoint = 768) => {
+      const [isMobile, setIsMobile] = useState(window.innerWidth < breakpoint);
+      useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth < breakpoint);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+      }, [breakpoint]);
+      return isMobile;
+    };
+
     // useToast Hook
     const useToast = () => {
       const [toasts, setToasts] = useState([]);
@@ -1875,6 +1894,8 @@
       const [loading, setLoading] = useState(true);
       const [showPurchaseModal, setShowPurchaseModal] = useState(null);
       const [uploading, setUploading] = useState(false);
+      const isMobile = useIsMobile();
+      const selectedRef = useRef(null);
 
       useEffect(() => {
         loadBoxCatalog();
@@ -1901,6 +1922,16 @@
             ? image.imageUrl
             : image.id;
           onSelectImage(imageRef);
+          // Auto-scroll selected image into view on mobile
+          if (isMobile) {
+            setTimeout(() => {
+              selectedRef.current?.scrollIntoView({
+                behavior: 'smooth',
+                block: 'nearest',
+                inline: 'center',
+              });
+            }, 50);
+          }
         } else {
           // Show purchase modal for locked boxes (works for free and premium users)
           setShowPurchaseModal(image);
@@ -2113,17 +2144,57 @@
 
           {/* Box Grid */}
           {!loading && (
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))',
-              gap: '1rem',
-            }}>
+            <div style={{ position: 'relative' }}>
+              {/* Left fade edge (mobile only) */}
+              {isMobile && activeBoxes.length > 0 && (
+                <div style={{
+                  position: 'absolute',
+                  left: 0,
+                  top: 0,
+                  bottom: 0,
+                  width: '20px',
+                  background: 'linear-gradient(to right, rgba(10, 14, 26, 0.9), transparent)',
+                  pointerEvents: 'none',
+                  zIndex: 1,
+                }} />
+              )}
+              {/* Right fade edge (mobile only) */}
+              {isMobile && activeBoxes.length > 0 && (
+                <div style={{
+                  position: 'absolute',
+                  right: 0,
+                  top: 0,
+                  bottom: 0,
+                  width: '20px',
+                  background: 'linear-gradient(to left, rgba(10, 14, 26, 0.9), transparent)',
+                  pointerEvents: 'none',
+                  zIndex: 1,
+                }} />
+              )}
+            <div
+              className={isMobile ? 'mobile-image-scroll' : undefined}
+              style={isMobile ? {
+                display: 'flex',
+                flexDirection: 'row',
+                overflowX: 'auto',
+                overflowY: 'hidden',
+                gap: '0.75rem',
+                paddingBottom: '0.75rem',
+                WebkitOverflowScrolling: 'touch',
+                scrollSnapType: 'x mandatory',
+              } : {
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))',
+                gap: '1rem',
+              }}
+            >
               {activeBoxes.length === 0 && (
                 <div style={{
-                  gridColumn: '1 / -1',
+                  ...(isMobile ? {} : { gridColumn: '1 / -1' }),
                   textAlign: 'center',
                   padding: '2rem',
                   color: '#64748b',
+                  width: '100%',
                 }}>
                   {activeTab === 'uploads'
                     ? 'No uploaded boxes yet. Upload your first custom box!'
@@ -2141,6 +2212,7 @@
                 return (
                   <div
                     key={image.id}
+                    ref={isSelected ? selectedRef : null}
                     style={{
                       position: 'relative',
                       cursor: 'pointer',
@@ -2150,6 +2222,11 @@
                       borderRadius: '12px',
                       transition: 'all 0.2s ease',
                       boxShadow: isSelected ? '0 0 20px rgba(59, 130, 246, 0.4)' : 'none',
+                      ...(isMobile ? {
+                        flexShrink: 0,
+                        width: '100px',
+                        scrollSnapAlign: 'start',
+                      } : {}),
                     }}
                     onClick={() => handleImageClick(image)}
                   >
@@ -2271,6 +2348,7 @@
                   </div>
                 );
               })}
+            </div>
             </div>
           )}
 
