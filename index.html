@@ -1631,6 +1631,7 @@
     // ItemCreator (simplified)
     const ItemCreator = ({ items, onAddItem, editingItem, onUpdateItem, onCancelEdit, userSettings }) => {
       const [itemForm, setItemForm] = useState({ name: '', percentage: '', color: '#3b82f6', maxQuantity: '', imageUrl: '' });
+      const isMobile = useIsMobile();
       const remainingPercentage = editingItem
         ? getRemainingPercentage(items.filter(i => i.id !== editingItem.id))
         : getRemainingPercentage(items);
@@ -1677,7 +1678,12 @@
         setItemForm({ name: '', percentage: '', color: '#3b82f6', maxQuantity: '', imageUrl: '' });
       };
 
-      const predefinedColors = ['#1e40af', '#3b82f6', '#60a5fa', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+      const predefinedColors = [
+        '#ef4444', '#f97316', '#f59e0b', '#eab308',
+        '#84cc16', '#22c55e', '#10b981', '#06b6d4',
+        '#0ea5e9', '#3b82f6', '#1e40af', '#6366f1',
+        '#8b5cf6', '#a855f7', '#ec4899', '#f43f5e',
+      ];
 
       return (
         <Card style={{ marginBottom: '2rem' }}>
@@ -1740,14 +1746,16 @@
               <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: '#cbd5e1', marginBottom: '0.5rem' }}>
                 Item Color
               </label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: '0.5rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(4, 1fr)' : 'repeat(8, 1fr)', gap: '0.5rem' }}>
                 {predefinedColors.map(color => (
                   <button
                     key={color}
                     type="button"
                     style={{
-                      width: '40px',
-                      height: '40px',
+                      width: isMobile ? '100%' : '40px',
+                      height: isMobile ? 'auto' : '40px',
+                      aspectRatio: isMobile ? '1' : undefined,
+                      minHeight: '32px',
                       background: color,
                       borderRadius: '8px',
                       border: '2px solid rgba(59, 130, 246, 0.3)',

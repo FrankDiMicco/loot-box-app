@@ -1,0 +1,129 @@
+================================================================================
+FIX: Color picker overflows on mobile + add more color options
+================================================================================
+
+CURRENT STATE
+-------------
+The ItemCreator color picker has 8 colors in a single row using
+gridTemplateColumns: 'repeat(8, 1fr)'. Each swatch is 40px. On mobile
+this overflows off screen since 8 x 40px + gaps > screen width.
+
+Colors are: #1e40af, #3b82f6, #60a5fa, #06b6d4, #10b981, #f59e0b,
+#ef4444, #8b5cf6
+
+
+CHANGES IN index.html - ItemCreator component
+----------------------------------------------
+
+CHANGE 1: Expand the color palette
+
+Find the predefinedColors array in ItemCreator:
+
+    const predefinedColors = ['#1e40af', '#3b82f6', '#60a5fa', '#06b6d4',
+      '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+
+Replace with a larger palette (16 colors, organized by hue):
+
+    const predefinedColors = [
+      '#ef4444', '#f97316', '#f59e0b', '#eab308',
+      '#84cc16', '#22c55e', '#10b981', '#06b6d4',
+      '#0ea5e9', '#3b82f6', '#1e40af', '#6366f1',
+      '#8b5cf6', '#a855f7', '#ec4899', '#f43f5e',
+    ];
+
+This gives a nice rainbow progression: red, orange, amber, yellow,
+lime, green, emerald, cyan, sky, blue, navy, indigo, violet, purple,
+pink, rose.
+
+
+CHANGE 2: Fix the grid layout
+
+Find the color picker grid container. It currently has:
+    gridTemplateColumns: 'repeat(8, 1fr)'
+
+Change to a responsive grid that works on all screen sizes:
+
+    On mobile (isMobile from useIsMobile hook):
+      gridTemplateColumns: 'repeat(4, 1fr)'
+      gap: '0.5rem'
+
+    On desktop:
+      gridTemplateColumns: 'repeat(8, 1fr)'
+      gap: '0.5rem'
+
+With 16 colors this gives:
+  - Mobile: 4 columns x 4 rows (fits nicely)
+  - Desktop: 8 columns x 2 rows (compact)
+
+
+CHANGE 3: Adjust swatch size for mobile
+
+Find each color swatch button. Currently:
+    width: '40px'
+    height: '40px'
+
+Change to:
+    On mobile:
+      width: '100%' (fill the grid cell)
+      height: '0' with paddingBottom: '100%' (makes it square)
+      OR simply: width: '36px', height: '36px' and let the grid
+      handle spacing
+
+    Actually, the simplest approach that works well:
+      width: '100%'
+      aspectRatio: '1'  (makes it square, fills available space)
+      minWidth: '32px'
+      minHeight: '32px'
+
+    On desktop: keep width: '40px', height: '40px'
+
+    OR even simpler -- just remove the fixed width/height entirely
+    and let the grid cell size them:
+      width: 'auto'
+      height: 'auto'
+      aspectRatio: '1'
+      minHeight: '32px'
+
+The selected state should remain the same (scale 1.1, blue box shadow).
+Make sure the border-radius stays at 8px.
+
+
+CHANGE 4: Ensure 44px minimum touch target
+
+Even if the visible swatch is 32-36px, the tappable area should be at
+least 44px. Add padding around each swatch button or set minHeight/
+minWidth to 44px on mobile. The visual swatch can be smaller inside
+the touch target area.
+
+One approach:
+    On mobile, set each button to:
+      width: '100%'
+      padding: '4px'
+      display: 'flex'
+      alignItems: 'center'
+      justifyContent: 'center'
+
+    Then put a div inside that's the colored swatch:
+      width: '100%'
+      aspectRatio: '1'
+      borderRadius: '8px'
+      background: color
+
+    But this changes the component structure. Simpler approach:
+    Just let the grid cells be naturally 44px+ by using the grid gap
+    and letting repeat(4, 1fr) on mobile fill the space.
+    On a 375px screen: (375 - 2*1.5rem padding - 3*0.5rem gap) / 4
+    = roughly 78px per cell. That's plenty for touch.
+
+
+================================================================================
+TESTING
+================================================================================
+1. Open create box on mobile
+2. Scroll to Item Color section
+3. All 16 colors should be visible in a 4x4 grid
+4. No overflow off screen
+5. Tapping any color selects it with the blue highlight
+6. On desktop, colors show as 8x2 grid
+7. Verify the new colors (orange, yellow, lime, rose, etc.) work and
+   display correctly on items and in pull history
