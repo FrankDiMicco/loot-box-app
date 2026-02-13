@@ -1227,15 +1227,17 @@
 
     // FilterTabs
     const FilterTabs = ({ activeFilter, onFilterChange, filters = ['Shared', 'New', 'Local'] }) => {
+      const isMobile = useIsMobile();
       return (
         <div style={{
           display: 'flex',
-          gap: '0.5rem',
+          gap: '0.25rem',
           padding: '0.5rem',
           background: 'rgba(15, 22, 36, 0.8)',
           borderRadius: '12px',
           border: '1px solid rgba(59, 130, 246, 0.2)',
           marginBottom: '2rem',
+          overflow: 'hidden',
         }}>
           {filters.map(filter => {
             const isActive = activeFilter === filter;
@@ -1244,8 +1246,8 @@
                 key={filter}
                 style={{
                   flex: 1,
-                  padding: '0.75rem 1.5rem',
-                  fontSize: '0.875rem',
+                  padding: '0.75rem 0.5rem',
+                  fontSize: isMobile ? '0.8rem' : '0.875rem',
                   fontWeight: 600,
                   color: isActive ? '#ffffff' : '#94a3b8',
                   background: isActive ? 'linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)' : 'transparent',
