@@ -1631,11 +1631,25 @@
                   textTransform: 'uppercase',
                   letterSpacing: '0.03em',
                 }}>
-                  {maxPulls
-                    ? `${pullHistory.length}/${maxPulls} Opens`
-                    : `${pullHistory.length} ${pullHistory.length === 1 ? 'Open' : 'Opens'}`
-                  }
+                  {pullHistory.length} {pullHistory.length === 1 ? 'Open' : 'Opens'}
                 </span>
+                {maxPulls && (
+                  <span style={{
+                    padding: '0.2rem 0.6rem',
+                    background: maxPulls - pullHistory.length === 0
+                      ? 'rgba(239, 68, 68, 0.7)'
+                      : 'rgba(245, 158, 11, 0.7)',
+                    backdropFilter: 'blur(4px)',
+                    borderRadius: '6px',
+                    fontSize: '0.65rem',
+                    fontWeight: 700,
+                    color: '#ffffff',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.03em',
+                  }}>
+                    {maxPulls - pullHistory.length}/{maxPulls} Left
+                  </span>
+                )}
                 {box.type === 'shared' && !box.isVisitor && (
                   <span style={{
                     padding: '0.2rem 0.6rem',
@@ -3191,7 +3205,7 @@
                   fontWeight: 600,
                   color: remainingPulls === 0 ? '#fca5a5' : '#93c5fd',
                 }}>
-                  {pullHistory.length}/{box.maxPulls} Opens
+                  {remainingPulls}/{box.maxPulls} Opens Left
                 </div>
               )}
               {remainingUserPulls !== null && (
@@ -3204,7 +3218,7 @@
                   fontWeight: 600,
                   color: remainingUserPulls === 0 ? '#fca5a5' : '#c4b5fd',
                 }}>
-                  You: {userPullCount}/{box.maxPullsPerUser} Opens
+                  You: {remainingUserPulls}/{box.maxPullsPerUser} Opens Left
                 </div>
               )}
               {box.expiresAt && (

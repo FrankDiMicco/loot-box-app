@@ -1,57 +1,75 @@
 ================================================================================
-FEATURE: CHANGE "PULLS" BADGE TO "X/Y OPENS" FORMAT
+FEATURE: CHANGE "PULLS" TO "OPENS" + REMAINING/TOTAL FORMAT
 ================================================================================
 File: index.html
 Components: BoxCard, BoxOpener
 
 OVERVIEW
 --------------------------------------------------------------------------------
-1. Replace all user-facing instances of "Pull" / "Pulls" with "Open" / "Opens"
-2. Change the BoxCard badge from "3 Pulls" to "1/2 Opens" format (used/total)
-3. Only show the fraction format when maxPulls is set; otherwise just show
-   the count of opens done (e.g. "3 Opens")
+1. Replace all user-facing "Pull"/"Pulls" with "Open"/"Opens"
+2. Use REMAINING/TOTAL format (e.g. "2/2 Opens" = 2 left out of 2)
+3. Add an opens remaining badge to BoxCard on the home page
 
 
-CHANGE 1: BOXCARD BADGE (pill badge on the box card image)
+CHANGE 1: BOXCARD - RENAME EXISTING BADGE + ADD REMAINING BADGE
 --------------------------------------------------------------------------------
-In the BoxCard component, find the badge that currently reads:
+In the BoxCard component, find the pill badges area (top-left overlay on the
+box image). There are currently badges for items count, pull count, type, etc.
 
-  {pullHistory.length} {pullHistory.length === 1 ? 'Pull' : 'Pulls'}
+A) Find the badge that currently reads:
+     {pullHistory.length} {pullHistory.length === 1 ? 'Pull' : 'Pulls'}
 
-Replace with logic that shows used/total when maxPulls exists:
+   Change to show total opens done:
+     {pullHistory.length} {pullHistory.length === 1 ? 'Open' : 'Opens'}
 
-  {maxPulls
-    ? `${pullHistory.length}/${maxPulls} Opens`
-    : `${pullHistory.length} ${pullHistory.length === 1 ? 'Open' : 'Opens'}`
-  }
+B) ADD a new badge right after that one, but ONLY when maxPulls is set.
+   This shows remaining out of total:
 
-This will display:
-  - "0/2 Opens" when maxPulls is 2 and nothing opened yet
-  - "1/2 Opens" after one open
-  - "2/2 Opens" when all used up
-  - "3 Opens" when maxPulls is null/unlimited
+   {maxPulls && (
+     <span style={{
+       padding: '0.2rem 0.6rem',
+       background: maxPulls - pullHistory.length === 0
+         ? 'rgba(239, 68, 68, 0.7)'
+         : 'rgba(245, 158, 11, 0.7)',
+       backdropFilter: 'blur(4px)',
+       borderRadius: '6px',
+       fontSize: '0.65rem',
+       fontWeight: 700,
+       color: '#ffffff',
+       textTransform: 'uppercase',
+       letterSpacing: '0.03em',
+     }}>
+       {maxPulls - pullHistory.length}/{maxPulls} Left
+     </span>
+   )}
+
+   This will display:
+     - "2/2 Left" (amber) when box is fresh with maxPulls=2
+     - "1/2 Left" (amber) after one open
+     - "0/2 Left" (red) when all used up
+     - Badge hidden entirely when maxPulls is null/unlimited
 
 
 CHANGE 2: BOXOPENER HEADER BADGES
 --------------------------------------------------------------------------------
-In the BoxOpener component, find the status badges area below the box name.
+In the BoxOpener component, find the status badges below the box name.
 
 A) The "Total Left" badge currently reads:
      {remainingPulls} Total Left
 
-   Change to:
-     {pullHistory.length}/{box.maxPulls} Opens
+   Change to remaining/total format:
+     {remainingPulls}/{box.maxPulls} Opens Left
 
 B) The "You: X Left" badge currently reads:
      You: {remainingUserPulls} Left
 
    Change to:
-     You: {userPullCount}/{box.maxPullsPerUser} Opens
+     You: {remainingUserPulls}/{box.maxPullsPerUser} Opens Left
 
 
 CHANGE 3: PULL HISTORY HEADING
 --------------------------------------------------------------------------------
-In the BoxOpener component, find the collapsible "Pull History" section header:
+In the BoxOpener component, find:
 
   Pull History ({pullHistory.length})
 
@@ -62,47 +80,23 @@ Change to:
 
 CHANGE 4: STATUS/ERROR MESSAGES
 --------------------------------------------------------------------------------
-Search the entire BoxOpener component for any remaining instances of the word
-"pull" or "pulls" in user-facing strings and replace with "open" / "opens".
+Find and replace all user-facing strings throughout BoxOpener:
 
-Specific strings to find and replace:
-
-  'No pulls remaining'        → 'No opens remaining'
-  'No pulls yet'              → 'No opens yet'
-  'You have used all your pulls!' → 'You have used all your opens!'
-  'No pulls remaining'        → 'No opens remaining'
-  'Failed to save pull to shared box' → 'Failed to save open to shared box'
-
-Also update the "Ready to open!" and status text area. The text that says
-"No pulls remaining" should say "No opens remaining".
-
-
-CHANGE 5: BOXOPENER "READY" STATE TEXT
---------------------------------------------------------------------------------
-In the ready state (inside the Main Opening Area Card), find:
-
-  'No pulls remaining'
-
-Change to:
-
-  'No opens remaining'
-
-And the helper text below it:
+  'No pulls remaining'                    → 'No opens remaining'
+  'No pulls yet'                          → 'No opens yet'
+  'You have used all your pulls!'         → 'You have used all your opens!'
+  'Failed to save pull to shared box'     → 'Failed to save open to shared box'
   'Check the pull history to see what was opened'
-
-Change to:
-  'Check the open history to see what was opened'
+    → 'Check the open history to see what was opened'
 
 
 TESTING
 --------------------------------------------------------------------------------
-[ ] BoxCard with maxPulls=2, 0 opens: shows "0/2 Opens"
-[ ] BoxCard with maxPulls=2, 1 open: shows "1/2 Opens"
-[ ] BoxCard with maxPulls=2, 2 opens: shows "2/2 Opens"
-[ ] BoxCard with no maxPulls, 5 opens: shows "5 Opens"
-[ ] BoxCard with no maxPulls, 1 open: shows "1 Open"
-[ ] BoxOpener header badge shows "1/2 Opens" format
-[ ] BoxOpener per-user badge shows "You: 0/1 Opens" format
+[ ] BoxCard (home page), maxPulls=2, 0 used: shows "0 Opens" + "2/2 Left" (amber)
+[ ] BoxCard (home page), maxPulls=2, 1 used: shows "1 Open" + "1/2 Left" (amber)
+[ ] BoxCard (home page), maxPulls=2, 2 used: shows "2 Opens" + "0/2 Left" (red)
+[ ] BoxCard (home page), no maxPulls: shows "3 Opens", no "Left" badge
+[ ] BoxOpener badge shows "1/2 Opens Left" format
+[ ] BoxOpener per-user badge shows "You: 1/1 Opens Left"
 [ ] "Open History" heading (not "Pull History")
 [ ] All error/status messages say "opens" not "pulls"
-[ ] No remaining instances of "pull" or "pulls" in user-facing text
