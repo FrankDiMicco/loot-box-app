@@ -1622,7 +1622,11 @@
                 </span>
                 <span style={{
                   padding: '0.2rem 0.6rem',
-                  background: 'rgba(59, 130, 246, 0.7)',
+                  background: maxPulls
+                    ? (maxPulls - pullHistory.length === 0
+                      ? 'rgba(239, 68, 68, 0.7)'
+                      : 'rgba(245, 158, 11, 0.7)')
+                    : 'rgba(59, 130, 246, 0.7)',
                   backdropFilter: 'blur(4px)',
                   borderRadius: '6px',
                   fontSize: '0.65rem',
@@ -1631,25 +1635,10 @@
                   textTransform: 'uppercase',
                   letterSpacing: '0.03em',
                 }}>
-                  {pullHistory.length} {pullHistory.length === 1 ? 'Open' : 'Opens'}
+                  {maxPulls
+                    ? `${maxPulls - pullHistory.length}/${maxPulls} Opens Left`
+                    : 'Unlimited Opens'}
                 </span>
-                {maxPulls && (
-                  <span style={{
-                    padding: '0.2rem 0.6rem',
-                    background: maxPulls - pullHistory.length === 0
-                      ? 'rgba(239, 68, 68, 0.7)'
-                      : 'rgba(245, 158, 11, 0.7)',
-                    backdropFilter: 'blur(4px)',
-                    borderRadius: '6px',
-                    fontSize: '0.65rem',
-                    fontWeight: 700,
-                    color: '#ffffff',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.03em',
-                  }}>
-                    {maxPulls - pullHistory.length}/{maxPulls} Left
-                  </span>
-                )}
                 {box.type === 'shared' && !box.isVisitor && (
                   <span style={{
                     padding: '0.2rem 0.6rem',
