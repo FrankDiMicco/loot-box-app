@@ -1,0 +1,170 @@
+================================================================================
+FEATURE: TAP/CLICK BOX IMAGE TO OPEN
+================================================================================
+File: index.html (the main loot-box-app-v2.html / single HTML file)
+Component: BoxOpener
+
+OVERVIEW
+--------------------------------------------------------------------------------
+Make the loot box image in the BoxOpener component clickable/tappable so users
+can tap the box itself to trigger the opening animation, instead of only using
+the "Open Box" button below. The button should remain as a secondary option.
+
+
+STEP 1: ADD CSS ANIMATIONS
+--------------------------------------------------------------------------------
+In the <style> section (where other @keyframes like spin, fadeIn, etc. exist),
+add these new keyframes:
+
+@keyframes boxWiggle {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  15% { transform: rotate(-3deg) scale(1.02); }
+  30% { transform: rotate(3deg) scale(1.04); }
+  45% { transform: rotate(-3deg) scale(1.02); }
+  60% { transform: rotate(2deg) scale(1.01); }
+  75% { transform: rotate(-1deg) scale(1); }
+}
+
+@keyframes boxIdle {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes tapHint {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+
+STEP 2: MAKE THE BOX IMAGE CLICKABLE IN THE "READY" STATE
+--------------------------------------------------------------------------------
+Location: Inside BoxOpener, find the "Main Opening Area" <Card> section.
+Currently the ready state (when not isOpening and not showResult) shows the
+box image statically inside the Card.
+
+Find the ready state rendering of the box image. It's the section that shows
+the box image when the box is NOT opening and NOT showing a result. It renders
+inside the Card with minHeight: '400px'.
+
+Wrap the box image in a clickable container. The ready state currently shows:
+- The box image (200x200)
+- A status message ("Ready to open!" / "No pulls remaining" / "This box has expired")
+
+Replace the ready state box image area with an interactive version:
+
+A) Add the click handler - the image container should call handleOpen when
+   clicked (same function the Open Button uses), but ONLY when canPull is true
+   and isOpening is false and the box is not expired.
+
+B) Style the clickable box image container with:
+   - cursor: pointer (when canPull && !isExpired)
+   - cursor: default (when disabled)
+   - animation: 'boxIdle 3s ease-in-out infinite' (when canPull && !isExpired)
+   - No idle animation when expired or no pulls remaining
+   - On hover/active, add a subtle scale transform (scale 1.05 on hover)
+   - transition: 'transform 0.2s ease'
+   - The image should be 200x200 as it currently is
+
+C) Add a "Tap to Open!" hint text below the box image (inside the clickable
+   area), styled as:
+   - fontSize: '0.875rem'
+   - color: '#94a3b8'
+   - animation: 'tapHint 2s ease-in-out infinite'
+   - marginTop: '0.75rem'
+   - fontWeight: 500
+   - Only show this text when canPull && !isExpired && !isOpening
+   - On mobile, change text to "Tap to Open!" 
+   - On desktop, change text to "Click to Open!"
+   - Use the existing isMobile variable for this
+
+D) Add a wiggle animation on click feedback:
+   - When the user taps/clicks the box, briefly apply the boxWiggle animation
+     before the spin starts
+   - Use a local state like [isWiggling, setIsWiggling] = useState(false)
+   - On click: setIsWiggling(true), then after ~400ms, setIsWiggling(false)
+     and call handleOpen()
+   - When isWiggling is true, apply animation: 'boxWiggle 0.4s ease'
+   - When isWiggling is false and canPull, apply animation: 'boxIdle 3s ease-in-out infinite'
+
+E) Add a subtle glow effect around the box when it's ready to open:
+   - boxShadow: '0 0 30px rgba(59, 130, 246, 0.3), 0 0 60px rgba(59, 130, 246, 0.1)'
+   - Only when canPull && !isExpired
+   - Remove glow when expired or no pulls
+
+
+STEP 3: UPDATE THE OPEN BUTTON STYLING
+--------------------------------------------------------------------------------
+The existing Open Button should remain but be visually demoted slightly since
+the primary interaction is now tapping the box itself.
+
+Find the Open Button (the <Button> with the gradient background right after
+the Main Opening Area Card).
+
+Changes:
+- Reduce padding from '1.25rem' to '1rem'
+- Reduce fontSize from '1.5rem' to '1.125rem'
+- Change the background gradient to a more subtle version:
+  background: 'linear-gradient(135deg, rgba(30, 64, 175, 0.6) 0%, rgba(245, 158, 11, 0.6) 100%)'
+- Reduce boxShadow from '0 8px 32px rgba(30, 64, 175, 0.4)' to
+  '0 4px 16px rgba(30, 64, 175, 0.2)'
+- Add a small text below the button text: "or tap the box above"
+  - fontSize: '0.75rem'
+  - color: 'rgba(255,255,255,0.5)'
+  - marginTop: '0.25rem'
+  - Only show this hint when canPull && !isExpired
+
+
+STEP 4: HANDLE THE RESULT STATE TAP-TO-REOPEN
+--------------------------------------------------------------------------------
+When showResult is true (after opening, showing the prize), the user should
+also be able to tap the result card area to open again (like "Open Again").
+
+In the result state rendering (the div with the color glow showing the prize),
+make it clickable:
+- Add onClick={handleOpen} to the result container div
+- Add cursor: 'pointer' when canPull (more pulls available)
+- Add a small "Tap to open again!" text at the bottom of the result card
+  - Only show when canPull && !isExpired
+  - fontSize: '0.875rem'
+  - color: '#94a3b8'
+  - marginTop: '1rem'
+  - animation: 'tapHint 2s ease-in-out infinite'
+
+
+STEP 5: ADD WIGGLE STATE TO BOXOPENER
+--------------------------------------------------------------------------------
+At the top of the BoxOpener component, alongside existing useState hooks, add:
+
+const [isWiggling, setIsWiggling] = useState(false);
+
+Create a new handler function (place it near handleOpen):
+
+const handleBoxTap = () => {
+  if (!canPull || isOpening || isExpired || currentOdds.length === 0) return;
+  setIsWiggling(true);
+  setTimeout(() => {
+    setIsWiggling(false);
+    handleOpen();
+  }, 400);
+};
+
+Use handleBoxTap for the box image click and result area click.
+Keep handleOpen for the button click (no wiggle needed on button).
+
+
+TESTING CHECKLIST
+--------------------------------------------------------------------------------
+[ ] Box image has gentle floating animation when ready to open
+[ ] "Tap to Open!" / "Click to Open!" hint text pulses below box
+[ ] Tapping box triggers wiggle animation then opens
+[ ] Spinning animation plays normally after wiggle
+[ ] Result reveal works the same as before
+[ ] Tapping the result card opens again (if pulls remaining)
+[ ] Box is NOT clickable when expired
+[ ] Box is NOT clickable when no pulls remaining
+[ ] Box is NOT clickable during opening animation
+[ ] Open Button still works as before
+[ ] Open Button has subtle "or tap the box above" hint
+[ ] Mobile: touch targets are large enough (200x200 box image)
+[ ] Desktop: hover effect scales box slightly
+[ ] No double-opens from rapid tapping (isOpening guard)

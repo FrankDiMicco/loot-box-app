@@ -159,6 +159,25 @@
       }
     }
 
+    @keyframes boxWiggle {
+      0%, 100% { transform: rotate(0deg) scale(1); }
+      15% { transform: rotate(-3deg) scale(1.02); }
+      30% { transform: rotate(3deg) scale(1.04); }
+      45% { transform: rotate(-3deg) scale(1.02); }
+      60% { transform: rotate(2deg) scale(1.01); }
+      75% { transform: rotate(-1deg) scale(1); }
+    }
+
+    @keyframes boxIdle {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-6px); }
+    }
+
+    @keyframes tapHint {
+      0%, 100% { opacity: 0.6; }
+      50% { opacity: 1; }
+    }
+
     @keyframes pulse {
       0%, 100% {
         opacity: 1;
@@ -2927,6 +2946,7 @@
       const [isOpening, setIsOpening] = useState(false);
       const [currentPull, setCurrentPull] = useState(null);
       const [showResult, setShowResult] = useState(false);
+      const [isWiggling, setIsWiggling] = useState(false);
       const [userName, setUserName] = useState(() => {
         if (box.type === 'shared' && box.shareCode) {
           // Check for a name saved specifically for this box
@@ -3070,6 +3090,15 @@
             onBoxUpdate && onBoxUpdate(updatedBox);
           }
         }, 2000);
+      };
+
+      const handleBoxTap = () => {
+        if (!canPull || isOpening || isExpired || currentOdds.length === 0) return;
+        setIsWiggling(true);
+        setTimeout(() => {
+          setIsWiggling(false);
+          handleOpen();
+        }, 400);
       };
 
       const handleNameSubmit = (e) => {
@@ -3234,17 +3263,20 @@
                 </div>
               </div>
             ) : showResult && currentPull ? (
-              <div style={{
-                textAlign: 'center',
-                padding: '3rem',
-                borderRadius: '16px',
-                background: `linear-gradient(135deg, ${currentPull.color}40 0%, ${currentPull.color}20 100%)`,
-                border: `2px solid ${currentPull.color}`,
-                boxShadow: `0 0 40px ${currentPull.color}60`,
-                animation: 'fadeIn 0.5s ease',
-                width: '100%',
-                maxWidth: '500px',
-              }}>
+              <div
+                onClick={canPull && !isExpired ? handleBoxTap : undefined}
+                style={{
+                  textAlign: 'center',
+                  padding: '3rem',
+                  borderRadius: '16px',
+                  background: `linear-gradient(135deg, ${currentPull.color}40 0%, ${currentPull.color}20 100%)`,
+                  border: `2px solid ${currentPull.color}`,
+                  boxShadow: `0 0 40px ${currentPull.color}60`,
+                  animation: 'fadeIn 0.5s ease',
+                  width: '100%',
+                  maxWidth: '500px',
+                  cursor: canPull && !isExpired ? 'pointer' : 'default',
+                }}>
                 {currentPull.imageUrl ? (
                   <div style={{
                     width: '200px',
@@ -3286,16 +3318,39 @@
                 }}>
                   {currentPull.percentage}% chance
                 </div>
+                {canPull && !isExpired && (
+                  <div style={{
+                    fontSize: '0.875rem',
+                    color: '#94a3b8',
+                    marginTop: '1rem',
+                    animation: 'tapHint 2s ease-in-out infinite',
+                  }}>
+                    {isMobile ? 'Tap to open again!' : 'Click to open again!'}
+                  </div>
+                )}
               </div>
             ) : (
               <div style={{ textAlign: 'center' }}>
-                <div style={{
-                  width: '200px',
-                  height: '200px',
-                  marginBottom: '1.5rem',
-                  margin: '0 auto 1.5rem',
-                  filter: 'drop-shadow(0 0 20px rgba(59, 130, 246, 0.4))',
-                }}>
+                <div
+                  onClick={canPull && !isExpired ? handleBoxTap : undefined}
+                  style={{
+                    width: '200px',
+                    height: '200px',
+                    margin: '0 auto 1.5rem',
+                    cursor: canPull && !isExpired ? 'pointer' : 'default',
+                    animation: isWiggling
+                      ? 'boxWiggle 0.4s ease'
+                      : canPull && !isExpired
+                        ? 'boxIdle 3s ease-in-out infinite'
+                        : 'none',
+                    transition: 'transform 0.2s ease',
+                    filter: 'drop-shadow(0 0 20px rgba(59, 130, 246, 0.4))',
+                    boxShadow: canPull && !isExpired
+                      ? '0 0 30px rgba(59, 130, 246, 0.3), 0 0 60px rgba(59, 130, 246, 0.1)'
+                      : 'none',
+                    borderRadius: '16px',
+                  }}
+                >
                   <img
                     src={getBoxImageUrl(box.boxImageId)}
                     alt={box.name}
@@ -3308,6 +3363,18 @@
                   />
                   <div style={{ fontSize: '6rem', display: 'none' }}>📦</div>
                 </div>
+                {canPull && !isExpired && !isOpening && (
+                  <div style={{
+                    fontSize: '0.875rem',
+                    color: '#94a3b8',
+                    animation: 'tapHint 2s ease-in-out infinite',
+                    marginTop: '-0.75rem',
+                    marginBottom: '0.75rem',
+                    fontWeight: 500,
+                  }}>
+                    {isMobile ? 'Tap to Open!' : 'Click to Open!'}
+                  </div>
+                )}
                 <div style={{
                   fontSize: '1.25rem',
                   color: isExpired ? '#fca5a5' : !canPull ? '#fca5a5' : '#cbd5e1',
@@ -3319,16 +3386,16 @@
                       ? 'No pulls remaining'
                       : 'Ready to open!'}
                 </div>
-                <div style={{
-                  fontSize: '0.875rem',
-                  color: '#64748b',
-                }}>
-                  {isExpired
-                    ? 'You can still view the pull history below'
-                    : !canPull
-                      ? 'Check the pull history to see what was opened'
-                      : 'Click the button below to reveal your prize'}
-                </div>
+                {(isExpired || !canPull) && (
+                  <div style={{
+                    fontSize: '0.875rem',
+                    color: '#64748b',
+                  }}>
+                    {isExpired
+                      ? 'You can still view the pull history below'
+                      : 'Check the pull history to see what was opened'}
+                  </div>
+                )}
               </div>
             )}
           </Card>
@@ -3340,15 +3407,22 @@
             onClick={handleOpen}
             disabled={isOpening || !canPull || currentOdds.length === 0}
             fullWidth
-            style={{ 
-              marginBottom: '2rem', 
-              fontSize: '1.5rem', 
-              padding: '1.25rem',
-              background: 'linear-gradient(135deg, #1e40af 0%, #f59e0b 100%)',
-              boxShadow: '0 8px 32px rgba(30, 64, 175, 0.4)',
+            style={{
+              marginBottom: '2rem',
+              fontSize: '1.125rem',
+              padding: '1rem',
+              background: 'linear-gradient(135deg, rgba(30, 64, 175, 0.6) 0%, rgba(245, 158, 11, 0.6) 100%)',
+              boxShadow: '0 4px 16px rgba(30, 64, 175, 0.2)',
             }}
           >
-            {isExpired ? 'Box Expired' : isOpening ? 'Opening...' : showResult ? 'Open Again' : 'Open Box'}
+            <div>
+              {isExpired ? 'Box Expired' : isOpening ? 'Opening...' : showResult ? 'Open Again' : 'Open Box'}
+              {canPull && !isExpired && (
+                <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)', marginTop: '0.25rem' }}>
+                  or tap the box above
+                </div>
+              )}
+            </div>
           </Button>
 
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : (box.hideOdds ? '1fr' : '1fr 1fr'), gap: isMobile ? '1rem' : '1.5rem' }}>
