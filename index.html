@@ -1501,7 +1501,7 @@
     // BoxCard (simplified for brevity)
     const BoxCard = ({ box, onClick, onEdit, onDelete, success }) => {
       const isMobile = useIsMobile();
-      const { name, items = [], pullHistory = [], maxPulls, type = 'local' } = box;
+      const { name, items = [], pullHistory = [], maxPulls, maxPullsPerUser, type = 'local' } = box;
       const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
       const handleEdit = (e) => {
@@ -1622,10 +1622,8 @@
                 </span>
                 <span style={{
                   padding: '0.2rem 0.6rem',
-                  background: maxPulls
-                    ? (maxPulls - pullHistory.length === 0
-                      ? 'rgba(239, 68, 68, 0.7)'
-                      : 'rgba(245, 158, 11, 0.7)')
+                  background: (maxPulls !== null && maxPulls !== undefined && maxPulls > 0)
+                    ? 'rgba(245, 158, 11, 0.7)'
                     : 'rgba(59, 130, 246, 0.7)',
                   backdropFilter: 'blur(4px)',
                   borderRadius: '6px',
@@ -1636,8 +1634,36 @@
                   letterSpacing: '0.03em',
                 }}>
                   {(maxPulls !== null && maxPulls !== undefined && maxPulls > 0)
-                    ? `${Math.max(0, maxPulls - pullHistory.length)}/${maxPulls} Opens Left`
-                    : 'Unlimited Opens'}
+                    ? `Max: ${maxPulls}`
+                    : 'Unlimited'}
+                </span>
+                {(maxPullsPerUser !== null && maxPullsPerUser !== undefined && maxPullsPerUser > 0) && (
+                  <span style={{
+                    padding: '0.2rem 0.6rem',
+                    background: 'rgba(139, 92, 246, 0.7)',
+                    backdropFilter: 'blur(4px)',
+                    borderRadius: '6px',
+                    fontSize: '0.65rem',
+                    fontWeight: 700,
+                    color: '#ffffff',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.03em',
+                  }}>
+                    {`Max: ${maxPullsPerUser}/Person`}
+                  </span>
+                )}
+                <span style={{
+                  padding: '0.2rem 0.6rem',
+                  background: 'rgba(59, 130, 246, 0.7)',
+                  backdropFilter: 'blur(4px)',
+                  borderRadius: '6px',
+                  fontSize: '0.65rem',
+                  fontWeight: 700,
+                  color: '#ffffff',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.03em',
+                }}>
+                  {`${pullHistory.length} ${pullHistory.length === 1 ? 'Open' : 'Opens'}`}
                 </span>
                 {box.type === 'shared' && !box.isVisitor && (
                   <span style={{
