@@ -490,7 +490,7 @@
         return data ? JSON.parse(data) : {
           tier: 'free',
           localBoxCount: 0,
-          displayName: 'Guest',
+          displayName: '',
           soundEnabled: true,
           theme: 'dark',
           uid: null,  // Firebase user ID
@@ -502,7 +502,7 @@
         return {
           tier: 'free',
           localBoxCount: 0,
-          displayName: 'Guest',
+          displayName: '',
           soundEnabled: true,
           theme: 'dark',
           uid: null,
@@ -2888,14 +2888,24 @@
       const [showResult, setShowResult] = useState(false);
       const [userName, setUserName] = useState(() => {
         if (box.type === 'shared' && box.shareCode) {
-          // Try box-specific name first
+          // Check for a name saved specifically for this box
           const boxName = getBoxUserName(box.shareCode);
           if (boxName) return boxName;
-          // Fall back to last used name, then global display name
-          return getLastUsedName() || getUserSettings().displayName || '';
+          // Check for a last used name from another box
+          const lastName = getLastUsedName();
+          if (lastName) return lastName;
+          // Check for a real display name (not the default 'Guest')
+          const settings = getUserSettings();
+          if (settings.displayName && settings.displayName !== 'Guest') {
+            return settings.displayName;
+          }
+          // No name found -- will trigger prompt
+          return '';
         }
         // Solo boxes use global display name
-        return getUserSettings().displayName || 'You';
+        const settings = getUserSettings();
+        return settings.displayName && settings.displayName !== 'Guest'
+          ? settings.displayName : 'You';
       });
       const [needsName, setNeedsName] = useState(false);
       const [oddsExpanded, setOddsExpanded] = useState(true);
@@ -2937,7 +2947,7 @@
 
       const handleOpen = () => {
         // Check if box is shared and needs user name
-        if (box.type === 'shared' && !userName && !needsName) {
+        if (box.type === 'shared' && (!userName || userName === 'Guest') && !needsName) {
           setNeedsName(true);
           return;
         }
