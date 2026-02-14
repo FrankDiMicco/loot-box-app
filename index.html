@@ -3555,14 +3555,30 @@
 
       // Tick to keep expiration badges fresh (1s when under 1min, else 30s)
       const [, setTick] = useState(0);
+      const boxesRef = useRef(boxes);
+      useEffect(() => { boxesRef.current = boxes; }, [boxes]);
+
       useEffect(() => {
-        const hasExpiringSoon = boxes.some(b =>
-          b.expiresAt && b.expiresAt - Date.now() > 0 && b.expiresAt - Date.now() < 60000
-        );
-        const interval = hasExpiringSoon ? 1000 : 30000;
-        const timer = setInterval(() => setTick(t => t + 1), interval);
-        return () => clearInterval(timer);
-      }, [boxes]);
+        const getInterval = () => {
+          const hasExpiringSoon = boxesRef.current.some(b =>
+            b.expiresAt && b.expiresAt - Date.now() > 0 && b.expiresAt - Date.now() < 60000
+          );
+          return hasExpiringSoon ? 1000 : 30000;
+        };
+
+        let timer = setInterval(() => setTick(t => t + 1), getInterval());
+
+        // Re-check interval every 30s to switch between fast/slow
+        const checker = setInterval(() => {
+          clearInterval(timer);
+          timer = setInterval(() => setTick(t => t + 1), getInterval());
+        }, 30000);
+
+        return () => {
+          clearInterval(timer);
+          clearInterval(checker);
+        };
+      }, []);
 
       const loadTemplate = async (shareCode) => {
         const templateData = await fetchBoxTemplate(shareCode);
