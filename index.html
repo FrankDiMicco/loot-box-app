@@ -3460,6 +3460,7 @@
                       pullHistory: updatedBox.pullHistory || [],
                       items: updatedBox.items || b.items,
                       name: updatedBox.name || b.name,
+                      allowParticipantSharing: updatedBox.allowParticipantSharing || false,
                     };
                     // Also persist to localStorage
                     saveBox(updated);
