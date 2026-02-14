@@ -1,0 +1,108 @@
+================================================================================
+FEATURE: "NEW" BADGE + SORT BY RECENT ACTIVITY
+================================================================================
+File: index.html
+Components: BoxCard, BoxOpener, App
+
+TWO INDEPENDENT CHANGES
+--------------------------------------------------------------------------------
+1. "New" badge on BoxCard - visual only, removed when user enters open modal
+2. Sort "All" filter by most recent activity (not by "new first")
+
+
+CHANGE 1: "NEW" BADGE
+--------------------------------------------------------------------------------
+
+A) TRACKING SEEN STATUS
+   Store a list of seen box IDs in localStorage. Create two utility functions
+   near the other localStorage helpers:
+
+   const getSeenBoxes = () => {
+     try { return JSON.parse(localStorage.getItem('lootBoxSeenBoxes')) || []; }
+     catch { return []; }
+   };
+
+   const markBoxAsSeen = (boxId) => {
+     const seen = getSeenBoxes();
+     if (!seen.includes(boxId)) {
+       seen.push(boxId);
+       localStorage.setItem('lootBoxSeenBoxes', JSON.stringify(seen));
+     }
+   };
+
+B) MARK AS SEEN WHEN ENTERING OPEN MODAL
+   In the App component, find handleOpenBox (where setMode('open') is called).
+   Right before or after setOpeningBox(box), add:
+
+     markBoxAsSeen(box.id);
+
+   This marks the box as seen whether the user opens it or not.
+
+C) DISPLAY "NEW" BADGE ON BOXCARD
+   Pass a prop to BoxCard indicating if the box is new:
+
+     <BoxCard
+       ...existing props...
+       isNew={!getSeenBoxes().includes(box.id)}
+     />
+
+   In BoxCard, accept the isNew prop. When isNew is true, render a "New"
+   badge. Place it on the image overlay (top-left, alongside Group/Joined/
+   expiration badges):
+
+     {isNew && (
+       <span style={{
+         padding: '0.2rem 0.6rem',
+         background: 'rgba(16, 185, 129, 0.9)',
+         backdropFilter: 'blur(4px)',
+         borderRadius: '6px',
+         fontSize: '0.65rem',
+         fontWeight: 700,
+         color: '#ffffff',
+         textTransform: 'uppercase',
+         letterSpacing: '0.03em',
+       }}>
+         New
+       </span>
+     )}
+
+   Use green (rgba(16, 185, 129, 0.9)) to make it pop.
+
+
+CHANGE 2: SORT "ALL" FILTER BY RECENT ACTIVITY
+--------------------------------------------------------------------------------
+In the App component, find the sorting logic for the "All" filter. It
+currently puts unopened boxes first, then sorts by most recently used.
+
+Replace it with simple activity-based sorting. Most recent activity first,
+where "activity" is whichever is latest: last pull timestamp OR creation date.
+
+  if (activeFilter === 'All') {
+    filteredBoxes = filteredBoxes.sort((a, b) => {
+      const getLastActivity = (box) => {
+        const lastPull = (box.pullHistory && box.pullHistory.length > 0)
+          ? Math.max(...box.pullHistory.map(p => p.timestamp || 0))
+          : 0;
+        return Math.max(lastPull, box.createdAt || 0);
+      };
+      return getLastActivity(b) - getLastActivity(a);
+    });
+  }
+
+This means:
+  - A brand new box starts at the top (creation date is recent)
+  - When you open another box, that box jumps to the top
+  - The new box naturally drifts down as other boxes get used
+  - The "New" badge stays on it so you can still spot it
+
+
+TESTING
+--------------------------------------------------------------------------------
+[ ] Create a new box - it has a green "New" badge
+[ ] Join a shared box via link - it has a "New" badge
+[ ] Tap into the box open modal - "New" badge disappears on return
+[ ] Just viewing the modal removes it, no need to actually open
+[ ] "New" badge persists across page refreshes until modal is entered
+[ ] Sort order: most recently used/created boxes appear first
+[ ] A new box starts at the top but drifts down as other boxes are used
+[ ] "New" badge is visible and doesn't clash with other badges

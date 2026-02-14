@@ -505,6 +505,19 @@
       }
     };
 
+    const getSeenBoxes = () => {
+      try { return JSON.parse(localStorage.getItem('lootBoxSeenBoxes')) || []; }
+      catch { return []; }
+    };
+
+    const markBoxAsSeen = (boxId) => {
+      const seen = getSeenBoxes();
+      if (!seen.includes(boxId)) {
+        seen.push(boxId);
+        localStorage.setItem('lootBoxSeenBoxes', JSON.stringify(seen));
+      }
+    };
+
     const deleteBox = (boxId) => {
       try {
         const boxes = getAllBoxes();
@@ -1499,7 +1512,7 @@
     };
 
     // BoxCard (simplified for brevity)
-    const BoxCard = ({ box, onClick, onEdit, onDelete, success }) => {
+    const BoxCard = ({ box, onClick, onEdit, onDelete, success, isNew }) => {
       const isMobile = useIsMobile();
       const { name, items = [], pullHistory = [], maxPulls, maxPullsPerUser, type = 'local' } = box;
       const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -1607,6 +1620,21 @@
                 gap: '0.4rem',
                 flexWrap: 'wrap',
               }}>
+                {isNew && (
+                  <span style={{
+                    padding: '0.2rem 0.6rem',
+                    background: 'rgba(16, 185, 129, 0.9)',
+                    backdropFilter: 'blur(4px)',
+                    borderRadius: '6px',
+                    fontSize: '0.65rem',
+                    fontWeight: 700,
+                    color: '#ffffff',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.03em',
+                  }}>
+                    New
+                  </span>
+                )}
                 {box.type === 'shared' && !box.isVisitor && (
                   <span style={{
                     padding: '0.2rem 0.6rem',
@@ -3942,6 +3970,7 @@
       };
 
       const handleOpenBox = async (box) => {
+        markBoxAsSeen(box.id);
         if (box.type === 'shared' && box.shareCode) {
           const freshBox = await fetchSharedBox(box.shareCode);
           if (freshBox) {
@@ -3985,26 +4014,13 @@
       // Sort "All" filter by newest first, then by most recently used
       if (activeFilter === 'All') {
         filteredBoxes = filteredBoxes.sort((a, b) => {
-          // Get the most recent pull timestamp for each box
-          const getLastUsed = (box) => {
-            if (!box.pullHistory || box.pullHistory.length === 0) return 0;
-            return Math.max(...box.pullHistory.map(pull => pull.timestamp || 0));
+          const getLastActivity = (box) => {
+            const lastPull = (box.pullHistory && box.pullHistory.length > 0)
+              ? Math.max(...box.pullHistory.map(p => p.timestamp || 0))
+              : 0;
+            return Math.max(lastPull, box.createdAt || 0);
           };
-
-          const aLastUsed = getLastUsed(a);
-          const bLastUsed = getLastUsed(b);
-
-          // If both have been used, sort by most recent use
-          if (aLastUsed > 0 && bLastUsed > 0) {
-            return bLastUsed - aLastUsed;
-          }
-
-          // If only one has been used, prioritize the unused one (newer)
-          if (aLastUsed > 0 && bLastUsed === 0) return 1;
-          if (aLastUsed === 0 && bLastUsed > 0) return -1;
-
-          // If neither has been used, sort by creation date (newest first)
-          return (b.createdAt || 0) - (a.createdAt || 0);
+          return getLastActivity(b) - getLastActivity(a);
         });
       }
 
@@ -4075,6 +4091,7 @@
                       onEdit={handleEditBox}
                       onDelete={handleDeleteBox}
                       success={success}
+                      isNew={!getSeenBoxes().includes(box.id)}
                     />
                   ))}
                 </div>
