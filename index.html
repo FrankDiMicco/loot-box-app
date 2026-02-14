@@ -1631,7 +1631,10 @@
                   textTransform: 'uppercase',
                   letterSpacing: '0.03em',
                 }}>
-                  {pullHistory.length} {pullHistory.length === 1 ? 'Pull' : 'Pulls'}
+                  {maxPulls
+                    ? `${pullHistory.length}/${maxPulls} Opens`
+                    : `${pullHistory.length} ${pullHistory.length === 1 ? 'Open' : 'Opens'}`
+                  }
                 </span>
                 {box.type === 'shared' && !box.isVisitor && (
                   <span style={{
@@ -1798,7 +1801,7 @@
           title={box.isVisitor ? "Remove from your feed?" : "Delete Loot Box?"}
           message={box.isVisitor
             ? `Remove "${name}" from your feed?`
-            : `Are you sure you want to delete "${name}"? This action cannot be undone and all pull history will be lost.`
+            : `Are you sure you want to delete "${name}"? This action cannot be undone and all open history will be lost.`
           }
           onConfirm={handleDeleteConfirm}
           onCancel={handleDeleteCancel}
@@ -2742,7 +2745,7 @@
               <div style={{ marginTop: '1rem', display: 'grid', gridTemplateColumns: boxType === 'shared' ? '1fr 1fr' : '1fr', gap: '1rem', maxWidth: boxType === 'shared' ? '500px' : '250px' }}>
                 <Input
                   type="number"
-                  label="Max Pulls Total (Optional)"
+                  label="Max Opens Total (Optional)"
                   placeholder="Unlimited"
                   value={maxPulls}
                   onChange={(e) => setMaxPulls(e.target.value)}
@@ -2752,7 +2755,7 @@
                 {boxType === 'shared' && (
                   <Input
                     type="number"
-                    label="Max Pulls Per Person (Optional)"
+                    label="Max Opens Per Person (Optional)"
                     placeholder="Unlimited"
                     value={maxPullsPerUser}
                     onChange={(e) => setMaxPullsPerUser(e.target.value)}
@@ -3021,9 +3024,9 @@
           if (isExpired) {
             error('This box has expired!');
           } else if (!userLimitOk) {
-            error('You have used all your pulls!');
+            error('You have used all your opens!');
           } else {
-            error('No pulls remaining!');
+            error('No opens remaining!');
           }
           return;
         }
@@ -3078,7 +3081,7 @@
               // The real-time listener will update pullHistory automatically
             } catch (err) {
               console.error('Failed to save pull:', err);
-              error('Failed to save pull to shared box');
+              error('Failed to save open to shared box');
             }
           } else {
             // Local box - save to localStorage
@@ -3188,7 +3191,7 @@
                   fontWeight: 600,
                   color: remainingPulls === 0 ? '#fca5a5' : '#93c5fd',
                 }}>
-                  {remainingPulls} Total Left
+                  {pullHistory.length}/{box.maxPulls} Opens
                 </div>
               )}
               {remainingUserPulls !== null && (
@@ -3201,7 +3204,7 @@
                   fontWeight: 600,
                   color: remainingUserPulls === 0 ? '#fca5a5' : '#c4b5fd',
                 }}>
-                  You: {remainingUserPulls} Left
+                  You: {userPullCount}/{box.maxPullsPerUser} Opens
                 </div>
               )}
               {box.expiresAt && (
@@ -3383,7 +3386,7 @@
                   {isExpired
                     ? 'This box has expired'
                     : !canPull
-                      ? 'No pulls remaining'
+                      ? 'No opens remaining'
                       : 'Ready to open!'}
                 </div>
                 {(isExpired || !canPull) && (
@@ -3392,8 +3395,8 @@
                     color: '#64748b',
                   }}>
                     {isExpired
-                      ? 'You can still view the pull history below'
-                      : 'Check the pull history to see what was opened'}
+                      ? 'You can still view the open history below'
+                      : 'Check the open history to see what was opened'}
                   </div>
                 )}
               </div>
@@ -3523,7 +3526,7 @@
                   color: '#e2e8f0',
                   margin: 0,
                 }}>
-                  Pull History ({pullHistory.length})
+                  Open History ({pullHistory.length})
                 </h3>
                 <span style={{
                   fontSize: '1.25rem',
@@ -3540,7 +3543,7 @@
                 <div style={{ marginTop: '1rem' }}>
                   {pullHistory.length === 0 ? (
                     <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
-                      No pulls yet
+                      No opens yet
                     </div>
                   ) : (
                     <div style={{
