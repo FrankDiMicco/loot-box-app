@@ -2978,6 +2978,16 @@
     };
 
     // BoxOpener Component
+    const isLightColor = (hex) => {
+      if (!hex) return false;
+      const c = hex.replace('#', '');
+      const r = parseInt(c.substr(0, 2), 16);
+      const g = parseInt(c.substr(2, 2), 16);
+      const b = parseInt(c.substr(4, 2), 16);
+      const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+      return luminance > 0.7;
+    };
+
     const BoxOpener = ({ box, onBack, onBoxUpdate, success, error, info }) => {
       const [pullHistory, setPullHistory] = useState(box.pullHistory || []);
       const [isOpening, setIsOpening] = useState(false);
@@ -3306,9 +3316,15 @@
                   textAlign: 'center',
                   padding: '3rem',
                   borderRadius: '16px',
-                  background: `linear-gradient(135deg, ${currentPull.color}40 0%, ${currentPull.color}20 100%)`,
-                  border: `2px solid ${currentPull.color}`,
-                  boxShadow: `0 0 40px ${currentPull.color}60`,
+                  background: isLightColor(currentPull.color)
+                    ? `linear-gradient(135deg, ${currentPull.color}40 0%, ${currentPull.color}20 100%)`
+                    : `linear-gradient(135deg, ${currentPull.color}40 0%, ${currentPull.color}20 100%)`,
+                  border: isLightColor(currentPull.color)
+                    ? '2px solid #94a3b8'
+                    : `2px solid ${currentPull.color}`,
+                  boxShadow: isLightColor(currentPull.color)
+                    ? '0 0 40px rgba(100, 116, 139, 0.6)'
+                    : `0 0 40px ${currentPull.color}60`,
                   animation: 'fadeIn 0.5s ease',
                   width: '100%',
                   maxWidth: '500px',
@@ -3339,7 +3355,7 @@
                 <h3 style={{
                   fontSize: '2rem',
                   fontWeight: 700,
-                  color: '#e2e8f0',
+                  color: isLightColor(currentPull.color) ? '#1e293b' : '#e2e8f0',
                   marginBottom: '0.5rem',
                 }}>
                   {currentPull.itemName}
@@ -3351,7 +3367,8 @@
                   borderRadius: '8px',
                   fontSize: '1rem',
                   fontWeight: 600,
-                  color: '#ffffff',
+                  color: isLightColor(currentPull.color) ? '#1e293b' : '#ffffff',
+                  border: isLightColor(currentPull.color) ? '2px solid #334155' : 'none',
                 }}>
                   {currentPull.percentage}% chance
                 </div>
@@ -3519,7 +3536,7 @@
                             <span style={{ flex: 1, fontSize: '0.875rem', color: '#cbd5e1' }}>
                               {box.hideContents ? '???' : item.name}
                             </span>
-                            <span style={{ fontSize: '1rem', fontWeight: 700, color: item.color }}>
+                            <span style={{ fontSize: '1rem', fontWeight: 700, color: isLightColor(item.color) ? '#94a3b8' : item.color }}>
                               {item.adjustedPercentage.toFixed(1)}%
                             </span>
                             {item.remaining !== Infinity && (
