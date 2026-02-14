@@ -1,0 +1,138 @@
+================================================================================
+FIX: Users can bypass per-user pull limits by changing their name
+================================================================================
+
+PROBLEM
+-------
+Per-user pull limits are enforced by counting pulls where
+pull.userName === currentUserName. A user can simply change their display
+name to get a fresh set of pulls. This is trivially exploitable.
+
+SOLUTION
+--------
+Generate a persistent device ID (stored in localStorage) and track pulls
+by deviceId instead of userName. The userName remains for display purposes
+only -- the limit enforcement uses the deviceId.
+
+
+================================================================================
+CHANGE 1: Create a getDeviceId utility function
+================================================================================
+
+Add this near the other utility functions (generateShareCode, etc.):
+
+  const getDeviceId = () => {
+    const STORAGE_KEY = 'lootBoxDeviceId';
+    try {
+      let deviceId = localStorage.getItem(STORAGE_KEY);
+      if (!deviceId) {
+        deviceId = 'device_' + Date.now().toString(36) + '_' +
+          Math.random().toString(36).substring(2, 10);
+        localStorage.setItem(STORAGE_KEY, deviceId);
+      }
+      return deviceId;
+    } catch {
+      // Fallback for private browsing -- generate per-session ID
+      return 'session_' + Date.now().toString(36) + '_' +
+        Math.random().toString(36).substring(2, 10);
+    }
+  };
+
+
+================================================================================
+CHANGE 2: Add deviceId to pull objects when recording pulls
+================================================================================
+
+In the BoxOpener component, find where the pull object is created (inside
+the setTimeout in handleOpen). Add a deviceId field:
+
+  const pull = {
+    itemId: selectedItem.id,
+    itemName: selectedItem.name,
+    percentage: selectedItem.percentage,
+    color: selectedItem.color,
+    imageUrl: selectedItem.imageUrl || null,
+    timestamp: Date.now(),
+    userName: userName || 'You',
+    deviceId: getDeviceId(),           // <-- ADD THIS
+  };
+
+
+================================================================================
+CHANGE 3: Update per-user limit check to use deviceId
+================================================================================
+
+In BoxOpener, find where userPullCount is calculated. Change it from
+matching on userName to matching on deviceId:
+
+  FROM:
+    const currentUserName = userName || 'You';
+    const userPullCount = pullHistory.filter(p => p.userName === currentUserName).length;
+
+  TO:
+    const currentDeviceId = getDeviceId();
+    const userPullCount = pullHistory.filter(p => p.deviceId === currentDeviceId).length;
+
+Keep the currentUserName variable if it's used elsewhere for display,
+but it must NOT be used for limit enforcement.
+
+
+================================================================================
+CHANGE 4: Update the "You: X Left" display
+================================================================================
+
+The remaining pulls display should still work the same -- it just reads
+from the updated userPullCount which now uses deviceId. No changes needed
+to the JSX display, just make sure remainingUserPulls is still calculated
+from the updated userPullCount:
+
+  const remainingUserPulls = box.maxPullsPerUser
+    ? box.maxPullsPerUser - userPullCount
+    : null;
+
+
+================================================================================
+CHANGE 5: Backward compatibility with old pulls
+================================================================================
+
+Old pull records won't have a deviceId field. This is fine because:
+  - The filter `p.deviceId === currentDeviceId` will simply not match
+    old pulls, so old pulls won't count against anyone's limit
+  - This is actually the generous/safe behavior -- existing pulls are
+    "grandfathered" and limits start fresh from the fix forward
+  - If you want stricter behavior, you could also match on userName as
+    a fallback for old records:
+
+    const userPullCount = pullHistory.filter(p =>
+      p.deviceId === currentDeviceId ||
+      (!p.deviceId && p.userName === (userName || 'You'))
+    ).length;
+
+  Use the fallback version if you want old pulls to still count.
+
+
+================================================================================
+IMPORTANT NOTES
+================================================================================
+- The userName field is still saved on every pull for DISPLAY purposes
+  (pull history shows who pulled what)
+- The deviceId is only used for LIMIT ENFORCEMENT
+- Users can still change their display name freely -- it just won't
+  reset their pull count
+- This isn't bulletproof (clearing localStorage resets deviceId) but it
+  stops casual exploits like simply changing a name field
+- Private/incognito browsing will get a new session ID each time, which
+  is acceptable -- the main use case is casual sharing with family
+
+
+================================================================================
+TESTING
+================================================================================
+1. Create a shared box with maxPullsPerUser set to 1
+2. Share it and open as a visitor, set name and pull once
+3. Try to pull again -- should be blocked ("You have used all your pulls!")
+4. Change the display name to something else
+5. Try to pull again -- should STILL be blocked (this was the bug)
+6. Open in a different browser -- should be able to pull (new device)
+7. Check pull history -- should show the correct display names
+8. Verify old boxes without deviceId in pull history still work

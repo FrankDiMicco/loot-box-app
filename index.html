@@ -406,6 +406,23 @@
       return code;
     };
 
+    const getDeviceId = () => {
+      const STORAGE_KEY = 'lootBoxDeviceId';
+      try {
+        let deviceId = localStorage.getItem(STORAGE_KEY);
+        if (!deviceId) {
+          deviceId = 'device_' + Date.now().toString(36) + '_' +
+            Math.random().toString(36).substring(2, 10);
+          localStorage.setItem(STORAGE_KEY, deviceId);
+        }
+        return deviceId;
+      } catch {
+        // Fallback for private browsing -- generate per-session ID
+        return 'session_' + Date.now().toString(36) + '_' +
+          Math.random().toString(36).substring(2, 10);
+      }
+    };
+
     // Format expiration countdown
     const formatExpirationCountdown = (expiresAt) => {
       const now = Date.now();
@@ -2957,7 +2974,11 @@
 
       // Calculate per-user remaining pulls
       const currentUserName = userName || 'You';
-      const userPullCount = pullHistory.filter(p => p.userName === currentUserName).length;
+      const currentDeviceId = getDeviceId();
+      const userPullCount = pullHistory.filter(p =>
+        p.deviceId === currentDeviceId ||
+        (!p.deviceId && p.userName === currentUserName)
+      ).length;
       const remainingUserPulls = box.maxPullsPerUser ? box.maxPullsPerUser - userPullCount : null;
 
       // Can pull only if ALL limits allow it
@@ -3018,6 +3039,7 @@
             imageUrl: selectedItem.imageUrl || null,
             timestamp: Date.now(),
             userName: userName || 'You',
+            deviceId: getDeviceId(),
           };
 
           setCurrentPull(pull);
