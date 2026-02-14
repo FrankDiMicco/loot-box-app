@@ -420,7 +420,9 @@
       
       if (days > 0) return `${days}d ${remainingHours}h`;
       if (hours > 0) return `${hours}h ${minutes}m`;
-      return `${minutes}m`;
+      if (minutes > 0) return `${minutes}m`;
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+      return `${seconds}s`;
     };
 
     // Check if expiring soon
@@ -3529,12 +3531,16 @@
       const [showSettings, setShowSettings] = useState(false);
       const { showToast, ToastContainer, success, error, info } = useToast();
 
-      // Tick every 30 seconds to keep expiration badges fresh
+      // Tick to keep expiration badges fresh (1s when under 1min, else 30s)
       const [, setTick] = useState(0);
       useEffect(() => {
-        const timer = setInterval(() => setTick(t => t + 1), 30000);
+        const hasExpiringSoon = boxes.some(b =>
+          b.expiresAt && b.expiresAt - Date.now() > 0 && b.expiresAt - Date.now() < 60000
+        );
+        const interval = hasExpiringSoon ? 1000 : 30000;
+        const timer = setInterval(() => setTick(t => t + 1), interval);
         return () => clearInterval(timer);
-      }, []);
+      }, [boxes]);
 
       const loadTemplate = async (shareCode) => {
         const templateData = await fetchBoxTemplate(shareCode);
