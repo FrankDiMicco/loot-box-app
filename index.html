@@ -3400,31 +3400,6 @@
             )}
           </Card>
 
-          {/* Open Button */}
-          <Button
-            variant="primary"
-            size="lg"
-            onClick={handleOpen}
-            disabled={isOpening || !canPull || currentOdds.length === 0}
-            fullWidth
-            style={{
-              marginBottom: '2rem',
-              fontSize: '1.125rem',
-              padding: '1rem',
-              background: 'linear-gradient(135deg, rgba(30, 64, 175, 0.6) 0%, rgba(245, 158, 11, 0.6) 100%)',
-              boxShadow: '0 4px 16px rgba(30, 64, 175, 0.2)',
-            }}
-          >
-            <div>
-              {isExpired ? 'Box Expired' : isOpening ? 'Opening...' : showResult ? 'Open Again' : 'Open Box'}
-              {canPull && !isExpired && (
-                <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)', marginTop: '0.25rem' }}>
-                  or tap the box above
-                </div>
-              )}
-            </div>
-          </Button>
-
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : (box.hideOdds ? '1fr' : '1fr 1fr'), gap: isMobile ? '1rem' : '1.5rem' }}>
             {/* Current Odds - only show if not hidden */}
             {!box.hideOdds && (
