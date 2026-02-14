@@ -139,6 +139,17 @@
       }
     }
 
+    @keyframes toastSlideUp {
+      from {
+        opacity: 0;
+        transform: translate(-50%, 20px);
+      }
+      to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+      }
+    }
+
     @keyframes spin {
       from {
         transform: rotate(0deg);
@@ -1080,7 +1091,7 @@
         color: '#ffffff',
         fontWeight: 500,
         minWidth: '300px',
-        animation: 'slideUp 0.4s ease',
+        animation: 'toastSlideUp 0.4s ease',
       };
 
       return (
