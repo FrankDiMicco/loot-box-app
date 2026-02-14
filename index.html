@@ -3740,7 +3740,13 @@
                       pullHistory: updatedBox.pullHistory || [],
                       items: updatedBox.items || b.items,
                       name: updatedBox.name || b.name,
-                      allowParticipantSharing: updatedBox.allowParticipantSharing || false,
+                      maxPulls: updatedBox.maxPulls != null ? updatedBox.maxPulls : b.maxPulls,
+                      maxPullsPerUser: updatedBox.maxPullsPerUser != null ? updatedBox.maxPullsPerUser : b.maxPullsPerUser,
+                      hideContents: updatedBox.hideContents != null ? updatedBox.hideContents : b.hideContents,
+                      hideOdds: updatedBox.hideOdds != null ? updatedBox.hideOdds : b.hideOdds,
+                      expiresAt: updatedBox.expiresAt != null ? updatedBox.expiresAt : b.expiresAt,
+                      boxImageId: updatedBox.boxImageId || b.boxImageId,
+                      allowParticipantSharing: updatedBox.allowParticipantSharing != null ? updatedBox.allowParticipantSharing : b.allowParticipantSharing,
                     };
                     // Also persist to localStorage
                     saveBox(updated);
@@ -3775,6 +3781,13 @@
                     pullHistory: freshBox.pullHistory || [],
                     items: freshBox.items || box.items,
                     name: freshBox.name || box.name,
+                    maxPulls: freshBox.maxPulls != null ? freshBox.maxPulls : box.maxPulls,
+                    maxPullsPerUser: freshBox.maxPullsPerUser != null ? freshBox.maxPullsPerUser : box.maxPullsPerUser,
+                    hideContents: freshBox.hideContents != null ? freshBox.hideContents : box.hideContents,
+                    hideOdds: freshBox.hideOdds != null ? freshBox.hideOdds : box.hideOdds,
+                    expiresAt: freshBox.expiresAt != null ? freshBox.expiresAt : box.expiresAt,
+                    boxImageId: freshBox.boxImageId || box.boxImageId,
+                    allowParticipantSharing: freshBox.allowParticipantSharing != null ? freshBox.allowParticipantSharing : box.allowParticipantSharing,
                   };
                 }
               } catch (err) {
