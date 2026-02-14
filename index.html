@@ -3016,6 +3016,7 @@
           ? settings.displayName : 'You';
       });
       const [needsName, setNeedsName] = useState(false);
+      const [isNameChange, setIsNameChange] = useState(false);
       const [oddsExpanded, setOddsExpanded] = useState(true);
       const [historyExpanded, setHistoryExpanded] = useState(false);
       const isMobile = useIsMobile();
@@ -3150,6 +3151,7 @@
 
       const handleNameSubmit = (e) => {
         e.preventDefault();
+        e.stopPropagation();
         if (userName.trim()) {
           const trimmedName = userName.trim();
           // Save name for this specific box
@@ -3159,7 +3161,12 @@
           // Also save as last used name for pre-filling future boxes
           setLastUsedName(trimmedName);
           setNeedsName(false);
-          handleOpen();
+          if (isNameChange) {
+            success('Name changed to ' + trimmedName);
+            setIsNameChange(false);
+          } else {
+            handleOpen();
+          }
         }
       };
 
@@ -3210,7 +3217,7 @@
 
             {box.type === 'shared' && userName && (
               <div
-                onClick={() => setNeedsName(true)}
+                onClick={(e) => { e.stopPropagation(); setNeedsName(true); setIsNameChange(true); }}
                 style={{
                   fontSize: '0.8rem',
                   color: '#94a3b8',
