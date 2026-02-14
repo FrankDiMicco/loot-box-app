@@ -1627,6 +1627,28 @@
                     Joined
                   </span>
                 )}
+                {box.expiresAt && (
+                  <span style={{
+                    padding: '0.2rem 0.6rem',
+                    background: (() => {
+                      const diff = box.expiresAt - Date.now();
+                      if (diff <= 0) return 'rgba(239, 68, 68, 0.8)';
+                      if (diff <= 24 * 60 * 60 * 1000) return 'rgba(245, 158, 11, 0.8)';
+                      return 'rgba(16, 185, 129, 0.8)';
+                    })(),
+                    backdropFilter: 'blur(4px)',
+                    borderRadius: '6px',
+                    fontSize: '0.65rem',
+                    fontWeight: 700,
+                    color: '#ffffff',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.03em',
+                  }}>
+                    {box.expiresAt - Date.now() <= 0
+                      ? 'Expired'
+                      : formatExpirationCountdown(box.expiresAt) + ' left'}
+                  </span>
+                )}
               </div>
 
               {/* Edit + Delete buttons - top right */}
