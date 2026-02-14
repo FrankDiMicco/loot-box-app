@@ -523,6 +523,52 @@
       }
     };
 
+    // Get display name for a specific box
+    const getBoxUserName = (shareCode) => {
+      try {
+        const names = JSON.parse(localStorage.getItem('lootBoxUserNames') || '{}');
+        return names[shareCode] || '';
+      } catch { return ''; }
+    };
+
+    // Save display name for a specific box
+    const setBoxUserName = (shareCode, name) => {
+      try {
+        const names = JSON.parse(localStorage.getItem('lootBoxUserNames') || '{}');
+        names[shareCode] = name;
+        localStorage.setItem('lootBoxUserNames', JSON.stringify(names));
+      } catch {}
+    };
+
+    // Get the most recently used name (for pre-filling)
+    const getLastUsedName = () => {
+      try {
+        return localStorage.getItem('lootBoxLastName') || '';
+      } catch { return ''; }
+    };
+
+    // Save the most recently used name
+    const setLastUsedName = (name) => {
+      try {
+        localStorage.setItem('lootBoxLastName', name);
+      } catch {}
+    };
+
+    // One-time migration of old global name
+    const migrateOldName = () => {
+      try {
+        const oldName = localStorage.getItem('lootBoxUserName');
+        if (oldName && !localStorage.getItem('lootBoxLastName')) {
+          localStorage.setItem('lootBoxLastName', oldName);
+          const settings = getUserSettings();
+          if (!settings.displayName) {
+            saveUserSettings({ ...settings, displayName: oldName });
+          }
+          localStorage.removeItem('lootBoxUserName');
+        }
+      } catch {}
+    };
+
     const canCreateLocalBox = () => {
       const settings = getUserSettings();
       if (settings.tier === 'paid') return true;
@@ -1336,6 +1382,77 @@
                 background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
               }}>
                 {confirmText}
+              </Button>
+            </div>
+          </Card>
+        </div>
+      );
+    };
+
+    // SettingsModal Component
+    const SettingsModal = ({ show, onClose, userSettings, onSave }) => {
+      const [displayName, setDisplayName] = useState(userSettings.displayName || '');
+      const isMobile = useIsMobile();
+
+      if (!show) return null;
+
+      const handleSave = () => {
+        onSave({ ...userSettings, displayName: displayName.trim() });
+        onClose();
+      };
+
+      return (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.7)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          animation: 'fadeIn 0.2s ease',
+        }}>
+          <Card style={{
+            maxWidth: '400px',
+            width: '90%',
+            animation: 'slideUp 0.3s ease',
+          }}>
+            <h3 style={{
+              fontSize: '1.5rem',
+              fontWeight: 700,
+              color: '#e2e8f0',
+              marginBottom: '1.5rem',
+            }}>
+              Settings
+            </h3>
+
+            <Input
+              label="Display Name"
+              placeholder="Enter your name"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              fullWidth
+              style={{ fontSize: '16px' }}
+            />
+            <div style={{
+              fontSize: '0.75rem',
+              color: '#94a3b8',
+              marginTop: '0.25rem',
+              marginBottom: '1.5rem',
+            }}>
+              Used for solo boxes and as the default for new group boxes.
+            </div>
+
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              <Button variant="ghost" onClick={onClose} fullWidth>
+                Cancel
+              </Button>
+              <Button variant="primary" onClick={handleSave} fullWidth>
+                Save
               </Button>
             </div>
           </Card>
@@ -2770,9 +2887,15 @@
       const [currentPull, setCurrentPull] = useState(null);
       const [showResult, setShowResult] = useState(false);
       const [userName, setUserName] = useState(() => {
-        try {
-          return localStorage.getItem('lootBoxUserName') || '';
-        } catch { return ''; }
+        if (box.type === 'shared' && box.shareCode) {
+          // Try box-specific name first
+          const boxName = getBoxUserName(box.shareCode);
+          if (boxName) return boxName;
+          // Fall back to last used name, then global display name
+          return getLastUsedName() || getUserSettings().displayName || '';
+        }
+        // Solo boxes use global display name
+        return getUserSettings().displayName || 'You';
       });
       const [needsName, setNeedsName] = useState(false);
       const [oddsExpanded, setOddsExpanded] = useState(true);
@@ -2896,9 +3019,13 @@
       const handleNameSubmit = (e) => {
         e.preventDefault();
         if (userName.trim()) {
-          try {
-            localStorage.setItem('lootBoxUserName', userName.trim());
-          } catch {}
+          const trimmedName = userName.trim();
+          // Save name for this specific box
+          if (box.shareCode) {
+            setBoxUserName(box.shareCode, trimmedName);
+          }
+          // Also save as last used name for pre-filling future boxes
+          setLastUsedName(trimmedName);
           setNeedsName(false);
           handleOpen();
         }
@@ -2912,7 +3039,7 @@
                 Enter Your Name
               </h2>
               <p style={{ color: '#94a3b8', marginBottom: '1.5rem' }}>
-                This is a shared box. Your name will be visible to others when you open it.
+                Enter your name for this box. Each box can have a different name.
               </p>
               <form onSubmit={handleNameSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 <Input
@@ -2949,7 +3076,22 @@
               </div>
             </div>
 
-            {/* Bottom row: Status badges and share button */}
+            {box.type === 'shared' && userName && (
+              <div
+                onClick={() => setNeedsName(true)}
+                style={{
+                  fontSize: '0.8rem',
+                  color: '#94a3b8',
+                  cursor: 'pointer',
+                  textAlign: 'center',
+                  marginBottom: '0.5rem',
+                }}
+              >
+                Playing as <span style={{ color: '#60a5fa', fontWeight: 600 }}>{userName}</span> - tap to change
+              </div>
+            )}
+
+            {/* Bottom row: Status badges */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
               {remainingPulls !== null && (
                 <div style={{
@@ -3374,6 +3516,7 @@
       const [editingBox, setEditingBox] = useState(null);
       const [openingBox, setOpeningBox] = useState(null);
       const [pendingTemplate, setPendingTemplate] = useState(null);
+      const [showSettings, setShowSettings] = useState(false);
       const { showToast, ToastContainer, success, error, info } = useToast();
 
       // Tick every 30 seconds to keep expiration badges fresh
@@ -3408,11 +3551,17 @@
         success('Box imported successfully!');
       };
 
+      const handleSaveSettings = (updatedSettings) => {
+        saveUserSettings(updatedSettings);
+        setUserSettings(updatedSettings);
+      };
+
       const handleCancelImport = () => {
         setPendingTemplate(null);
       };
 
       useEffect(() => {
+        migrateOldName();
         loadData();
 
         // Check for shared box URL
@@ -3677,7 +3826,7 @@
       return (
         <div style={{ maxWidth: '1200px', margin: '0 auto', padding: isMobile ? '1rem' : '2rem', minHeight: '100vh' }}>
           <Header
-            onSettingsClick={() => info('Settings coming soon!')}
+            onSettingsClick={() => setShowSettings(true)}
             userTier={userSettings.tier}
           />
 
@@ -3839,6 +3988,13 @@
               </Card>
             </div>
           )}
+
+          <SettingsModal
+            show={showSettings}
+            onClose={() => setShowSettings(false)}
+            userSettings={userSettings}
+            onSave={handleSaveSettings}
+          />
 
           <ToastContainer />
         </div>

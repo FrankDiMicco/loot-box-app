@@ -1,0 +1,350 @@
+================================================================================
+FEATURE: Per-box display names + Settings modal with display name
+================================================================================
+
+PROBLEM
+-------
+Currently, when a user joins a group box, their name is stored globally
+in localStorage as 'lootBoxUserName'. This means if they join a family
+box as "Dad" and a friends box as "BigMike", changing one changes all.
+
+Additionally, creators of group boxes never get prompted for a name --
+their pulls just show "You" or whatever is in userSettings.displayName.
+A creator should also be able to pick a per-box name (e.g., "Dad" in
+the kids' box, "Frank" in the poker box).
+
+Solo/local boxes use the global display name from Settings.
+
+The settings cog currently does nothing ("Settings coming soon!").
+
+
+DESIRED BEHAVIOR
+----------------
+1. GROUP BOXES (shared): Each box remembers its own display name,
+   for BOTH creators and visitors. When anyone (creator or visitor)
+   opens a group box for the first time, they enter a name for that
+   box. They can change it anytime via "Playing as X - tap to change."
+
+2. SOLO BOXES (local): Use the global display name from Settings.
+   Pulls show that name (or "You" if not set).
+
+3. SETTINGS MODAL: Tap the cog icon to open a modal with a Display
+   Name field. This name is used for solo boxes and as the default
+   pre-fill when joining new group boxes.
+
+
+================================================================================
+PART A: Per-box display names for group boxes
+================================================================================
+
+CHANGE A1: New helper functions for per-box name storage
+
+Add these near the other localStorage helper functions:
+
+    // Get display name for a specific box
+    const getBoxUserName = (shareCode) => {
+      try {
+        const names = JSON.parse(localStorage.getItem('lootBoxUserNames') || '{}');
+        return names[shareCode] || '';
+      } catch { return ''; }
+    };
+
+    // Save display name for a specific box
+    const setBoxUserName = (shareCode, name) => {
+      try {
+        const names = JSON.parse(localStorage.getItem('lootBoxUserNames') || '{}');
+        names[shareCode] = name;
+        localStorage.setItem('lootBoxUserNames', JSON.stringify(names));
+      } catch {}
+    };
+
+    // Get the most recently used name (for pre-filling)
+    const getLastUsedName = () => {
+      try {
+        return localStorage.getItem('lootBoxLastName') || '';
+      } catch { return ''; }
+    };
+
+    // Save the most recently used name
+    const setLastUsedName = (name) => {
+      try {
+        localStorage.setItem('lootBoxLastName', name);
+      } catch {}
+    };
+
+
+CHANGE A2: Update BoxOpener userName initialization
+
+In the BoxOpener component, find the userName state:
+
+    const [userName, setUserName] = useState(() => {
+      try {
+        return localStorage.getItem('lootBoxUserName') || '';
+      } catch { return ''; }
+    });
+
+Replace with:
+
+    const [userName, setUserName] = useState(() => {
+      if (box.type === 'shared' && box.shareCode) {
+        // Try box-specific name first
+        const boxName = getBoxUserName(box.shareCode);
+        if (boxName) return boxName;
+        // Fall back to last used name, then global display name
+        return getLastUsedName() || getUserSettings().displayName || '';
+      }
+      // Solo boxes use global display name
+      return getUserSettings().displayName || 'You';
+    });
+
+
+CHANGE A3: Update handleNameSubmit to save per-box
+
+Find the handleNameSubmit function and replace with:
+
+    const handleNameSubmit = (e) => {
+      e.preventDefault();
+      if (userName.trim()) {
+        const trimmedName = userName.trim();
+        // Save name for this specific box
+        if (box.shareCode) {
+          setBoxUserName(box.shareCode, trimmedName);
+        }
+        // Also save as last used name for pre-filling future boxes
+        setLastUsedName(trimmedName);
+        setNeedsName(false);
+        handleOpen();
+      }
+    };
+
+
+CHANGE A4: Prompt CREATORS for a name too (not just visitors)
+
+In handleOpen, find:
+
+    if (box.type === 'shared' && !userName && !needsName) {
+      setNeedsName(true);
+      return;
+    }
+
+This already works for both creators and visitors! If the creator
+has no per-box name saved and no last-used name, userName will be
+empty and the prompt will trigger. No code change needed here.
+
+BUT -- there is one edge case. If the creator has a global
+displayName in settings (e.g., "Frank"), the fallback in A2 will
+use it and skip the prompt. That's actually fine as a default, and
+they can change it via the "tap to change" link (see A5).
+
+
+CHANGE A5: Add "Change Name" option in BoxOpener
+
+Add a small clickable text in the BoxOpener, right below the header
+(after the back button and box name row, before the chest image).
+Only show for group boxes:
+
+    {box.type === 'shared' && userName && (
+      <div
+        onClick={() => setNeedsName(true)}
+        style={{
+          fontSize: '0.8rem',
+          color: '#94a3b8',
+          cursor: 'pointer',
+          textAlign: 'center',
+          marginBottom: '0.5rem',
+        }}
+      >
+        Playing as <span style={{ color: '#60a5fa', fontWeight: 600 }}>{userName}</span> - tap to change
+      </div>
+    )}
+
+
+CHANGE A6: Update the name prompt text
+
+In the name entry form (the needsName screen), update the description:
+
+    <p style={{ color: '#94a3b8', marginBottom: '1.5rem' }}>
+      Enter your name for this box. Each box can have a different name.
+    </p>
+
+
+CHANGE A7: One-time migration of old global name
+
+Add this function near the other helpers:
+
+    const migrateOldName = () => {
+      try {
+        const oldName = localStorage.getItem('lootBoxUserName');
+        if (oldName && !localStorage.getItem('lootBoxLastName')) {
+          localStorage.setItem('lootBoxLastName', oldName);
+          // Also set it as the global display name if none exists
+          const settings = getUserSettings();
+          if (!settings.displayName) {
+            saveUserSettings({ ...settings, displayName: oldName });
+          }
+          localStorage.removeItem('lootBoxUserName');
+        }
+      } catch {}
+    };
+
+Call migrateOldName() once at app startup in the App component's
+initial useEffect (inside loadData or right before it).
+
+
+================================================================================
+PART B: Settings modal with display name
+================================================================================
+
+CHANGE B1: Add SettingsModal component
+
+Create a new component called SettingsModal. Place it after the
+ConfirmDialog component definition:
+
+    const SettingsModal = ({ show, onClose, userSettings, onSave }) => {
+      const [displayName, setDisplayName] = useState(userSettings.displayName || '');
+      const isMobile = useIsMobile();
+
+      if (!show) return null;
+
+      const handleSave = () => {
+        onSave({ ...userSettings, displayName: displayName.trim() });
+        onClose();
+      };
+
+      return (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.7)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          animation: 'fadeIn 0.2s ease',
+        }}>
+          <Card style={{
+            maxWidth: '400px',
+            width: '90%',
+            animation: 'slideUp 0.3s ease',
+          }}>
+            <h3 style={{
+              fontSize: '1.5rem',
+              fontWeight: 700,
+              color: '#e2e8f0',
+              marginBottom: '1.5rem',
+            }}>
+              Settings
+            </h3>
+
+            <Input
+              label="Display Name"
+              placeholder="Enter your name"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              fullWidth
+              style={{ fontSize: '16px' }}
+            />
+            <div style={{
+              fontSize: '0.75rem',
+              color: '#94a3b8',
+              marginTop: '0.25rem',
+              marginBottom: '1.5rem',
+            }}>
+              Used for solo boxes and as the default for new group boxes.
+            </div>
+
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              <Button variant="ghost" onClick={onClose} fullWidth>
+                Cancel
+              </Button>
+              <Button variant="primary" onClick={handleSave} fullWidth>
+                Save
+              </Button>
+            </div>
+          </Card>
+        </div>
+      );
+    };
+
+
+CHANGE B2: Add settings state and handlers in App component
+
+In the App component, add:
+
+    const [showSettings, setShowSettings] = useState(false);
+
+Find where the Header is rendered. The onSettingsClick currently does:
+
+    onSettingsClick={() => info('Settings coming soon!')}
+
+Change to:
+
+    onSettingsClick={() => setShowSettings(true)}
+
+
+CHANGE B3: Add settings save handler in App
+
+    const handleSaveSettings = (updatedSettings) => {
+      saveUserSettings(updatedSettings);
+      setUserSettings(updatedSettings);
+    };
+
+
+CHANGE B4: Render the SettingsModal in App
+
+Add this right before the ToastContainer (or wherever the other
+modals/dialogs are rendered):
+
+    <SettingsModal
+      show={showSettings}
+      onClose={() => setShowSettings(false)}
+      userSettings={userSettings}
+      onSave={handleSaveSettings}
+    />
+
+
+================================================================================
+SUMMARY: How names work after these changes
+================================================================================
+
+GROUP BOXES (shared):
+  - First time opening: prompts for a name (pre-filled with last used
+    name or global display name from Settings)
+  - Each box remembers its own name independently
+  - "Playing as X - tap to change" link to switch anytime
+  - Creator AND visitors both get per-box names
+  - Example: "Dad" in family box, "Frank" in poker box
+
+SOLO BOXES (local):
+  - Uses the global display name from Settings
+  - If no display name set, pulls show "You"
+  - Change it anytime via the settings cog
+
+SETTINGS MODAL:
+  - Opens from the cog icon on home screen
+  - Display Name field (used for solo boxes + default pre-fill)
+  - More settings can be added here later (sound, theme, etc.)
+
+
+================================================================================
+TESTING
+================================================================================
+1.  Tap settings cog -- modal opens with Display Name field
+2.  Enter "Frank" and save -- settings persist on reload
+3.  Open a solo/local box -- pulls should show "Frank"
+4.  Open a group box you created -- should prompt for name
+    (pre-filled with "Frank")
+5.  Enter "Dad" -- saves for this box
+6.  Open a different group box -- prompts again (pre-filled "Dad"
+    since it was the last used name)
+7.  Enter "Big Mike" -- saves for this box
+8.  Go back to first group box -- auto-loads "Dad" without prompting
+9.  See "Playing as Dad - tap to change" -- tap it, change to "Daddy-O"
+10. Second box still shows "Big Mike" -- unaffected
+11. Solo boxes still show "Frank" from settings
+12. Change display name in settings to "Franklin" -- solo boxes update
+
