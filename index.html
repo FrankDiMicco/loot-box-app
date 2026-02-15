@@ -910,10 +910,37 @@
         throw new Error('Firebase not available');
       }
       try {
-        await db.collection('sharedBoxes').doc(shareCode).update({
-          pullHistory: firebase.firestore.FieldValue.arrayUnion(pull),
-          updatedAt: Date.now()
+        const boxRef = db.collection('sharedBoxes').doc(shareCode);
+
+        await db.runTransaction(async (transaction) => {
+          const doc = await transaction.get(boxRef);
+          if (!doc.exists) {
+            throw new Error('Shared box not found');
+          }
+
+          const data = doc.data();
+          const history = data.pullHistory || [];
+
+          // Server-side total limit check
+          if (data.maxPulls && history.length >= data.maxPulls) {
+            throw new Error('Box has reached maximum opens');
+          }
+
+          // Server-side per-user limit check
+          if (data.maxPullsPerUser && pull.deviceId) {
+            const userPulls = history.filter(p => p.deviceId === pull.deviceId).length;
+            if (userPulls >= data.maxPullsPerUser) {
+              throw new Error('You have reached your open limit for this box');
+            }
+          }
+
+          // All checks passed - append the pull
+          transaction.update(boxRef, {
+            pullHistory: [...history, pull],
+            updatedAt: Date.now()
+          });
         });
+
         return true;
       } catch (error) {
         console.error('Error adding pull:', error);
