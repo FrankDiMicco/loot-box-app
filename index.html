@@ -1949,7 +1949,7 @@
     const ItemCreator = ({ items, onAddItem, editingItem, onUpdateItem, onCancelEdit, userSettings }) => {
       const [itemForm, setItemForm] = useState({ name: '', percentage: '', color: '#3b82f6', maxQuantity: '', imageUrl: '' });
       const [colorPickerOpen, setColorPickerOpen] = useState(false);
-      const colorPickerRef = useRef(null);
+      const colorButtonRef = useRef(null);
       const isMobile = useIsMobile();
       const remainingPercentage = editingItem
         ? getRemainingPercentage(items.filter(i => i.id !== editingItem.id))
@@ -1967,20 +1967,6 @@
           });
         }
       }, [editingItem]);
-
-      useEffect(() => {
-        const handleClickOutside = (e) => {
-          if (colorPickerRef.current && !colorPickerRef.current.contains(e.target)) {
-            setColorPickerOpen(false);
-          }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        document.addEventListener('touchstart', handleClickOutside);
-        return () => {
-          document.removeEventListener('mousedown', handleClickOutside);
-          document.removeEventListener('touchstart', handleClickOutside);
-        };
-      }, []);
 
       const handleSubmit = (e) => {
         e.preventDefault();
@@ -2020,7 +2006,7 @@
       ];
 
       return (
-        <Card style={{ marginBottom: '2rem', overflow: 'visible' }}>
+        <Card style={{ marginBottom: '2rem' }}>
           <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#e2e8f0', marginBottom: '1rem' }}>
             {editingItem ? 'Edit Item' : 'Add Item'}
           </h3>
@@ -2060,7 +2046,7 @@
               />
             </div>
 
-            <div ref={colorPickerRef} style={{ position: 'relative', zIndex: 100 }}>
+            <div style={{ position: 'relative' }}>
               <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: '#cbd5e1', marginBottom: '0.5rem' }}>
                 Item Color
               </label>
@@ -2068,6 +2054,7 @@
               {/* Color picker trigger button */}
               <button
                 type="button"
+                ref={colorButtonRef}
                 onClick={() => setColorPickerOpen(!colorPickerOpen)}
                 style={{
                   display: 'flex',
@@ -2122,56 +2109,74 @@
                 </svg>
               </button>
 
-              {/* Dropdown color grid */}
-              {colorPickerOpen && (
-                <div style={{
-                  position: 'absolute',
-                  top: '100%',
-                  left: 0,
-                  right: 0,
-                  marginTop: '0.5rem',
-                  padding: '0.75rem',
-                  background: 'rgba(15, 22, 36, 0.95)',
-                  border: '2px solid rgba(59, 130, 246, 0.3)',
-                  borderRadius: '12px',
-                  backdropFilter: 'blur(12px)',
-                  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)',
-                  zIndex: 100,
-                  animation: 'fadeIn 0.15s ease',
-                }}>
-                  <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(5, 1fr)',
-                    gap: '0.4rem',
-                  }}>
-                    {predefinedColors.map(color => (
-                      <button
-                        key={color}
-                        type="button"
-                        style={{
-                          width: '100%',
-                          aspectRatio: '1',
-                          background: color,
-                          borderRadius: '6px',
-                          border: itemForm.color === color
-                            ? '2px solid #ffffff'
-                            : color === '#ffffff'
-                              ? '2px solid rgba(148, 163, 184, 0.5)'
-                              : '2px solid rgba(59, 130, 246, 0.15)',
-                          cursor: 'pointer',
-                          transform: itemForm.color === color ? 'scale(1.1)' : 'scale(1)',
-                          boxShadow: itemForm.color === color ? `0 0 12px ${color}80` : 'none',
-                          transition: 'all 0.15s ease',
-                        }}
-                        onClick={() => {
-                          setItemForm({ ...itemForm, color });
-                          setColorPickerOpen(false);
-                        }}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
+              {/* Dropdown color grid (portal) */}
+              {colorPickerOpen && (() => {
+                const rect = colorButtonRef.current?.getBoundingClientRect();
+                if (!rect) return null;
+                return ReactDOM.createPortal(
+                  <>
+                    {/* Invisible backdrop to catch outside clicks */}
+                    <div
+                      onClick={() => setColorPickerOpen(false)}
+                      style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        zIndex: 9998,
+                      }}
+                    />
+                    {/* The actual color grid */}
+                    <div style={{
+                      position: 'fixed',
+                      top: rect.bottom + 8,
+                      left: rect.left,
+                      width: rect.width,
+                      padding: '0.75rem',
+                      background: 'rgba(15, 22, 36, 0.98)',
+                      border: '2px solid rgba(59, 130, 246, 0.3)',
+                      borderRadius: '12px',
+                      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.6)',
+                      zIndex: 9999,
+                      animation: 'fadeIn 0.15s ease',
+                    }}>
+                      <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(5, 1fr)',
+                        gap: '0.4rem',
+                      }}>
+                        {predefinedColors.map(color => (
+                          <button
+                            key={color}
+                            type="button"
+                            style={{
+                              width: '100%',
+                              aspectRatio: '1',
+                              background: color,
+                              borderRadius: '6px',
+                              border: itemForm.color === color
+                                ? '2px solid #ffffff'
+                                : color === '#ffffff'
+                                  ? '2px solid rgba(148, 163, 184, 0.5)'
+                                  : '2px solid rgba(59, 130, 246, 0.15)',
+                              cursor: 'pointer',
+                              transform: itemForm.color === color ? 'scale(1.1)' : 'scale(1)',
+                              boxShadow: itemForm.color === color ? `0 0 12px ${color}80` : 'none',
+                              transition: 'all 0.15s ease',
+                            }}
+                            onClick={() => {
+                              setItemForm({ ...itemForm, color });
+                              setColorPickerOpen(false);
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </>,
+                  document.body
+                );
+              })()}
             </div>
 
             <Button type="submit" variant="primary" fullWidth disabled={remainingPercentage <= 0 || !itemForm.name || !itemForm.percentage}>
