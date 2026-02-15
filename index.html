@@ -636,14 +636,17 @@
     const fetchDefaultBoxes = async () => {
       if (!firebaseEnabled || !db) return [];
       try {
+        // Single-field query to avoid needing a composite Firestore index.
+        // Filter out inactive boxes client-side instead.
         const snapshot = await db.collection('boxCatalog')
           .where('source', '==', BOX_SOURCES.DEFAULT)
-          .where('active', '==', true)
           .get();
-        return snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
+        return snapshot.docs
+          .map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }))
+          .filter(box => box.active !== false);  // Include boxes where active is true, undefined, or missing
       } catch (error) {
         console.error('Error fetching default boxes:', error);
         return [];
@@ -656,12 +659,13 @@
       try {
         const snapshot = await db.collection('boxCatalog')
           .where('source', '==', BOX_SOURCES.PREMIUM)
-          .where('active', '==', true)
           .get();
-        return snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
+        return snapshot.docs
+          .map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }))
+          .filter(box => box.active !== false);
       } catch (error) {
         console.error('Error fetching premium boxes:', error);
         return [];
@@ -702,13 +706,14 @@
       try {
         const snapshot = await db.collection('boxCatalog')
           .where('source', '==', BOX_SOURCES.STORE)
-          .where('active', '==', true)
           .get();
 
-        return snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
+        return snapshot.docs
+          .map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }))
+          .filter(box => box.active !== false);
       } catch (error) {
         console.error('Error fetching store boxes:', error);
         return [];
@@ -805,6 +810,14 @@
         store = results[2];
         premium = results[3];
         userUploaded = results[4];
+
+        console.log('[BoxCatalog] Loaded from Firebase:', {
+          defaults: defaults.length,
+          seasonal: seasonal.length,
+          store: store.length,
+          premium: premium.length,
+          userUploaded: userUploaded.length,
+        });
       }
 
       // Fall back to hardcoded defaults ONLY if Firebase
