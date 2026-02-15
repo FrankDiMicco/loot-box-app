@@ -1915,8 +1915,41 @@
     };
 
     // ItemCreator (simplified)
+    const getColorName = (hex) => {
+      const names = {
+        '#ef4444': 'Red',
+        '#f97316': 'Orange',
+        '#f59e0b': 'Amber',
+        '#eab308': 'Yellow',
+        '#84cc16': 'Lime',
+        '#22c55e': 'Green',
+        '#10b981': 'Emerald',
+        '#06b6d4': 'Cyan',
+        '#3b82f6': 'Blue',
+        '#1e40af': 'Navy',
+        '#6366f1': 'Indigo',
+        '#8b5cf6': 'Violet',
+        '#a855f7': 'Purple',
+        '#ec4899': 'Pink',
+        '#f43f5e': 'Rose',
+        '#78716c': 'Stone',
+        '#a8a29e': 'Warm Gray',
+        '#92400e': 'Brown',
+        '#b45309': 'Dark Amber',
+        '#854d0e': 'Dark Gold',
+        '#374151': 'Charcoal',
+        '#6b7280': 'Gray',
+        '#9ca3af': 'Silver',
+        '#d4d4d8': 'Light Gray',
+        '#ffffff': 'White',
+      };
+      return names[hex] || hex;
+    };
+
     const ItemCreator = ({ items, onAddItem, editingItem, onUpdateItem, onCancelEdit, userSettings }) => {
       const [itemForm, setItemForm] = useState({ name: '', percentage: '', color: '#3b82f6', maxQuantity: '', imageUrl: '' });
+      const [colorPickerOpen, setColorPickerOpen] = useState(false);
+      const colorPickerRef = useRef(null);
       const isMobile = useIsMobile();
       const remainingPercentage = editingItem
         ? getRemainingPercentage(items.filter(i => i.id !== editingItem.id))
@@ -1934,6 +1967,20 @@
           });
         }
       }, [editingItem]);
+
+      useEffect(() => {
+        const handleClickOutside = (e) => {
+          if (colorPickerRef.current && !colorPickerRef.current.contains(e.target)) {
+            setColorPickerOpen(false);
+          }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        document.addEventListener('touchstart', handleClickOutside);
+        return () => {
+          document.removeEventListener('mousedown', handleClickOutside);
+          document.removeEventListener('touchstart', handleClickOutside);
+        };
+      }, []);
 
       const handleSubmit = (e) => {
         e.preventDefault();
@@ -2013,32 +2060,118 @@
               />
             </div>
 
-            <div>
+            <div ref={colorPickerRef} style={{ position: 'relative' }}>
               <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: '#cbd5e1', marginBottom: '0.5rem' }}>
                 Item Color
               </label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: isMobile ? '0.4rem' : '0.5rem' }}>
-                {predefinedColors.map(color => (
-                  <button
-                    key={color}
-                    type="button"
-                    style={{
-                      width: '100%',
-                      aspectRatio: '1',
-                      background: color,
-                      borderRadius: '6px',
-                      border: color === '#ffffff'
-                        ? '2px solid rgba(148, 163, 184, 0.5)'
-                        : '2px solid rgba(59, 130, 246, 0.2)',
-                      cursor: 'pointer',
-                      transform: itemForm.color === color ? 'scale(1.1)' : 'scale(1)',
-                      boxShadow: itemForm.color === color ? `0 0 12px ${color}80` : 'none',
-                      transition: 'all 0.15s ease',
-                    }}
-                    onClick={() => setItemForm({ ...itemForm, color })}
-                  />
-                ))}
-              </div>
+
+              {/* Color picker trigger button */}
+              <button
+                type="button"
+                onClick={() => setColorPickerOpen(!colorPickerOpen)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem',
+                  width: '100%',
+                  padding: '0.75rem 1rem',
+                  background: 'rgba(15, 22, 36, 0.6)',
+                  border: colorPickerOpen
+                    ? '2px solid #3b82f6'
+                    : '2px solid rgba(59, 130, 246, 0.2)',
+                  borderRadius: '12px',
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                {/* Selected color indicator */}
+                <div style={{
+                  width: '28px',
+                  height: '28px',
+                  borderRadius: '8px',
+                  background: itemForm.color,
+                  border: itemForm.color === '#ffffff'
+                    ? '2px solid rgba(148, 163, 184, 0.5)'
+                    : '2px solid rgba(255, 255, 255, 0.15)',
+                  boxShadow: `0 0 8px ${itemForm.color}40`,
+                  flexShrink: 0,
+                }} />
+
+                {/* Color name */}
+                <span style={{
+                  flex: 1,
+                  textAlign: 'left',
+                  color: '#e2e8f0',
+                  fontSize: '0.9rem',
+                  fontWeight: 500,
+                }}>
+                  {getColorName(itemForm.color)}
+                </span>
+
+                {/* Chevron */}
+                <svg
+                  width="16" height="16" viewBox="0 0 16 16" fill="none"
+                  style={{
+                    transform: colorPickerOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                    transition: 'transform 0.2s ease',
+                    flexShrink: 0,
+                  }}
+                >
+                  <path d="M4 6L8 10L12 6" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+
+              {/* Dropdown color grid */}
+              {colorPickerOpen && (
+                <div style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: 0,
+                  right: 0,
+                  marginTop: '0.5rem',
+                  padding: '0.75rem',
+                  background: 'rgba(15, 22, 36, 0.95)',
+                  border: '2px solid rgba(59, 130, 246, 0.3)',
+                  borderRadius: '12px',
+                  backdropFilter: 'blur(12px)',
+                  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)',
+                  zIndex: 50,
+                  animation: 'fadeIn 0.15s ease',
+                }}>
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(5, 1fr)',
+                    gap: '0.4rem',
+                  }}>
+                    {predefinedColors.map(color => (
+                      <button
+                        key={color}
+                        type="button"
+                        style={{
+                          width: '100%',
+                          aspectRatio: '1',
+                          background: color,
+                          borderRadius: '6px',
+                          border: itemForm.color === color
+                            ? '2px solid #ffffff'
+                            : color === '#ffffff'
+                              ? '2px solid rgba(148, 163, 184, 0.5)'
+                              : '2px solid rgba(59, 130, 246, 0.15)',
+                          cursor: 'pointer',
+                          transform: itemForm.color === color ? 'scale(1.1)' : 'scale(1)',
+                          boxShadow: itemForm.color === color ? `0 0 12px ${color}80` : 'none',
+                          transition: 'all 0.15s ease',
+                        }}
+                        onClick={() => {
+                          setItemForm({ ...itemForm, color });
+                          setColorPickerOpen(false);
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             <Button type="submit" variant="primary" fullWidth disabled={remainingPercentage <= 0 || !itemForm.name || !itemForm.percentage}>

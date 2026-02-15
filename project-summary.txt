@@ -1,0 +1,374 @@
+================================================================================
+INSTRUCTIONS FOR CLAUDE CODE
+================================================================================
+
+Replace the contents of loot-box-project-summary.txt with everything below
+this instructions section. The old summary has several outdated sections that
+need correcting:
+
+1. FILE STRUCTURE: The main app was renamed from loot-box-app-v2.html to
+   index.html. The add-sample-boxes.html and firebase-setup.html files are
+   no longer needed and should be removed. box-admin.html now exists as the
+   admin panel.
+
+2. COMPLETED FEATURES: Many features have been implemented since the last
+   summary update:
+   - Tap-to-open with CSS animations (boxWiggle, boxIdle, tapHint)
+   - Shared boxes with real-time Firestore sync (sharedBoxes collection)
+   - Visitor persistence (isVisitor flag, read-only access)
+   - Per-user open limits (maxPullsPerUser, deviceId tracking)
+   - Box expiration with countdown display
+   - Shareable URL links with Web Share API
+   - Allow participant sharing toggle
+   - Box templates system (saveBoxTemplate, fetchBoxTemplates)
+   - Per-box username system (lootBoxUserNames in localStorage)
+   - Device ID generation for security
+   - "Opens" terminology (replaced "pulls")
+   - Badge system showing remaining opens, total opens, per-person limits
+   - Collapsible odds and history panels
+   - Admin panel (box-admin.html) for managing box catalog
+   - Client-side active filtering for Firestore queries (no composite indexes needed)
+   - Console debug logging for box catalog loading
+   - GitHub Pages hosting
+
+3. FIREBASE COLLECTIONS: sharedBoxes collection was added for real-time
+   shared box functionality.
+
+4. DATA STRUCTURES: Box object now includes maxPullsPerUser, expiresAt,
+   allowParticipantSharing, isVisitor, isSharedRef. Pull object now
+   includes deviceId and imageUrl.
+
+5. DEPLOYMENT: Now hosted on GitHub Pages, not just local dev server.
+
+6. KNOWN ISSUES / NOT YET IMPLEMENTED: Several items previously listed as
+   not implemented are now done. The list should be trimmed.
+
+7. DEVELOPMENT NOTES: References to add-sample-boxes.html and
+   firebase-setup.html should be removed. Real-time sync is now implemented
+   for shared boxes.
+
+Also delete these files from the repo if they still exist:
+- add-sample-boxes.html
+- firebase-setup.html
+
+================================================================================
+                    LOOT BOX CREATOR - PROJECT SUMMARY
+================================================================================
+
+PROJECT OVERVIEW
+--------------------------------------------------------------------------------
+A mobile-first loot box creation and opening app with deep space royal blue
+aesthetic and Firebase backend. Users can create custom loot boxes with
+configurable items, percentages, and opening mechanics. Features a marketplace
+for seasonal and purchasable box skins, shared multiplayer boxes with real-time
+sync, and tap-to-open interactions. Built with React (via CDN) in a single
+HTML file with Firebase integration for scalability.
+
+CURRENT STATUS: Fully functional with Firebase integration. Local boxes work
+offline, shared boxes sync in real-time via Firestore, seasonal/store boxes
+load from Firebase catalog. Hosted on GitHub Pages.
+
+PLATFORM: Mobile-first web app (Firebase backend, GitHub Pages hosting)
+
+
+================================================================================
+COMPLETED FEATURES
+================================================================================
+
+CORE FUNCTIONALITY
+--------------------------------------------------------------------------------
+- Create Boxes: name input, type selection (local/shared), box image selector
+  with marketplace tabs, max opens limit (optional), per-user open limits,
+  hide contents option, hide odds option, box expiration (optional)
+- Add Items: name, percentage (must total 100%), color picker (8 colors),
+  max quantity (optional, enables dynamic odds), real-time % validation
+- Edit Boxes: full editing, modify all settings/items/image, pre-fills data
+- Edit Items: click edit on any item, pre-fills form, update/cancel options
+- Delete Boxes: custom modal confirmation, clears state, toast notification
+- Tap-to-Open: tap/click box image to open, CSS wiggle animation on tap,
+  idle breathing animation when ready, adaptive hint text (tap vs click),
+  tap result card to open again
+- Dynamic Odds: auto-adjusts when limited items run out, normalizes to 100%,
+  shows remaining quantity, prevents opening when all claimed
+- Pull History: chronological list, item name/user/timestamp/color dot,
+  respects hideContents, auto-scrolling, collapsible panel
+- Collapsible Panels: odds and history panels expand/collapse independently,
+  history auto-expands after first open
+
+SHARED BOX SYSTEM
+--------------------------------------------------------------------------------
+- Real-time Firestore sync via sharedBoxes collection
+- Firestore transactions for atomic pull writes (prevents race conditions)
+- Server-side validation of total and per-user open limits
+- Shareable URL links (Web Share API on mobile, clipboard fallback)
+- Visitor persistence: read-only local reference with isVisitor flag
+- Visitors can open boxes but cannot edit or delete
+- Per-box username system (stored per shareCode in localStorage)
+- Last-used name pre-fill for convenience
+- Allow participant sharing toggle (creator controls if visitors can reshare)
+- Real-time listener updates pull history live for all participants
+- Creator can delete shared box (removes from Firestore + all visitors)
+- Box deletion detection: visitors see toast if box is deleted by creator
+
+SECURITY & LIMITS
+--------------------------------------------------------------------------------
+- Device ID tracking (lootBoxDeviceId in localStorage, session fallback)
+- Per-user open limits enforced both client-side and server-side (Firestore)
+- Total open limits enforced via Firestore transactions
+- Badge system: remaining opens, total opens completed, per-person limits
+- Box expiration with countdown display and color-coded urgency
+- Visitor edit protection (cannot edit/delete boxes you joined)
+
+BOX MARKETPLACE & CATALOG SYSTEM
+--------------------------------------------------------------------------------
+- Multi-Source Box Images: default (free), seasonal (time-limited), store
+  (purchasable), premium (paid tier), user uploads (premium only)
+- Tabbed Image Picker: Defaults/Seasonal/Store/My Uploads tabs
+- Box Ownership: defaults free for all, purchased tracked in ownedBoxes,
+  uploaded tracked in uploadedBoxes
+- Visual Indicators: lock icons, price badges, owned/upload/seasonal badges
+- Purchase Flow: click locked box, modal with price/description, confirms
+  purchase, updates Firestore, unlocks immediately
+- Client-side active filtering (no composite Firestore indexes needed)
+- Console debug logging for catalog load counts
+
+BOX TEMPLATES
+--------------------------------------------------------------------------------
+- Save box as shareable template to Firestore (boxTemplates collection)
+- Import templates: confirmation dialog before creating local copy
+- Template includes: name, items, settings, creator info
+
+UI/UX DESIGN
+--------------------------------------------------------------------------------
+- Royal blue color scheme with deep space dark backgrounds
+- Glass morphism cards with backdrop blur
+- Custom scrollbars, no spinner arrows on number inputs
+- Toast notifications (slide up, 3sec auto-dismiss)
+- CSS animations: fadeIn, slideUp, spin, pulse, glow, boxWiggle, boxIdle,
+  tapHint
+- Mobile-first responsive design with useIsMobile hook
+- Horizontal scrolling image picker on mobile with snap and fade edges
+- Filter tabs: All/Shared/New/Local with activity-based sorting
+- "New" badge system for unseen boxes (tracked via seenBoxes in localStorage)
+
+ADMIN PANEL (box-admin.html)
+--------------------------------------------------------------------------------
+- Full CRUD for box catalog entries in Firestore
+- Source type selector: default/seasonal/store/premium
+- Image upload to Firebase Storage with progress bar
+- Active/inactive toggle per box
+- Filter tabs: All/Default/Seasonal/Store/Premium
+- Stats bar showing counts per category
+- Edit existing boxes (pre-fills form)
+- Delete with confirmation dialog
+- Seasonal date range management
+
+DATA MANAGEMENT
+--------------------------------------------------------------------------------
+- LocalStorage: lootBoxes (array), userSettings (preferences + owned boxes),
+  lootBoxUserNames (per-box names), lootBoxLastName (last used name),
+  lootBoxDeviceId (device fingerprint), seenBoxes (new badge tracking)
+- Firestore Collections: boxCatalog (skins), sharedBoxes (shared box data),
+  boxTemplates (shareable templates), purchases (transactions), users (planned)
+- Hybrid Strategy: local boxes in localStorage, shared boxes in Firestore,
+  catalog in Firestore with hardcoded fallback, graceful offline degradation
+
+FREE TIER LIMITS
+--------------------------------------------------------------------------------
+- Max 5 local boxes
+- 3 default box skins (free)
+- Can purchase additional skins individually
+- Cannot upload custom boxes
+- Cannot create shared boxes
+
+PREMIUM TIER BENEFITS
+--------------------------------------------------------------------------------
+- Unlimited local boxes
+- Unlimited shared boxes
+- Upload custom box skins to Firebase Storage
+- Access to premium box skins
+- Can purchase additional skins (same as free)
+- Premium badge in header
+
+
+================================================================================
+DATA STRUCTURES
+================================================================================
+
+BOX OBJECT
+--------------------------------------------------------------------------------
+{
+  id: string,
+  name: string,
+  type: 'local' | 'shared',
+  items: Array<Item>,
+  maxPulls: number | null,
+  maxPullsPerUser: number | null,
+  hideContents: boolean,
+  hideOdds: boolean,
+  pullHistory: Array<Pull>,
+  createdAt: number,
+  shareCode: string,
+  boxImageId: string,
+  expiresAt: number | null,
+  allowParticipantSharing: boolean,
+  isVisitor: boolean,            // true for visitor references
+  isSharedRef: boolean,          // true for shared box references
+}
+
+ITEM OBJECT
+--------------------------------------------------------------------------------
+{
+  id: string,
+  name: string,
+  percentage: number,
+  color: string,
+  maxQuantity: number | null,
+  imageUrl: string | null,       // for item image uploads (premium)
+}
+
+PULL OBJECT
+--------------------------------------------------------------------------------
+{
+  itemId: string,
+  itemName: string,
+  percentage: number,
+  color: string,
+  imageUrl: string | null,
+  timestamp: number,
+  userName: string,
+  deviceId: string,
+}
+
+USER SETTINGS OBJECT
+--------------------------------------------------------------------------------
+{
+  tier: 'free' | 'paid',
+  localBoxCount: number,
+  displayName: string,
+  soundEnabled: boolean,
+  theme: 'dark',
+  uid: string | null,
+  ownedBoxes: Array<string>,
+  uploadedBoxes: Array<string>,
+}
+
+
+================================================================================
+CURRENT ARCHITECTURE
+================================================================================
+
+FILE STRUCTURE
+--------------------------------------------------------------------------------
+Main App:    index.html (single file, ~4000+ lines)
+Admin Panel: box-admin.html (box catalog management)
+Assets:      /assets/images/boxes/free/ (3 default box images)
+             /assets/images/boxes/premium/ (premium box images)
+
+Deprecated (safe to delete):
+  - add-sample-boxes.html (replaced by box-admin.html)
+  - firebase-setup.html (replaced by box-admin.html)
+
+FIREBASE COLLECTIONS
+--------------------------------------------------------------------------------
+'boxCatalog'    - Box skin catalog (default, seasonal, store, premium, user)
+'sharedBoxes'   - Shared box data with real-time sync
+'boxTemplates'  - Shareable box templates
+'purchases'     - Purchase transaction records
+'users'         - User data (planned for auth implementation)
+
+FIREBASE CONFIGURATION
+--------------------------------------------------------------------------------
+Project: lootbox-app-dd5fa
+Firestore: Enabled (Native mode)
+Storage: Ready for user uploads (requires billing)
+Auth: Ready for user management (not yet enabled)
+
+DEPLOYMENT
+--------------------------------------------------------------------------------
+Production: GitHub Pages
+Local Dev:  python -m http.server 8000 → http://localhost:8000/
+Admin:      http://localhost:8000/box-admin.html
+
+
+================================================================================
+NOT YET IMPLEMENTED
+================================================================================
+
+HIGH PRIORITY
+--------------------------------------------------------------------------------
+- User Authentication (Firebase Auth login/signup, display name, premium
+  tier verification, account settings)
+- Payment Integration (Stripe, purchase confirmation, receipts)
+- Real box images for seasonal/store catalog (replace placeholders)
+- Firebase Storage setup for user uploads (requires billing)
+
+MEDIUM PRIORITY
+--------------------------------------------------------------------------------
+- Item Image Uploads (premium feature, camera/upload, Firebase Storage
+  with compression, display in results/odds/history)
+- Settings Page (theme toggle, display name, sound toggle, account info)
+- Notification System (activity feed, pull notifications, expiration
+  warnings, purchase confirmations)
+- Sound Effects (opening, success, purchase, button clicks, volume control)
+
+NICE TO HAVE
+--------------------------------------------------------------------------------
+- Share URL Generation (URL shortener integration, QR codes)
+- Analytics Dashboard (paid feature, pull stats, charts)
+- Advanced Marketplace (search/filter, sort, previews, ratings)
+- Social Features (follow users, favorites, leaderboards, achievements)
+- Export/Import (JSON backup, cloud restore)
+- Progressive Web App (installable, push notifications)
+
+
+================================================================================
+MONETIZATION MODEL
+================================================================================
+
+Revenue Streams:
+1. Individual box skin purchases ($0.99 - $2.99 each)
+2. Premium subscription (TBD pricing)
+3. Future: Seasonal battle pass, exclusive content packs
+
+Box Skin Purchases (All Users):
+- Free and premium users can buy skins
+- Purchased skins owned forever, usable on unlimited boxes
+- Seasonal skins have limited-time availability
+
+Premium Subscription:
+- Unlimited local and shared boxes
+- Upload custom box skins
+- Access premium box catalog
+- Future: Analytics, priority support
+
+
+================================================================================
+DESIGN SYSTEM
+================================================================================
+
+COLOR PALETTE
+--------------------------------------------------------------------------------
+Backgrounds: #0a0e1a (darkest), #0f1624 (dark), #1a1f35 (medium),
+  rgba(26, 31, 53, 0.6) (glass)
+Brand: #1e40af (dark royal blue), #2563eb (royal blue), #3b82f6 (sky blue)
+Text: #e2e8f0 (bright), #cbd5e1 (medium), #94a3b8 (muted)
+Semantic: #10b981 (success), #f59e0b (warning/gold), #ef4444 (error),
+  #ec4899 (pink/seasonal), #8b5cf6 (purple)
+
+TYPOGRAPHY
+--------------------------------------------------------------------------------
+Font: 'Inter', sans-serif (Google Fonts)
+Weights: 400, 500, 600, 700
+
+ANIMATIONS
+--------------------------------------------------------------------------------
+fadeIn, slideUp, spin, pulse, glow (existing)
+boxWiggle: 0.4s tap feedback animation
+boxIdle: 3s infinite breathing animation
+tapHint: 2s infinite pulsing hint text
+
+
+================================================================================
+END OF SUMMARY
+================================================================================
