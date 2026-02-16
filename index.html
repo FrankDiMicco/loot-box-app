@@ -2458,8 +2458,8 @@
                   key={tab.id}
                   style={{
                     flex: '0 0 auto',
-                    padding: '0.5rem 1rem',
-                    fontSize: '0.875rem',
+                    padding: '0.4rem 0.75rem',
+                    fontSize: '0.8rem',
                     fontWeight: 600,
                     color: isActive ? '#ffffff' : '#94a3b8',
                     background: isActive
@@ -2557,14 +2557,14 @@
                 flexDirection: 'row',
                 overflowX: 'auto',
                 overflowY: 'hidden',
-                gap: '0.75rem',
+                gap: '0.5rem',
                 paddingBottom: '0.75rem',
                 WebkitOverflowScrolling: 'touch',
                 scrollSnapType: 'x mandatory',
               } : {
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))',
-                gap: '1rem',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(90px, 1fr))',
+                gap: '0.75rem',
               }}
             >
               {activeBoxes.length === 0 && (
@@ -2595,7 +2595,7 @@
                     style={{
                       position: 'relative',
                       cursor: 'pointer',
-                      padding: '0.75rem',
+                      padding: '0.5rem',
                       background: 'rgba(15, 22, 36, 0.6)',
                       border: `2px solid ${isSelected ? '#3b82f6' : 'rgba(59, 130, 246, 0.2)'}`,
                       borderRadius: '12px',
@@ -2603,7 +2603,7 @@
                       boxShadow: isSelected ? '0 0 20px rgba(59, 130, 246, 0.4)' : 'none',
                       ...(isMobile ? {
                         flexShrink: 0,
-                        width: '100px',
+                        width: '72px',
                         scrollSnapAlign: 'start',
                       } : {}),
                     }}
@@ -2612,7 +2612,7 @@
                     {/* Image preview */}
                     <div style={{
                       width: '100%',
-                      height: '100px',
+                      height: isMobile ? '60px' : '65px',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -2646,13 +2646,19 @@
                     </div>
 
                     {/* Image name */}
-                    <div style={{
-                      fontSize: '0.75rem',
-                      fontWeight: 600,
-                      color: '#cbd5e1',
-                      textAlign: 'center',
-                      marginBottom: '0.25rem',
-                    }}>
+                    <div
+                      title={image.name}
+                      style={{
+                        fontSize: '0.65rem',
+                        fontWeight: 600,
+                        color: '#cbd5e1',
+                        textAlign: 'center',
+                        marginBottom: '0.25rem',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
                       {image.name}
                     </div>
 
@@ -2773,6 +2779,12 @@
         return '';
       });
       const [boxImageId, setBoxImageId] = useState(editingBox ? editingBox.boxImageId || 'chest' : 'chest');
+      const [showAdvanced, setShowAdvanced] = useState(
+        editingBox ? !!(editingBox.hideContents || editingBox.hideOdds || editingBox.expiresAt) : false
+      );
+      const [expirationEnabled, setExpirationEnabled] = useState(
+        editingBox ? !!editingBox.expiresAt : false
+      );
 
       const userSettings = getUserSettings();
       const isPaidUser = userSettings.tier === 'paid';
@@ -2891,7 +2903,7 @@
                 fullWidth
               />
 
-              <div style={{ marginTop: '1.5rem' }}>
+              <div style={{ marginTop: '0.75rem' }}>
                 <ImagePicker
                   selectedImageId={boxImageId}
                   onSelectImage={setBoxImageId}
@@ -2902,7 +2914,7 @@
                 />
               </div>
 
-              <div style={{ marginTop: '1rem' }}>
+              <div style={{ marginTop: '0.75rem' }}>
                 <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: '#cbd5e1', marginBottom: '0.5rem' }}>
                   Box Type
                 </label>
@@ -2944,7 +2956,7 @@
                 </div>
               </div>
 
-              <div style={{ marginTop: '1rem', display: 'grid', gridTemplateColumns: boxType === 'shared' ? '1fr 1fr' : '1fr', gap: '1rem', maxWidth: boxType === 'shared' ? '500px' : '250px' }}>
+              <div style={{ marginTop: '0.75rem', display: 'grid', gridTemplateColumns: boxType === 'shared' ? '1fr 1fr' : '1fr', gap: '1rem', maxWidth: boxType === 'shared' ? '500px' : '250px' }}>
                 <Input
                   type="number"
                   label="Max Opens Total (Optional)"
@@ -2967,140 +2979,294 @@
                 )}
               </div>
 
-              <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                <label style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.75rem',
-                  cursor: 'pointer',
-                  fontSize: '0.875rem',
-                  color: '#cbd5e1',
-                }}>
-                  <input
-                    type="checkbox"
-                    checked={hideContents}
-                    onChange={(e) => setHideContents(e.target.checked)}
-                    style={{
-                      width: '18px',
-                      height: '18px',
-                      cursor: 'pointer',
-                      accentColor: '#3b82f6',
-                    }}
-                  />
-                  <span>Hide Contents - Don't show what items are in the box</span>
-                </label>
-
-                <label style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.75rem',
-                  cursor: 'pointer',
-                  fontSize: '0.875rem',
-                  color: '#cbd5e1',
-                }}>
-                  <input
-                    type="checkbox"
-                    checked={hideOdds}
-                    onChange={(e) => setHideOdds(e.target.checked)}
-                    style={{
-                      width: '18px',
-                      height: '18px',
-                      cursor: 'pointer',
-                      accentColor: '#3b82f6',
-                    }}
-                  />
-                  <span>Hide Odds - Don't show percentage chances</span>
-                </label>
-
-                <div style={{ marginTop: '0.75rem' }}>
-                  <Input
-                    type="datetime-local"
-                    label="Expiration Date (Optional)"
-                    value={expiresAt}
-                    onChange={(e) => setExpiresAt(e.target.value)}
-                    fullWidth
-                  />
-                  {expiresAt && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
-                      <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
-                        Box will expire: {new Date(expiresAt).toLocaleString()}
-                      </span>
-                      <button
-                        type="button"
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          color: '#ef4444',
-                          cursor: 'pointer',
-                          fontSize: '0.75rem',
-                          fontFamily: 'inherit',
-                          textDecoration: 'underline',
-                        }}
-                        onClick={() => setExpiresAt('')}
-                      >
-                        Clear
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {boxType === 'shared' && (
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
+              {/* Advanced Settings */}
+              <div style={{ marginTop: '0.75rem' }}>
+                <div
+                  onClick={() => setShowAdvanced(!showAdvanced)}
+                  style={{
+                    display: 'inline-flex',
                     alignItems: 'center',
-                    padding: '0.75rem 1rem',
-                    background: 'rgba(30, 64, 175, 0.15)',
+                    gap: '0.5rem',
+                    padding: '0.55rem 0.85rem',
+                    background: 'rgba(15, 22, 36, 0.6)',
                     border: '1px solid rgba(59, 130, 246, 0.2)',
                     borderRadius: '8px',
-                    marginTop: '0.75rem',
+                    cursor: 'pointer',
+                    userSelect: 'none',
+                  }}
+                >
+                  <span style={{ color: '#cbd5e1', fontWeight: 600, fontSize: '0.875rem' }}>
+                    Advanced Settings
+                  </span>
+                  <span style={{
+                    color: '#94a3b8',
+                    fontSize: '0.75rem',
+                    transition: 'transform 0.2s ease',
+                    transform: showAdvanced ? 'rotate(180deg)' : 'rotate(0deg)',
+                    display: 'inline-block',
                   }}>
-                    <div>
-                      <div style={{ color: '#e2e8f0', fontWeight: 600, fontSize: '0.9rem' }}>
-                        Allow Participants to Share
-                      </div>
-                      <div style={{ color: '#94a3b8', fontSize: '0.75rem', marginTop: '0.25rem' }}>
-                        Let people who join this box share the link with others
-                      </div>
-                    </div>
-                    <label style={{
-                      position: 'relative',
-                      display: 'inline-block',
-                      width: '44px',
-                      height: '24px',
-                      cursor: 'pointer',
-                      flexShrink: 0,
+                    ▼
+                  </span>
+                </div>
+
+                {showAdvanced && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.5rem' }}>
+                    {/* Hide Contents toggle */}
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: '0.6rem 0.75rem',
+                      background: 'rgba(30, 64, 175, 0.15)',
+                      border: '1px solid rgba(59, 130, 246, 0.2)',
+                      borderRadius: '8px',
                     }}>
-                      <input
-                        type="checkbox"
-                        checked={allowParticipantSharing}
-                        onChange={(e) => setAllowParticipantSharing(e.target.checked)}
-                        style={{ opacity: 0, width: 0, height: 0 }}
-                      />
-                      <span style={{
-                        position: 'absolute',
-                        top: 0, left: 0, right: 0, bottom: 0,
-                        background: allowParticipantSharing
-                          ? 'linear-gradient(135deg, #4169e1, #1e40af)'
-                          : 'rgba(100, 116, 139, 0.4)',
-                        borderRadius: '12px',
-                        transition: 'all 0.3s ease',
+                      <div>
+                        <div style={{ color: '#e2e8f0', fontWeight: 600, fontSize: '0.9rem' }}>
+                          Hide Contents
+                        </div>
+                        <div style={{ color: '#94a3b8', fontSize: '0.75rem', marginTop: '0.15rem' }}>
+                          Items hidden until opened
+                        </div>
+                      </div>
+                      <label style={{
+                        position: 'relative',
+                        display: 'inline-block',
+                        width: '44px',
+                        height: '24px',
+                        cursor: 'pointer',
+                        flexShrink: 0,
                       }}>
+                        <input
+                          type="checkbox"
+                          checked={hideContents}
+                          onChange={(e) => setHideContents(e.target.checked)}
+                          style={{ opacity: 0, width: 0, height: 0 }}
+                        />
                         <span style={{
                           position: 'absolute',
-                          height: '18px',
-                          width: '18px',
-                          left: allowParticipantSharing ? '22px' : '3px',
-                          bottom: '3px',
-                          background: '#fff',
-                          borderRadius: '50%',
+                          top: 0, left: 0, right: 0, bottom: 0,
+                          background: hideContents
+                            ? 'linear-gradient(135deg, #4169e1, #1e40af)'
+                            : 'rgba(100, 116, 139, 0.4)',
+                          borderRadius: '12px',
                           transition: 'all 0.3s ease',
-                        }} />
-                      </span>
-                    </label>
+                        }}>
+                          <span style={{
+                            position: 'absolute',
+                            height: '18px',
+                            width: '18px',
+                            left: hideContents ? '22px' : '3px',
+                            bottom: '3px',
+                            background: '#fff',
+                            borderRadius: '50%',
+                            transition: 'all 0.3s ease',
+                          }} />
+                        </span>
+                      </label>
+                    </div>
+
+                    {/* Hide Odds toggle */}
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: '0.6rem 0.75rem',
+                      background: 'rgba(30, 64, 175, 0.15)',
+                      border: '1px solid rgba(59, 130, 246, 0.2)',
+                      borderRadius: '8px',
+                    }}>
+                      <div>
+                        <div style={{ color: '#e2e8f0', fontWeight: 600, fontSize: '0.9rem' }}>
+                          Hide Odds
+                        </div>
+                        <div style={{ color: '#94a3b8', fontSize: '0.75rem', marginTop: '0.15rem' }}>
+                          Percentages stay secret
+                        </div>
+                      </div>
+                      <label style={{
+                        position: 'relative',
+                        display: 'inline-block',
+                        width: '44px',
+                        height: '24px',
+                        cursor: 'pointer',
+                        flexShrink: 0,
+                      }}>
+                        <input
+                          type="checkbox"
+                          checked={hideOdds}
+                          onChange={(e) => setHideOdds(e.target.checked)}
+                          style={{ opacity: 0, width: 0, height: 0 }}
+                        />
+                        <span style={{
+                          position: 'absolute',
+                          top: 0, left: 0, right: 0, bottom: 0,
+                          background: hideOdds
+                            ? 'linear-gradient(135deg, #4169e1, #1e40af)'
+                            : 'rgba(100, 116, 139, 0.4)',
+                          borderRadius: '12px',
+                          transition: 'all 0.3s ease',
+                        }}>
+                          <span style={{
+                            position: 'absolute',
+                            height: '18px',
+                            width: '18px',
+                            left: hideOdds ? '22px' : '3px',
+                            bottom: '3px',
+                            background: '#fff',
+                            borderRadius: '50%',
+                            transition: 'all 0.3s ease',
+                          }} />
+                        </span>
+                      </label>
+                    </div>
+
+                    {/* Expiration Date toggle */}
+                    <div style={{
+                      padding: '0.6rem 0.75rem',
+                      background: 'rgba(30, 64, 175, 0.15)',
+                      border: '1px solid rgba(59, 130, 246, 0.2)',
+                      borderRadius: '8px',
+                    }}>
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                      }}>
+                        <div>
+                          <div style={{ color: '#e2e8f0', fontWeight: 600, fontSize: '0.9rem' }}>
+                            Expiration Date
+                          </div>
+                          <div style={{ color: '#94a3b8', fontSize: '0.75rem', marginTop: '0.15rem' }}>
+                            Box expires after a set date
+                          </div>
+                        </div>
+                        <label style={{
+                          position: 'relative',
+                          display: 'inline-block',
+                          width: '44px',
+                          height: '24px',
+                          cursor: 'pointer',
+                          flexShrink: 0,
+                        }}>
+                          <input
+                            type="checkbox"
+                            checked={expirationEnabled}
+                            onChange={(e) => {
+                              setExpirationEnabled(e.target.checked);
+                              if (!e.target.checked) setExpiresAt('');
+                            }}
+                            style={{ opacity: 0, width: 0, height: 0 }}
+                          />
+                          <span style={{
+                            position: 'absolute',
+                            top: 0, left: 0, right: 0, bottom: 0,
+                            background: expirationEnabled
+                              ? 'linear-gradient(135deg, #4169e1, #1e40af)'
+                              : 'rgba(100, 116, 139, 0.4)',
+                            borderRadius: '12px',
+                            transition: 'all 0.3s ease',
+                          }}>
+                            <span style={{
+                              position: 'absolute',
+                              height: '18px',
+                              width: '18px',
+                              left: expirationEnabled ? '22px' : '3px',
+                              bottom: '3px',
+                              background: '#fff',
+                              borderRadius: '50%',
+                              transition: 'all 0.3s ease',
+                            }} />
+                          </span>
+                        </label>
+                      </div>
+                      {expirationEnabled && (
+                        <div style={{ marginTop: '0.5rem' }}>
+                          <input
+                            type="datetime-local"
+                            value={expiresAt}
+                            onChange={(e) => setExpiresAt(e.target.value)}
+                            style={{
+                              width: '100%',
+                              padding: '0.5rem 0.75rem',
+                              background: 'rgba(15, 22, 36, 0.6)',
+                              border: '1px solid rgba(59, 130, 246, 0.3)',
+                              borderRadius: '8px',
+                              color: '#e2e8f0',
+                              fontSize: '0.875rem',
+                              fontFamily: 'inherit',
+                              outline: 'none',
+                            }}
+                          />
+                          {expiresAt && (
+                            <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>
+                              Expires: {new Date(expiresAt).toLocaleString()}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
+
+              {/* Allow Participants to Share - outside Advanced Settings */}
+              {boxType === 'shared' && (
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '0.6rem 0.75rem',
+                  background: 'rgba(30, 64, 175, 0.15)',
+                  border: '1px solid rgba(59, 130, 246, 0.2)',
+                  borderRadius: '8px',
+                  marginTop: '0.5rem',
+                }}>
+                  <div>
+                    <div style={{ color: '#e2e8f0', fontWeight: 600, fontSize: '0.9rem' }}>
+                      Allow Participants to Share
+                    </div>
+                    <div style={{ color: '#94a3b8', fontSize: '0.75rem', marginTop: '0.15rem' }}>
+                      Let people who join this box share the link with others
+                    </div>
+                  </div>
+                  <label style={{
+                    position: 'relative',
+                    display: 'inline-block',
+                    width: '44px',
+                    height: '24px',
+                    cursor: 'pointer',
+                    flexShrink: 0,
+                  }}>
+                    <input
+                      type="checkbox"
+                      checked={allowParticipantSharing}
+                      onChange={(e) => setAllowParticipantSharing(e.target.checked)}
+                      style={{ opacity: 0, width: 0, height: 0 }}
+                    />
+                    <span style={{
+                      position: 'absolute',
+                      top: 0, left: 0, right: 0, bottom: 0,
+                      background: allowParticipantSharing
+                        ? 'linear-gradient(135deg, #4169e1, #1e40af)'
+                        : 'rgba(100, 116, 139, 0.4)',
+                      borderRadius: '12px',
+                      transition: 'all 0.3s ease',
+                    }}>
+                      <span style={{
+                        position: 'absolute',
+                        height: '18px',
+                        width: '18px',
+                        left: allowParticipantSharing ? '22px' : '3px',
+                        bottom: '3px',
+                        background: '#fff',
+                        borderRadius: '50%',
+                        transition: 'all 0.3s ease',
+                      }} />
+                    </span>
+                  </label>
+                </div>
+              )}
             </Card>
           </div>
 
