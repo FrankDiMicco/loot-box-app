@@ -2525,7 +2525,7 @@
 
           {/* Box Grid */}
           {!loading && (
-            <div style={{ position: 'relative' }}>
+            <div style={{ position: 'relative', overflow: 'visible' }}>
               {/* Left fade edge (mobile only) */}
               {isMobile && activeBoxes.length > 0 && (
                 <div style={{
@@ -2533,7 +2533,7 @@
                   left: 0,
                   top: 0,
                   bottom: 0,
-                  width: '20px',
+                  width: '12px',
                   background: 'linear-gradient(to right, rgba(10, 14, 26, 0.9), transparent)',
                   pointerEvents: 'none',
                   zIndex: 1,
@@ -2546,7 +2546,7 @@
                   right: 0,
                   top: 0,
                   bottom: 0,
-                  width: '20px',
+                  width: '12px',
                   background: 'linear-gradient(to left, rgba(10, 14, 26, 0.9), transparent)',
                   pointerEvents: 'none',
                   zIndex: 1,
@@ -2558,9 +2558,9 @@
                 display: 'flex',
                 flexDirection: 'row',
                 overflowX: 'auto',
-                overflowY: 'hidden',
+                overflowY: 'visible',
                 gap: '0.5rem',
-                padding: '0.5rem 0.75rem 0.75rem 0.75rem',
+                padding: '0.5rem 1rem 0.75rem 1rem',
                 WebkitOverflowScrolling: 'touch',
                 scrollSnapType: 'x mandatory',
               } : {
