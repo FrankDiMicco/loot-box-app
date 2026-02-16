@@ -189,10 +189,10 @@
 
     @keyframes glow {
       0%, 100% {
-        box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+        box-shadow: 0 0 25px rgba(59, 130, 246, 0.5);
       }
       50% {
-        box-shadow: 0 0 30px rgba(59, 130, 246, 0.6);
+        box-shadow: 0 0 40px rgba(59, 130, 246, 0.8);
       }
     }
 
@@ -1305,7 +1305,7 @@
     // ========== COMPONENTS - LAYOUT ==========
     
     // Header
-    const Header = ({ title = 'Loot Box Creator', onSettingsClick, userTier = 'free' }) => {
+    const Header = ({ title = 'Loot Box Creator', onSettingsClick, userTier = 'free', hideSettings = false }) => {
       const isMobile = useIsMobile();
       return (
         <header style={{
@@ -1361,23 +1361,25 @@
               {userTier === 'paid' ? '⭐ Premium' : 'Free'}
             </div>
 
-            <button
-              style={{
-                width: '48px',
-                height: '48px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background: 'rgba(26, 31, 53, 0.6)',
-                border: '1px solid rgba(59, 130, 246, 0.2)',
-                borderRadius: '12px',
-                cursor: 'pointer',
-                fontSize: '1.25rem',
-              }}
-              onClick={onSettingsClick}
-            >
-              ⚙️
-            </button>
+            {!hideSettings && (
+              <button
+                style={{
+                  width: '48px',
+                  height: '48px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: 'rgba(26, 31, 53, 0.6)',
+                  border: '1px solid rgba(59, 130, 246, 0.2)',
+                  borderRadius: '12px',
+                  cursor: 'pointer',
+                  fontSize: '1.25rem',
+                }}
+                onClick={onSettingsClick}
+              >
+                ⚙️
+              </button>
+            )}
           </div>
         </header>
       );
@@ -3355,7 +3357,7 @@
       });
       const [needsName, setNeedsName] = useState(false);
       const [isNameChange, setIsNameChange] = useState(false);
-      const [oddsExpanded, setOddsExpanded] = useState(true);
+      const [oddsExpanded, setOddsExpanded] = useState(false);
       const [historyExpanded, setHistoryExpanded] = useState(false);
       const isMobile = useIsMobile();
       const userToggledHistory = useRef(false);
@@ -3540,18 +3542,20 @@
       return (
         <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
           {/* Header */}
-          <div style={{ marginBottom: '2rem' }}>
-            {/* Top row: Back button left, box name centered */}
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem' }}>
-              <Button variant="ghost" onClick={onBack}>← Back</Button>
-              <h2 style={{ fontSize: '2rem', fontWeight: 700, color: '#e2e8f0', margin: 0, flex: 1, textAlign: 'center' }}>
-                {box.name}
-              </h2>
-              {/* Invisible spacer to balance the Back button */}
-              <div style={{ visibility: 'hidden' }}>
-                <Button variant="ghost">← Back</Button>
-              </div>
-            </div>
+          <div style={{ marginBottom: '1rem' }}>
+            {/* Back button - left aligned, compact */}
+            <Button variant="ghost" onClick={onBack} style={{ marginBottom: '0.5rem' }}>← Back</Button>
+
+            {/* Box name - full width, centered */}
+            <h2 style={{
+              fontSize: '1.75rem',
+              fontWeight: 700,
+              color: '#e2e8f0',
+              margin: '0 0 0.25rem 0',
+              textAlign: 'center',
+            }}>
+              {box.name}
+            </h2>
 
             {box.type === 'shared' && userName && (
               <div
@@ -3561,7 +3565,7 @@
                   color: '#94a3b8',
                   cursor: 'pointer',
                   textAlign: 'center',
-                  marginBottom: '0.5rem',
+                  marginBottom: '0.25rem',
                 }}
               >
                 Playing as <span style={{ color: '#60a5fa', fontWeight: 600 }}>{userName}</span> - tap to change
@@ -3569,7 +3573,7 @@
             )}
 
             {/* Bottom row: Status badges */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
               {remainingPulls !== null && (
                 <div style={{
                   padding: '0.5rem 1rem',
@@ -3628,7 +3632,7 @@
           </div>
 
           {/* Main Opening Area */}
-          <Card style={{ marginBottom: '2rem', minHeight: '400px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+          <Card style={{ marginBottom: '1.5rem', minHeight: '300px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
             {isOpening ? (
               <div style={{ textAlign: 'center' }}>
                 <div style={{
@@ -3743,9 +3747,9 @@
                         ? 'boxIdle 3s ease-in-out infinite'
                         : 'none',
                     transition: 'transform 0.2s ease',
-                    filter: 'drop-shadow(0 0 20px rgba(59, 130, 246, 0.4))',
+                    filter: 'drop-shadow(0 0 25px rgba(59, 130, 246, 0.6))',
                     boxShadow: canPull && !isExpired
-                      ? '0 0 30px rgba(59, 130, 246, 0.3), 0 0 60px rgba(59, 130, 246, 0.1)'
+                      ? '0 0 35px rgba(59, 130, 246, 0.5), 0 0 70px rgba(59, 130, 246, 0.25)'
                       : 'none',
                     borderRadius: '16px',
                   }}
@@ -3764,27 +3768,27 @@
                 </div>
                 {canPull && !isExpired && !isOpening && (
                   <div style={{
-                    fontSize: '0.875rem',
+                    fontSize: '1rem',
                     color: '#94a3b8',
                     animation: 'tapHint 2s ease-in-out infinite',
-                    marginTop: '-0.75rem',
-                    marginBottom: '0.75rem',
+                    marginTop: '-0.5rem',
+                    marginBottom: '0.5rem',
                     fontWeight: 500,
                   }}>
                     {isMobile ? 'Tap to Open!' : 'Click to Open!'}
                   </div>
                 )}
-                <div style={{
-                  fontSize: '1.25rem',
-                  color: isExpired ? '#fca5a5' : !canPull ? '#fca5a5' : '#cbd5e1',
-                  marginBottom: '0.5rem',
-                }}>
-                  {isExpired
-                    ? 'This box has expired'
-                    : !canPull
-                      ? 'No opens remaining'
-                      : 'Ready to open!'}
-                </div>
+
+                {/* Only show status text for expired or depleted states */}
+                {(isExpired || !canPull) && (
+                  <div style={{
+                    fontSize: '1.25rem',
+                    color: '#fca5a5',
+                    marginBottom: '0.5rem',
+                  }}>
+                    {isExpired ? 'This box has expired' : 'No opens remaining'}
+                  </div>
+                )}
                 {(isExpired || !canPull) && (
                   <div style={{
                     fontSize: '0.875rem',
@@ -4341,6 +4345,7 @@
           <Header
             onSettingsClick={() => setShowSettings(true)}
             userTier={userSettings.tier}
+            hideSettings={mode === 'open'}
           />
 
           {mode === 'home' && (
