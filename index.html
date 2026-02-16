@@ -2021,7 +2021,7 @@
               required
             />
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', alignItems: 'end' }}>
               <Input
                 type="number"
                 label="Percentage"
@@ -2037,7 +2037,7 @@
 
               <Input
                 type="number"
-                label="Max Quantity (Optional)"
+                label="Max Qty (Optional)"
                 placeholder="Unlimited"
                 value={itemForm.maxQuantity}
                 onChange={(e) => setItemForm({ ...itemForm, maxQuantity: e.target.value })}
