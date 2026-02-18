@@ -237,6 +237,12 @@
       -ms-overflow-style: none;
       scrollbar-width: none;
     }
+    input::placeholder, textarea::placeholder {
+      color: rgba(148, 163, 184, 0.4);
+      font-family: inherit;
+      font-style: italic;
+      font-weight: 400;
+    }
   </style>
 </head>
 <body>
@@ -1158,16 +1164,17 @@
 
       const inputStyles = {
         width: '100%',
-        padding: '0.75rem',
+        padding: '12px 16px',
         fontSize: '1rem',
         fontFamily: 'inherit',
         color: '#e2e8f0',
-        background: 'rgba(15, 22, 36, 0.8)',
-        border: `2px solid ${isFocused ? '#3b82f6' : 'rgba(59, 130, 246, 0.2)'}`,
-        borderRadius: '8px',
+        background: 'rgba(15, 23, 42, 0.6)',
+        backdropFilter: 'blur(8px)',
+        border: `1px solid ${isFocused ? 'rgba(65, 105, 225, 0.5)' : 'rgba(65, 105, 225, 0.2)'}`,
+        borderRadius: '12px',
         outline: 'none',
-        transition: 'all 0.25s ease',
-        boxShadow: isFocused ? '0 0 20px rgba(59, 130, 246, 0.2)' : 'none',
+        transition: 'all 0.2s ease',
+        boxShadow: isFocused ? '0 0 0 3px rgba(65, 105, 225, 0.1)' : 'none',
       };
 
       return (
@@ -3107,11 +3114,24 @@
 
       return (
         <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '2rem' }}>
+            <button onClick={onCancel} style={{
+              width: '44px', height: '44px',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: '#94a3b8', padding: 0, flexShrink: 0,
+              transition: 'color 0.15s ease',
+            }}
+            onMouseEnter={e => e.currentTarget.style.color = '#e2e8f0'}
+            onMouseLeave={e => e.currentTarget.style.color = '#94a3b8'}
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+            </button>
             <h2 style={{ fontSize: '2rem', fontWeight: 700, color: '#e2e8f0', margin: 0 }}>
               {editingBox ? 'Edit Loot Box' : 'Create Loot Box'}
             </h2>
-            <Button variant="ghost" onClick={onCancel}>Cancel</Button>
           </div>
 
           <div style={{ marginBottom: '2rem' }}>
