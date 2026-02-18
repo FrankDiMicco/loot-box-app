@@ -1329,83 +1329,283 @@
     };
 
     // ========== COMPONENTS - LAYOUT ==========
-    
+
+    // AboutModal
+    const AboutModal = ({ show, onClose }) => {
+      if (!show) return null;
+      return (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
+          zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: '1rem',
+        }} onClick={onClose}>
+          <div style={{
+            background: 'linear-gradient(180deg, #0f172a 0%, #1e293b 100%)',
+            border: '1px solid rgba(59, 130, 246, 0.2)',
+            borderRadius: '16px',
+            padding: '2rem',
+            maxWidth: '360px',
+            width: '100%',
+            textAlign: 'center',
+          }} onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#e2e8f0', marginBottom: '0.25rem' }}>
+              Loot Box Creator
+            </div>
+            <div style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '1rem' }}>v1.0.0</div>
+            <div style={{ fontSize: '0.9rem', color: '#94a3b8', marginBottom: '1.5rem', lineHeight: 1.5 }}>
+              Create, customize, and share loot boxes with friends. Built with love.
+            </div>
+            <div style={{ height: '1px', background: 'rgba(59, 130, 246, 0.15)', marginBottom: '1rem' }} />
+            <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '0.5rem' }}>Powered by Firebase</div>
+            <button onClick={onClose} style={{
+              marginTop: '1rem', padding: '0.75rem 2rem',
+              background: 'linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)',
+              border: 'none', borderRadius: '10px', color: '#fff',
+              fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.9rem',
+            }}>Close</button>
+          </div>
+        </div>
+      );
+    };
+
+    // SideDrawer
+    const SideDrawer = ({ isOpen, onClose, userSettings, onNavigate }) => {
+      const menuItems = [
+        { key: 'myBoxes', label: 'My Boxes', icon: (
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
+            <rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" />
+          </svg>
+        )},
+        { key: 'marketplace', label: 'Marketplace', badge: 'Soon', icon: (
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
+            <line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 01-8 0" />
+          </svg>
+        )},
+        { key: 'templates', label: 'Box Templates', badge: 'Soon', icon: (
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+            <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+          </svg>
+        )},
+        { key: 'stats', label: 'Stats', badge: 'Soon', icon: (
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="12" y1="20" x2="12" y2="10" /><line x1="18" y1="20" x2="18" y2="4" />
+            <line x1="6" y1="20" x2="6" y2="16" />
+          </svg>
+        )},
+        'divider',
+        { key: 'account', label: 'My Account', badge: 'Soon', icon: (
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" />
+          </svg>
+        )},
+        { key: 'settings', label: 'Settings', icon: (
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="3" />
+            <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06a1.65 1.65 0 001.82.33h.09a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82v.09a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
+          </svg>
+        )},
+        'divider',
+        { key: 'shareApp', label: 'Share the App', icon: (
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
+            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+          </svg>
+        )},
+        { key: 'about', label: 'About', icon: (
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
+          </svg>
+        )},
+      ];
+
+      const displayName = userSettings?.displayName || 'Loot Box User';
+      const isPremium = userSettings?.tier === 'paid';
+
+      return (
+        <>
+          {/* Overlay */}
+          <div style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0, 0, 0, 0.6)',
+            backdropFilter: 'blur(4px)',
+            zIndex: 9998,
+            opacity: isOpen ? 1 : 0,
+            pointerEvents: isOpen ? 'auto' : 'none',
+            transition: 'opacity 0.3s ease',
+          }} onClick={onClose} />
+
+          {/* Drawer */}
+          <div style={{
+            position: 'fixed', top: 0, left: 0, bottom: 0,
+            width: 'min(280px, 80%)',
+            maxWidth: '320px',
+            background: 'linear-gradient(180deg, #0f172a 0%, #1e293b 100%)',
+            borderRight: '1px solid rgba(65, 105, 225, 0.2)',
+            zIndex: 9999,
+            transform: isOpen ? 'translateX(0)' : 'translateX(-100%)',
+            transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            overflowY: 'auto',
+            boxShadow: isOpen ? '4px 0 24px rgba(0, 0, 0, 0.5)' : 'none',
+            display: 'flex',
+            flexDirection: 'column',
+          }}>
+            {/* Header */}
+            <div style={{
+              padding: '24px 20px',
+              borderBottom: '1px solid rgba(65, 105, 225, 0.15)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              position: 'relative',
+            }}>
+              <div style={{
+                width: '44px', height: '44px', borderRadius: '50%',
+                background: 'linear-gradient(135deg, #4169e1, #1e40af)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '18px', fontWeight: 700, color: '#fff',
+                flexShrink: 0,
+              }}>
+                {displayName.charAt(0).toUpperCase()}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 700, color: '#e2e8f0', fontSize: '1rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {displayName}
+                </div>
+                <span style={{
+                  display: 'inline-block',
+                  marginTop: '4px',
+                  padding: '2px 8px',
+                  borderRadius: '10px',
+                  fontSize: '0.65rem',
+                  fontWeight: 700,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  ...(isPremium
+                    ? { background: 'linear-gradient(135deg, #f59e0b, #ec4899)', color: '#fff' }
+                    : { background: 'rgba(100, 116, 139, 0.3)', color: '#94a3b8' }
+                  ),
+                }}>
+                  {isPremium ? 'Premium' : 'Free'}
+                </span>
+              </div>
+              <button onClick={onClose} style={{
+                position: 'absolute', top: '16px', right: '16px',
+                background: 'none', border: 'none', cursor: 'pointer', padding: '4px',
+                color: '#64748b', display: 'flex',
+              }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Menu Items */}
+            <div style={{ flex: 1, padding: '8px 0' }}>
+              {menuItems.map((item, i) => {
+                if (item === 'divider') {
+                  return <div key={`div-${i}`} style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '8px 20px' }} />;
+                }
+                return (
+                  <button key={item.key} onClick={() => onNavigate(item.key)} style={{
+                    display: 'flex', alignItems: 'center', gap: '14px',
+                    width: '100%', padding: '14px 20px',
+                    background: 'none', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.05)',
+                    color: '#94a3b8', cursor: 'pointer', fontFamily: 'inherit',
+                    transition: 'background 0.15s ease',
+                    textAlign: 'left',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(65, 105, 225, 0.1)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                  >
+                    <span style={{ display: 'flex', flexShrink: 0 }}>{item.icon}</span>
+                    <span style={{ flex: 1, color: '#e2e8f0', fontSize: '0.95rem', fontWeight: 500 }}>{item.label}</span>
+                    {item.badge && (
+                      <span style={{
+                        padding: '2px 8px', borderRadius: '10px',
+                        fontSize: '0.65rem', fontWeight: 600,
+                        background: 'rgba(245, 158, 11, 0.2)', color: '#f59e0b',
+                      }}>{item.badge}</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </>
+      );
+    };
+
     // Header
-    const Header = ({ title = 'Loot Box Creator V121', onSettingsClick, userTier = 'free', hideSettings = false }) => {
+    const Header = ({ title = 'Loot Box Creator V121', onMenuClick, userTier = 'free' }) => {
       const isMobile = useIsMobile();
       return (
         <header style={{
           display: 'flex',
-          ...(isMobile ? {
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '0.75rem',
-            padding: '1rem',
-          } : {
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '1.5rem 0',
-          }),
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: isMobile ? '1rem' : '1.5rem 0',
           marginBottom: isMobile ? '1rem' : '2rem',
           borderBottom: '1px solid rgba(59, 130, 246, 0.2)',
         }}>
+          {/* Hamburger */}
+          <button onClick={onMenuClick} style={{
+            width: '44px', height: '44px',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'none', border: 'none', cursor: 'pointer',
+            color: '#e2e8f0', padding: 0, flexShrink: 0,
+          }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <line x1="3" y1="12" x2="21" y2="12" />
+              <line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
+          </button>
+
+          {/* Title */}
           <h1 style={{
-            fontSize: isMobile ? '1.75rem' : '2.5rem',
+            fontSize: isMobile ? '1.5rem' : '2.5rem',
             fontWeight: 700,
             background: 'linear-gradient(135deg, #3b82f6 0%, #60a5fa 50%, #93c5fd 100%)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
             filter: 'drop-shadow(0 0 30px rgba(59, 130, 246, 0.4))',
             margin: 0,
-            ...(isMobile ? { textAlign: 'center', whiteSpace: 'nowrap' } : {}),
+            textAlign: 'center',
+            whiteSpace: 'nowrap',
           }}>
             {title}
           </h1>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', justifyContent: 'center' }}>
-            <div
-              style={{
-                padding: '0.5rem 1rem',
-                background: userTier === 'paid' ? 'linear-gradient(135deg, #f59e0b 0%, #ec4899 100%)' : 'rgba(26, 31, 53, 0.6)',
-                border: `1px solid ${userTier === 'paid' ? '#f59e0b' : 'rgba(59, 130, 246, 0.2)'}`,
-                borderRadius: '12px',
-                fontSize: '0.875rem',
-                fontWeight: 600,
-                color: '#ffffff',
-                textTransform: 'uppercase',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-              }}
-              onClick={() => {
-                const settings = getUserSettings();
-                const newTier = settings.tier === 'paid' ? 'free' : 'paid';
-                saveUserSettings({ ...settings, tier: newTier });
-                window.location.reload();
-              }}
-              title="Click to toggle tier (for testing)"
-            >
-              {userTier === 'paid' ? '⭐ Premium' : 'Free'}
-            </div>
-
-            {!hideSettings && (
-              <button
-                style={{
-                  width: '48px',
-                  height: '48px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  background: 'rgba(26, 31, 53, 0.6)',
-                  border: '1px solid rgba(59, 130, 246, 0.2)',
-                  borderRadius: '12px',
-                  cursor: 'pointer',
-                  fontSize: '1.25rem',
-                }}
-                onClick={onSettingsClick}
-              >
-                ⚙️
-              </button>
-            )}
+          {/* Tier badge */}
+          <div
+            style={{
+              padding: '0.5rem 1rem',
+              background: userTier === 'paid' ? 'linear-gradient(135deg, #f59e0b 0%, #ec4899 100%)' : 'rgba(26, 31, 53, 0.6)',
+              border: `1px solid ${userTier === 'paid' ? '#f59e0b' : 'rgba(59, 130, 246, 0.2)'}`,
+              borderRadius: '12px',
+              fontSize: '0.875rem',
+              fontWeight: 600,
+              color: '#ffffff',
+              textTransform: 'uppercase',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              flexShrink: 0,
+            }}
+            onClick={() => {
+              const settings = getUserSettings();
+              const newTier = settings.tier === 'paid' ? 'free' : 'paid';
+              saveUserSettings({ ...settings, tier: newTier });
+              window.location.reload();
+            }}
+            title="Click to toggle tier (for testing)"
+          >
+            {userTier === 'paid' ? '⭐ Premium' : 'Free'}
           </div>
         </header>
       );
@@ -4054,6 +4254,8 @@
       const [openingBox, setOpeningBox] = useState(null);
       const [pendingTemplate, setPendingTemplate] = useState(null);
       const [showSettings, setShowSettings] = useState(false);
+      const [drawerOpen, setDrawerOpen] = useState(false);
+      const [showAboutModal, setShowAboutModal] = useState(false);
       const { showToast, ToastContainer, success, error, info } = useToast();
 
       // Tick to keep expiration badges fresh (1s when under 1min, else 30s)
@@ -4300,6 +4502,34 @@
         success(box?.isVisitor ? 'Removed from your feed' : 'Box deleted successfully');
       };
 
+      // Lock body scroll when drawer is open
+      useEffect(() => {
+        document.body.style.overflow = drawerOpen ? 'hidden' : '';
+        return () => { document.body.style.overflow = ''; };
+      }, [drawerOpen]);
+
+      const handleDrawerNavigate = (key) => {
+        setDrawerOpen(false);
+        switch (key) {
+          case 'myBoxes': setMode('home'); break;
+          case 'marketplace': info('Marketplace coming soon!'); break;
+          case 'templates': info('Browse templates when creating a box'); break;
+          case 'stats': info('Stats coming soon!'); break;
+          case 'account': info('Account system coming soon!'); break;
+          case 'settings': setTimeout(() => setShowSettings(true), 100); break;
+          case 'shareApp': {
+            const appUrl = `${window.location.origin}${window.location.pathname}`;
+            if (navigator.share) {
+              navigator.share({ title: 'Loot Box Creator', text: 'Create, customize, and share loot boxes with friends!', url: appUrl }).catch(() => {});
+            } else {
+              navigator.clipboard.writeText(appUrl).then(() => success('Link copied!')).catch(() => {});
+            }
+            break;
+          }
+          case 'about': setTimeout(() => setShowAboutModal(true), 100); break;
+        }
+      };
+
       const handleToggleFavorite = (boxId) => {
         const newFavs = toggleFavorite(boxId);
         setFavorites([...newFavs]);
@@ -4381,9 +4611,8 @@
       return (
         <div style={{ maxWidth: '1200px', margin: '0 auto', padding: isMobile ? '1rem' : '2rem', minHeight: '100vh' }}>
           <Header
-            onSettingsClick={() => setShowSettings(true)}
+            onMenuClick={() => setDrawerOpen(true)}
             userTier={userSettings.tier}
-            hideSettings={mode === 'open'}
           />
 
           {mode === 'home' && (
@@ -4567,6 +4796,18 @@
             onClose={() => setShowSettings(false)}
             userSettings={userSettings}
             onSave={handleSaveSettings}
+          />
+
+          <SideDrawer
+            isOpen={drawerOpen}
+            onClose={() => setDrawerOpen(false)}
+            userSettings={userSettings}
+            onNavigate={handleDrawerNavigate}
+          />
+
+          <AboutModal
+            show={showAboutModal}
+            onClose={() => setShowAboutModal(false)}
           />
 
           <ToastContainer />
