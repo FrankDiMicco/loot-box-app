@@ -1561,26 +1561,24 @@
     };
 
     // Header
-    const Header = ({ title = 'Loot Box Creator V1629', onMenuClick }) => {
+    const Header = ({ title = 'Loot Box Creator V1648', onMenuClick }) => {
       const isMobile = useIsMobile();
       return (
         <header style={{
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center',
+          justifyContent: 'space-between',
           padding: isMobile ? '1rem' : '1.5rem 0',
           marginBottom: isMobile ? '1rem' : '2rem',
           borderBottom: '1px solid rgba(59, 130, 246, 0.2)',
-          position: 'relative',
         }}>
           {/* Hamburger */}
           <button onClick={onMenuClick} style={{
-            position: 'absolute',
-            left: isMobile ? '1rem' : 0,
             width: '44px', height: '44px',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             background: 'none', border: 'none', cursor: 'pointer',
-            color: '#e2e8f0', padding: 0,
+            color: '#e2e8f0', padding: 0, flexShrink: 0,
+            marginLeft: '-10px',
           }}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
               <line x1="3" y1="6" x2="21" y2="6" />
@@ -1603,6 +1601,8 @@
           }}>
             {title}
           </h1>
+          {/* Spacer to balance hamburger for centered title */}
+          <div style={{ width: '44px', flexShrink: 0 }} />
         </header>
       );
     };
@@ -2784,15 +2784,15 @@
                 overflowX: 'auto',
                 overflowY: 'hidden',
                 gap: '0.5rem',
-                padding: '0.75rem 1.25rem 0.75rem 1.25rem',
-                scrollPadding: '0 1.25rem',
+                padding: '0.75rem 1.25rem 0.75rem 0',
+                scrollPadding: '0 1.25rem 0 0',
                 WebkitOverflowScrolling: 'touch',
                 scrollSnapType: 'x mandatory',
               } : {
                 display: 'grid',
                 gridTemplateColumns: 'repeat(auto-fill, minmax(90px, 1fr))',
                 gap: '0.75rem',
-                padding: '10px',
+                padding: '10px 10px 10px 0',
               }}
             >
               {activeBoxes.length === 0 && (
