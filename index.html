@@ -1300,29 +1300,39 @@
 
     // useToast Hook
     const useToast = () => {
-      const [toasts, setToasts] = useState([]);
+      const [toast, setToast] = useState(null);
+      const toastTimeoutRef = useRef(null);
+      const toastKeyRef = useRef(0);
 
       const showToast = (message, type = 'info', duration = 3000) => {
-        const id = Date.now();
-        setToasts(prev => [...prev, { id, message, type, duration, show: true }]);
-      };
-
-      const hideToast = (id) => {
-        setToasts(prev => prev.filter(toast => toast.id !== id));
+        if (toastTimeoutRef.current) {
+          clearTimeout(toastTimeoutRef.current);
+        }
+        setToast(null);
+        requestAnimationFrame(() => {
+          toastKeyRef.current += 1;
+          setToast({ message, type, duration, key: toastKeyRef.current });
+          toastTimeoutRef.current = setTimeout(() => {
+            setToast(null);
+          }, duration);
+        });
       };
 
       const ToastContainer = () => (
         <>
-          {toasts.map(toast => (
+          {toast && (
             <Toast
-              key={toast.id}
+              key={toast.key}
               message={toast.message}
               type={toast.type}
               duration={toast.duration}
-              show={toast.show}
-              onClose={() => hideToast(toast.id)}
+              show={true}
+              onClose={() => {
+                if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+                setToast(null);
+              }}
             />
-          ))}
+          )}
         </>
       );
 
@@ -1561,7 +1571,7 @@
     };
 
     // Header
-    const Header = ({ title = 'Loot Box Creator V1648', onMenuClick }) => {
+    const Header = ({ title = 'Loot Box Creator V1723', onMenuClick }) => {
       const isMobile = useIsMobile();
       return (
         <header style={{
