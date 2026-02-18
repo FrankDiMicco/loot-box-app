@@ -1305,7 +1305,7 @@
     // ========== COMPONENTS - LAYOUT ==========
     
     // Header
-    const Header = ({ title = 'Loot Box Creator V115', onSettingsClick, userTier = 'free', hideSettings = false }) => {
+    const Header = ({ title = 'Loot Box Creator V121', onSettingsClick, userTier = 'free', hideSettings = false }) => {
       const isMobile = useIsMobile();
       return (
         <header style={{
@@ -2526,32 +2526,6 @@
           {/* Box Grid */}
           {!loading && (
             <div style={{ position: 'relative', overflow: 'visible' }}>
-              {/* Left fade edge (mobile only) */}
-              {isMobile && activeBoxes.length > 0 && (
-                <div style={{
-                  position: 'absolute',
-                  left: 0,
-                  top: 0,
-                  bottom: 0,
-                  width: '12px',
-                  background: 'linear-gradient(to right, rgba(10, 14, 26, 0.9), transparent)',
-                  pointerEvents: 'none',
-                  zIndex: 1,
-                }} />
-              )}
-              {/* Right fade edge (mobile only) */}
-              {isMobile && activeBoxes.length > 0 && (
-                <div style={{
-                  position: 'absolute',
-                  right: 0,
-                  top: 0,
-                  bottom: 0,
-                  width: '12px',
-                  background: 'linear-gradient(to left, rgba(10, 14, 26, 0.9), transparent)',
-                  pointerEvents: 'none',
-                  zIndex: 1,
-                }} />
-              )}
             <div
               className={isMobile ? 'mobile-image-scroll' : undefined}
               style={isMobile ? {
@@ -2560,7 +2534,8 @@
                 overflowX: 'auto',
                 overflowY: 'hidden',
                 gap: '0.5rem',
-                padding: '0.5rem 1.25rem 0.75rem 1.25rem',
+                padding: '0.75rem 1.25rem 0.75rem 1.25rem',
+                scrollPadding: '0 1.25rem',
                 WebkitOverflowScrolling: 'touch',
                 scrollSnapType: 'x mandatory',
               } : {
