@@ -1305,7 +1305,7 @@
     // ========== COMPONENTS - LAYOUT ==========
     
     // Header
-    const Header = ({ title = 'Loot Box Creator', onSettingsClick, userTier = 'free', hideSettings = false }) => {
+    const Header = ({ title = 'Loot Box Creator V115', onSettingsClick, userTier = 'free', hideSettings = false }) => {
       const isMobile = useIsMobile();
       return (
         <header style={{
@@ -2891,7 +2891,7 @@
         <div style={{ maxWidth: '800px', margin: '0 auto' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
             <h2 style={{ fontSize: '2rem', fontWeight: 700, color: '#e2e8f0', margin: 0 }}>
-              {editingBox ? 'Edit Loot Box' : 'Create Loot Box V109'}
+              {editingBox ? 'Edit Loot Box' : 'Create Loot Box'}
             </h2>
             <Button variant="ghost" onClick={onCancel}>Cancel</Button>
           </div>
