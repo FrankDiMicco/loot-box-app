@@ -2560,7 +2560,7 @@
                 overflowX: 'auto',
                 overflowY: 'hidden',
                 gap: '0.5rem',
-                padding: '0.5rem 1rem 0.75rem 1rem',
+                padding: '0.75rem 1rem 0.75rem 1rem',
                 WebkitOverflowScrolling: 'touch',
                 scrollSnapType: 'x mandatory',
               } : {
@@ -2603,7 +2603,9 @@
                       border: `2px solid ${isSelected ? '#3b82f6' : 'rgba(59, 130, 246, 0.2)'}`,
                       borderRadius: '12px',
                       transition: 'all 0.2s ease',
-                      boxShadow: isSelected ? 'inset 0 0 15px rgba(59, 130, 246, 0.3), 0 0 8px rgba(59, 130, 246, 0.4)' : 'none',
+                      boxShadow: isSelected ? 'inset 0 0 15px rgba(59, 130, 246, 0.3)' : 'none',
+                      outline: isSelected ? '2px solid rgba(59, 130, 246, 0.6)' : 'none',
+                      outlineOffset: '2px',
                       ...(isMobile ? {
                         flexShrink: 0,
                         width: '72px',
