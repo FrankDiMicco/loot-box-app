@@ -1228,13 +1228,6 @@
 
     // Toast Component
     const Toast = ({ message, type = 'info', duration = 3000, onClose, show = false }) => {
-      useEffect(() => {
-        if (show && duration > 0) {
-          const timer = setTimeout(() => onClose && onClose(), duration);
-          return () => clearTimeout(timer);
-        }
-      }, [show, duration, onClose]);
-
       if (!show) return null;
 
       const types = {
@@ -1318,27 +1311,23 @@
         });
       };
 
-      const ToastContainer = () => (
-        <>
-          {toast && (
-            <Toast
-              key={toast.key}
-              message={toast.message}
-              type={toast.type}
-              duration={toast.duration}
-              show={true}
-              onClose={() => {
-                if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
-                setToast(null);
-              }}
-            />
-          )}
-        </>
-      );
+      const toastElement = toast ? (
+        <Toast
+          key={toast.key}
+          message={toast.message}
+          type={toast.type}
+          duration={toast.duration}
+          show={true}
+          onClose={() => {
+            if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+            setToast(null);
+          }}
+        />
+      ) : null;
 
       return {
         showToast,
-        ToastContainer,
+        toastElement,
         success: (message, duration) => showToast(message, 'success', duration),
         error: (message, duration) => showToast(message, 'error', duration),
         info: (message, duration) => showToast(message, 'info', duration),
@@ -1571,7 +1560,7 @@
     };
 
     // Header
-    const Header = ({ title = 'Loot Box Creator V1723', onMenuClick }) => {
+    const Header = ({ title = 'Loot Box Creator V1735', onMenuClick }) => {
       const isMobile = useIsMobile();
       return (
         <header style={{
@@ -4279,7 +4268,7 @@
       const [showSettings, setShowSettings] = useState(false);
       const [drawerOpen, setDrawerOpen] = useState(false);
       const [showAboutModal, setShowAboutModal] = useState(false);
-      const { showToast, ToastContainer, success, error, info } = useToast();
+      const { showToast, toastElement, success, error, info } = useToast();
 
       // Tick to keep expiration badges fresh (1s when under 1min, else 30s)
       const [, setTick] = useState(0);
@@ -4841,7 +4830,7 @@
             onClose={() => setShowAboutModal(false)}
           />
 
-          <ToastContainer />
+          {toastElement}
         </div>
       );
     };
