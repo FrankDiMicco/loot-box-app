@@ -474,6 +474,32 @@
     const STORAGE_KEYS = {
       BOXES: 'lootBoxes',
       USER_SETTINGS: 'userSettings',
+      FAVORITES: 'lootBoxFavorites',
+    };
+
+    const getFavorites = () => {
+      try {
+        const data = localStorage.getItem(STORAGE_KEYS.FAVORITES);
+        return data ? JSON.parse(data) : [];
+      } catch (e) {
+        return [];
+      }
+    };
+
+    const toggleFavorite = (boxId) => {
+      const favs = getFavorites();
+      const index = favs.indexOf(boxId);
+      if (index > -1) {
+        favs.splice(index, 1);
+      } else {
+        favs.push(boxId);
+      }
+      localStorage.setItem(STORAGE_KEYS.FAVORITES, JSON.stringify(favs));
+      return favs;
+    };
+
+    const isFavorite = (boxId) => {
+      return getFavorites().includes(boxId);
     };
 
     const getAllBoxes = () => {
@@ -1555,10 +1581,11 @@
     };
 
     // BoxCard (simplified for brevity)
-    const BoxCard = ({ box, onClick, onEdit, onDelete, success, isNew }) => {
+    const BoxCard = ({ box, onClick, onEdit, onDelete, success, isNew, isFav, onToggleFavorite }) => {
       const isMobile = useIsMobile();
       const { name, items = [], pullHistory = [], maxPulls, maxPullsPerUser, type = 'local' } = box;
       const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+      const boxFavId = box.shareCode || box.id;
 
       const handleEdit = (e) => {
         e.stopPropagation();
@@ -1732,7 +1759,7 @@
                 )}
               </div>
 
-              {/* Edit + Delete buttons - top right */}
+              {/* Card action buttons - top right: Star, Edit, Delete */}
               <div style={{
                 position: 'absolute',
                 top: '0.5rem',
@@ -1740,6 +1767,33 @@
                 display: 'flex',
                 gap: '0.4rem',
               }}>
+                <button
+                  onClick={(e) => { e.stopPropagation(); onToggleFavorite && onToggleFavorite(boxFavId); }}
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: 'rgba(15, 22, 36, 0.6)',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    padding: 0,
+                    transition: 'all 0.2s ease',
+                    backdropFilter: 'blur(4px)',
+                  }}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" style={{
+                    fill: isFav ? '#f59e0b' : 'none',
+                    stroke: isFav ? '#f59e0b' : 'rgba(148, 163, 184, 0.5)',
+                    strokeWidth: 1.5,
+                    transition: 'all 0.2s ease',
+                    filter: isFav ? 'drop-shadow(0 0 4px rgba(245, 158, 11, 0.4))' : 'none',
+                  }}>
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                  </svg>
+                </button>
                 {!box.isVisitor && onEdit && (
                   <button onClick={handleEdit} style={{
                     width: '32px',
@@ -3993,6 +4047,7 @@
       const isMobile = useIsMobile();
       const [mode, setMode] = useState('home'); // home, create, edit, open
       const [activeFilter, setActiveFilter] = useState('All');
+      const [favorites, setFavorites] = useState(getFavorites());
       const [boxes, setBoxes] = useState([]);
       const [userSettings, setUserSettings] = useState(null);
       const [editingBox, setEditingBox] = useState(null);
@@ -4245,6 +4300,11 @@
         success(box?.isVisitor ? 'Removed from your feed' : 'Box deleted successfully');
       };
 
+      const handleToggleFavorite = (boxId) => {
+        const newFavs = toggleFavorite(boxId);
+        setFavorites([...newFavs]);
+      };
+
       const handleBoxSaved = (box) => {
         loadData();
         setMode('home');
@@ -4295,6 +4355,10 @@
           // Show boxes that haven't been opened yet
           return !box.pullHistory || box.pullHistory.length === 0;
         }
+        if (activeFilter === 'Faves') {
+          const favId = box.shareCode || box.id;
+          return favorites.includes(favId);
+        }
         if (activeFilter === 'All') return true;
         return true;
       });
@@ -4324,7 +4388,7 @@
 
           {mode === 'home' && (
             <>
-              <FilterTabs activeFilter={activeFilter} onFilterChange={setActiveFilter} filters={['All', 'Shared', 'New', 'Local']} />
+              <FilterTabs activeFilter={activeFilter} onFilterChange={setActiveFilter} filters={['All', 'Shared', 'New', 'Faves', 'Local']} />
 
               <button
                 onClick={handleCreateBox}
@@ -4354,16 +4418,30 @@
 
               {filteredBoxes.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '4rem 2rem', color: '#64748b' }}>
-                  <div style={{ fontSize: '4rem', marginBottom: '1rem', opacity: 0.5 }}>📦</div>
-                  <div style={{ fontSize: '1.125rem', marginBottom: '0.5rem' }}>
-                    {activeFilter === 'Local' && 'No local boxes yet'}
-                    {activeFilter === 'Shared' && 'No shared boxes yet'}
-                    {activeFilter === 'New' && 'No unopened boxes'}
-                    {activeFilter === 'All' && 'No boxes yet'}
-                  </div>
-                  <div style={{ fontSize: '0.875rem', color: '#475569' }}>
-                    {activeFilter === 'New' ? 'All your boxes have been opened!' : 'Create your first loot box to get started!'}
-                  </div>
+                  {activeFilter === 'Faves' ? (
+                    <>
+                      <div style={{ marginBottom: '1rem', opacity: 0.5 }}>
+                        <svg width="40" height="40" viewBox="0 0 24 24" style={{ fill: 'none', stroke: '#64748b', strokeWidth: 1.5 }}>
+                          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                        </svg>
+                      </div>
+                      <div style={{ fontSize: '1.125rem', marginBottom: '0.5rem' }}>No favorites yet</div>
+                      <div style={{ fontSize: '0.875rem', color: '#475569' }}>Tap the star on any box to add it here</div>
+                    </>
+                  ) : (
+                    <>
+                      <div style={{ fontSize: '4rem', marginBottom: '1rem', opacity: 0.5 }}>📦</div>
+                      <div style={{ fontSize: '1.125rem', marginBottom: '0.5rem' }}>
+                        {activeFilter === 'Local' && 'No local boxes yet'}
+                        {activeFilter === 'Shared' && 'No shared boxes yet'}
+                        {activeFilter === 'New' && 'No unopened boxes'}
+                        {activeFilter === 'All' && 'No boxes yet'}
+                      </div>
+                      <div style={{ fontSize: '0.875rem', color: '#475569' }}>
+                        {activeFilter === 'New' ? 'All your boxes have been opened!' : 'Create your first loot box to get started!'}
+                      </div>
+                    </>
+                  )}
                 </div>
               ) : (
                 <div style={{
@@ -4381,6 +4459,8 @@
                       onDelete={handleDeleteBox}
                       success={success}
                       isNew={!getSeenBoxes().includes(box.id)}
+                      isFav={favorites.includes(box.shareCode || box.id)}
+                      onToggleFavorite={handleToggleFavorite}
                     />
                   ))}
                 </div>
