@@ -1560,7 +1560,7 @@
     };
 
     // Header
-    const Header = ({ title = 'Loot Box Creator V1735', onMenuClick }) => {
+    const Header = ({ title = 'Loot Box Creator V1548', onMenuClick }) => {
       const isMobile = useIsMobile();
       return (
         <header style={{
@@ -1780,7 +1780,112 @@
       const isMobile = useIsMobile();
       const { name, items = [], pullHistory = [], maxPulls, maxPullsPerUser, type = 'local' } = box;
       const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+      const [activeTooltip, setActiveTooltip] = useState(null);
       const boxFavId = box.shareCode || box.id;
+
+      const handleIconTap = (e, iconId) => {
+        e.stopPropagation();
+        setActiveTooltip(activeTooltip === iconId ? null : iconId);
+      };
+
+      useEffect(() => {
+        if (activeTooltip) {
+          const timer = setTimeout(() => setActiveTooltip(null), 3000);
+          return () => clearTimeout(timer);
+        }
+      }, [activeTooltip]);
+
+      // Dismiss tooltip on outside click
+      useEffect(() => {
+        if (activeTooltip) {
+          const dismiss = () => setActiveTooltip(null);
+          document.addEventListener('click', dismiss);
+          return () => document.removeEventListener('click', dismiss);
+        }
+      }, [activeTooltip]);
+
+      // Compute opens info
+      const opensRemaining = (() => {
+        if (!maxPulls || maxPulls <= 0) return { unlimited: true };
+        const used = pullHistory.length;
+        const remaining = Math.max(0, maxPulls - used);
+        return { unlimited: false, remaining, total: maxPulls };
+      })();
+
+      const opensIconColor = (() => {
+        if (opensRemaining.unlimited) return '#94a3b8';
+        if (opensRemaining.remaining <= 0) return '#ef4444';
+        if (opensRemaining.remaining <= 3) return '#f59e0b';
+        return '#10b981';
+      })();
+
+      const opensTooltipText = (() => {
+        if (opensRemaining.unlimited) return 'Unlimited opens';
+        if (opensRemaining.remaining <= 0) return 'No opens remaining';
+        return `${opensRemaining.remaining} of ${opensRemaining.total} opens remaining`;
+      })();
+
+      // Expiration color
+      const expirationIconColor = (() => {
+        if (!box.expiresAt) return '#94a3b8';
+        const diff = box.expiresAt - Date.now();
+        if (diff <= 0) return '#ef4444';
+        if (diff <= 60 * 60 * 1000) return '#ef4444';
+        if (diff <= 24 * 60 * 60 * 1000) return '#f59e0b';
+        return '#94a3b8';
+      })();
+
+      const expirationPulse = box.expiresAt && (box.expiresAt - Date.now()) <= 60 * 60 * 1000 && (box.expiresAt - Date.now()) > 0;
+
+      // Shared box participant count
+      const uniqueParticipants = (() => {
+        if (box.type !== 'shared') return 0;
+        const seen = new Set();
+        (pullHistory || []).forEach(p => {
+          if (p.userName) seen.add(p.userName);
+          else if (p.deviceId) seen.add(p.deviceId);
+        });
+        return seen.size;
+      })();
+
+      // Tooltip renderer
+      const renderTooltip = (text) => (
+        React.createElement('div', {
+          style: {
+            position: 'absolute',
+            left: '40px',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            background: 'rgba(15, 23, 42, 0.95)',
+            border: '1px solid rgba(65, 105, 225, 0.3)',
+            borderRadius: '8px',
+            padding: '8px 12px',
+            color: '#e2e8f0',
+            fontSize: '0.75rem',
+            fontWeight: 500,
+            whiteSpace: 'nowrap',
+            zIndex: 10,
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.4)',
+            animation: 'fadeIn 0.15s ease',
+            pointerEvents: 'none',
+          }
+        },
+          React.createElement('div', {
+            style: {
+              position: 'absolute',
+              left: '-6px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              width: 0,
+              height: 0,
+              borderTop: '6px solid transparent',
+              borderBottom: '6px solid transparent',
+              borderRight: '6px solid rgba(15, 23, 42, 0.95)',
+            }
+          }),
+          text
+        )
+      );
 
       const handleEdit = (e) => {
         e.stopPropagation();
@@ -2025,6 +2130,111 @@
                 </button>
               </div>
 
+              {/* Left-edge icon strip */}
+              <div style={{
+                position: 'absolute',
+                left: '12px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '10px',
+                zIndex: 2,
+              }}>
+                {/* Item count icon */}
+                <div onClick={(e) => handleIconTap(e, 'items')} style={{
+                  position: 'relative',
+                  width: '30px', height: '30px', borderRadius: '8px',
+                  background: 'rgba(15, 23, 42, 0.7)',
+                  border: '1px solid rgba(65, 105, 225, 0.2)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer', transition: 'all 0.2s ease',
+                }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polygon points="12 2 2 7 12 12 22 7 12 2" />
+                    <polyline points="2 17 12 22 22 17" />
+                    <polyline points="2 12 12 17 22 12" />
+                  </svg>
+                  {activeTooltip === 'items' && renderTooltip(`${items.length} item${items.length === 1 ? '' : 's'} in this box`)}
+                </div>
+
+                {/* Opens remaining icon */}
+                <div onClick={(e) => handleIconTap(e, 'opens')} style={{
+                  position: 'relative',
+                  width: '30px', height: '30px', borderRadius: '8px',
+                  background: 'rgba(15, 23, 42, 0.7)',
+                  border: '1px solid rgba(65, 105, 225, 0.2)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer', transition: 'all 0.2s ease',
+                }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={opensIconColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" />
+                    <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+                    <line x1="12" y1="22.08" x2="12" y2="12" />
+                  </svg>
+                  {activeTooltip === 'opens' && renderTooltip(opensTooltipText)}
+                </div>
+
+                {/* Per-person limit icon */}
+                {(maxPullsPerUser !== null && maxPullsPerUser !== undefined && maxPullsPerUser > 0) && (
+                  <div onClick={(e) => handleIconTap(e, 'perPerson')} style={{
+                    position: 'relative',
+                    width: '30px', height: '30px', borderRadius: '8px',
+                    background: 'rgba(15, 23, 42, 0.7)',
+                    border: '1px solid rgba(65, 105, 225, 0.2)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    cursor: 'pointer', transition: 'all 0.2s ease',
+                  }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
+                      <circle cx="12" cy="7" r="4" />
+                    </svg>
+                    {activeTooltip === 'perPerson' && renderTooltip(`Max ${maxPullsPerUser} open${maxPullsPerUser === 1 ? '' : 's'} per person`)}
+                  </div>
+                )}
+
+                {/* Expiration icon */}
+                {box.expiresAt && (
+                  <div onClick={(e) => handleIconTap(e, 'expiration')} style={{
+                    position: 'relative',
+                    width: '30px', height: '30px', borderRadius: '8px',
+                    background: 'rgba(15, 23, 42, 0.7)',
+                    border: '1px solid rgba(65, 105, 225, 0.2)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    cursor: 'pointer', transition: 'all 0.2s ease',
+                    animation: expirationPulse ? 'pulse 2s ease-in-out infinite' : 'none',
+                  }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={expirationIconColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10" />
+                      <polyline points="12 6 12 12 16 14" />
+                    </svg>
+                    {activeTooltip === 'expiration' && renderTooltip(
+                      box.expiresAt - Date.now() <= 0 ? 'Expired' : `Expires in ${formatExpirationCountdown(box.expiresAt)}`
+                    )}
+                  </div>
+                )}
+
+                {/* Shared / Participants icon */}
+                {box.type === 'shared' && (
+                  <div onClick={(e) => handleIconTap(e, 'shared')} style={{
+                    position: 'relative',
+                    width: '30px', height: '30px', borderRadius: '8px',
+                    background: 'rgba(15, 23, 42, 0.7)',
+                    border: '1px solid rgba(65, 105, 225, 0.2)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    cursor: 'pointer', transition: 'all 0.2s ease',
+                  }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+                      <circle cx="9" cy="7" r="4" />
+                      <path d="M23 21v-2a4 4 0 00-3-3.87" />
+                      <path d="M16 3.13a4 4 0 010 7.75" />
+                    </svg>
+                    {activeTooltip === 'shared' && renderTooltip(`Shared box - ${uniqueParticipants} ${uniqueParticipants === 1 ? 'person has' : 'people have'} opened`)}
+                  </div>
+                )}
+              </div>
+
               {/* Bottom gradient overlay for name readability */}
               <div style={{
                 position: 'absolute',
@@ -2058,69 +2268,6 @@
 
             </div>
             {/* End image area */}
-
-            {/* Info badges */}
-            <div style={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: '0.35rem',
-              padding: '0.6rem 0.75rem 0',
-            }}>
-              <span style={{
-                padding: '0.2rem 0.5rem',
-                background: 'rgba(59, 130, 246, 0.7)',
-                borderRadius: '5px',
-                fontSize: '0.6rem',
-                fontWeight: 700,
-                color: '#ffffff',
-                textTransform: 'uppercase',
-                letterSpacing: '0.03em',
-              }}>
-                {items.length} {items.length === 1 ? 'Item' : 'Items'}
-              </span>
-              <span style={{
-                padding: '0.2rem 0.5rem',
-                background: (maxPulls !== null && maxPulls !== undefined && maxPulls > 0)
-                  ? 'rgba(245, 158, 11, 0.7)'
-                  : 'rgba(59, 130, 246, 0.7)',
-                borderRadius: '5px',
-                fontSize: '0.6rem',
-                fontWeight: 700,
-                color: '#ffffff',
-                textTransform: 'uppercase',
-                letterSpacing: '0.03em',
-              }}>
-                {(maxPulls !== null && maxPulls !== undefined && maxPulls > 0)
-                  ? `Max: ${maxPulls}`
-                  : 'Unlimited'}
-              </span>
-              {(maxPullsPerUser !== null && maxPullsPerUser !== undefined && maxPullsPerUser > 0) && (
-                <span style={{
-                  padding: '0.2rem 0.5rem',
-                  background: 'rgba(139, 92, 246, 0.7)',
-                  borderRadius: '5px',
-                  fontSize: '0.6rem',
-                  fontWeight: 700,
-                  color: '#ffffff',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.03em',
-                }}>
-                  {`Max: ${maxPullsPerUser}/Person`}
-                </span>
-              )}
-              <span style={{
-                padding: '0.2rem 0.5rem',
-                background: 'rgba(59, 130, 246, 0.7)',
-                borderRadius: '5px',
-                fontSize: '0.6rem',
-                fontWeight: 700,
-                color: '#ffffff',
-                textTransform: 'uppercase',
-                letterSpacing: '0.03em',
-              }}>
-                {`${pullHistory.length} ${pullHistory.length === 1 ? 'Open' : 'Opens'}`}
-              </span>
-            </div>
 
             {/* Footer - Share button only */}
             <div style={{

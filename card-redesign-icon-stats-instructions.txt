@@ -1,0 +1,289 @@
+================================================================================
+LOOT BOX APP - BOX CARD REDESIGN (ICON STATS + TOOLTIPS)            V[TIME]
+================================================================================
+File to modify: index.html
+
+IMPORTANT - VERSION NUMBER:
+Update the version number displayed next to the main app title
+("Loot Box Creator") in the header. The version format is V followed
+by the current time in 24hr format with no colon. For example if it
+is 1:32pm the version is V1332. If it is 4:10pm the version is V1610.
+Update this every time you make changes.
+
+
+================================================================================
+OVERVIEW
+================================================================================
+
+Redesign the box card to replace the row of badge pills at the bottom
+with small, meaningful icons along the left edge. Each icon is tappable
+and shows a tooltip bubble explaining what it means. This makes the
+cards cleaner while keeping all info accessible.
+
+
+================================================================================
+WHAT TO REMOVE
+================================================================================
+
+Remove the entire bottom badge row - the row of pill-shaped badges
+that currently shows things like:
+  [4 ITEMS] [UNLIMITED] [MAX: 1/PERSON] [2 OPENS]
+
+These are being replaced by the left-edge icon system described below.
+
+Keep the following elements unchanged:
+  - Box type badge top-left (GROUP / LOCAL)
+  - Star favorite icon top-right
+  - Edit (pencil) and Delete (x) buttons top-right
+  - Box image centered
+  - Box name below image
+  - Share button at the bottom (for shared boxes)
+
+
+================================================================================
+NEW: LEFT-EDGE ICON STRIP
+================================================================================
+
+Position: A vertical strip of small icons along the LEFT edge of the
+card, vertically centered relative to the box image area.
+
+Layout:
+  - position: absolute
+  - left: 12px
+  - top: 50% (vertically centered with transform: translateY(-50%)),
+    or positioned to start at the same Y as the box image
+  - display: flex
+  - flex-direction: column
+  - gap: 10px
+  - z-index: 2
+
+Each icon is a small circle or rounded square container with the icon
+inside. The icons should feel like game UI elements.
+
+Icon container:
+  - width: 30px, height: 30px
+  - border-radius: 8px
+  - background: rgba(15, 23, 42, 0.7)
+  - border: 1px solid rgba(65, 105, 225, 0.2)
+  - display: flex, align-items: center, justify-content: center
+  - cursor: pointer
+  - transition: all 0.2s ease
+
+Icon container hover/active:
+  - background: rgba(65, 105, 225, 0.2)
+  - border-color: rgba(65, 105, 225, 0.4)
+
+Icon SVGs:
+  - Size: 16x16
+  - stroke="currentColor", strokeWidth="2", fill="none"
+  - Default color: #94a3b8
+
+IMPORTANT: The icons should not obscure the box image. If the card
+is narrow on mobile, ensure the box image shifts right slightly or
+the icons overlay the card padding area, not the image itself.
+
+
+================================================================================
+ICON DEFINITIONS
+================================================================================
+
+Show only the icons that are RELEVANT to each box. Don't show all
+icons on every card - only show ones that have meaningful info.
+
+1. ITEM COUNT
+   When to show: Always
+   Icon: Stacked layers
+     <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+          strokeLinejoin="round">
+       <polygon points="12 2 2 7 12 12 22 7 12 2" />
+       <polyline points="2 17 12 22 22 17" />
+       <polyline points="2 12 12 17 22 12" />
+     </svg>
+   Color: #94a3b8 (default gray)
+   Tooltip: "4 items in this box"
+
+2. OPENS REMAINING
+   When to show: Always
+   Icon: Box opening (package)
+     <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+          strokeLinejoin="round">
+       <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" />
+       <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+       <line x1="12" y1="22.08" x2="12" y2="12" />
+     </svg>
+   Color logic:
+     - Unlimited: #94a3b8 (gray)
+     - Has opens left: #10b981 (green)
+     - Running low (<=3 left): #f59e0b (amber)
+     - No opens left: #ef4444 (red)
+   Tooltip:
+     - "Unlimited opens" (if no max)
+     - "3 of 10 opens remaining" (if limited)
+     - "No opens remaining" (if depleted)
+
+3. PER-PERSON LIMIT
+   When to show: Only if maxPullsPerUser is set
+   Icon: Single person
+     <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+          strokeLinejoin="round">
+       <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
+       <circle cx="12" cy="7" r="4" />
+     </svg>
+   Color: #8b5cf6 (purple - distinct from other icons)
+   Tooltip: "Max 1 open per person"
+
+4. EXPIRATION
+   When to show: Only if expiresAt is set
+   Icon: Clock
+     <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+          strokeLinejoin="round">
+       <circle cx="12" cy="12" r="10" />
+       <polyline points="12 6 12 12 16 14" />
+     </svg>
+   Color logic:
+     - More than 24h left: #94a3b8 (gray)
+     - Less than 24h: #f59e0b (amber)
+     - Less than 1h: #ef4444 (red, add subtle pulse animation)
+   Tooltip: "Expires in 2d 5h" (use existing formatExpirationCountdown)
+
+5. SHARED / PARTICIPANTS
+   When to show: Only for shared boxes
+   Icon: People group
+     <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+          strokeLinejoin="round">
+       <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+       <circle cx="9" cy="7" r="4" />
+       <path d="M23 21v-2a4 4 0 00-3-3.87" />
+       <path d="M16 3.13a4 4 0 010 7.75" />
+     </svg>
+   Color: #3b82f6 (blue)
+   Tooltip: "Shared box - X people have opened"
+     (use pullHistory to count unique userNames/deviceIds)
+
+
+================================================================================
+TOOLTIP BUBBLE
+================================================================================
+
+When an icon is tapped, show a small tooltip bubble that points at
+the icon with an arrow/caret.
+
+Tooltip container:
+  - position: absolute
+  - left: 40px (to the right of the icon)
+  - top: 50% of the icon, transform: translateY(-50%)
+  - background: rgba(15, 23, 42, 0.95)
+  - border: 1px solid rgba(65, 105, 225, 0.3)
+  - border-radius: 8px
+  - padding: 8px 12px
+  - color: #e2e8f0
+  - font-size: 0.75rem
+  - font-weight: 500
+  - white-space: nowrap
+  - z-index: 10
+  - box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4)
+  - animation: fadeIn 0.15s ease
+
+Arrow/caret pointing left:
+  - Use a CSS pseudo-element (::before)
+  - position: absolute
+  - left: -6px
+  - top: 50%, transform: translateY(-50%)
+  - width: 0, height: 0
+  - border-top: 6px solid transparent
+  - border-bottom: 6px solid transparent
+  - border-right: 6px solid rgba(15, 23, 42, 0.95)
+
+Behavior:
+  - Tap icon to show tooltip
+  - Tap anywhere else to dismiss (use a click-outside handler)
+  - Only one tooltip visible at a time (tapping another icon
+    switches to that tooltip)
+  - Auto-dismiss after 3 seconds
+  - e.stopPropagation() on icon tap to prevent triggering the card
+
+EDGE CASE: If the tooltip would overflow the right edge of the
+screen on mobile, position it differently or allow text wrapping.
+For most short tooltip messages, nowrap should be fine.
+
+
+================================================================================
+STATE MANAGEMENT
+================================================================================
+
+In the BoxCard component (or wherever box cards are rendered):
+
+  const [activeTooltip, setActiveTooltip] = useState(null);
+
+  // Each icon has an id like 'items', 'opens', 'perPerson', etc.
+  const handleIconTap = (e, iconId) => {
+    e.stopPropagation();
+    setActiveTooltip(activeTooltip === iconId ? null : iconId);
+  };
+
+  // Auto-dismiss after 3 seconds
+  useEffect(() => {
+    if (activeTooltip) {
+      const timer = setTimeout(() => setActiveTooltip(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [activeTooltip]);
+
+  // Dismiss on outside tap
+  // (Could be handled by a click listener on the card or document)
+
+
+================================================================================
+CARD LAYOUT ADJUSTMENT
+================================================================================
+
+The card layout needs to account for the icon strip on the left.
+The box image and name should remain centered in the REMAINING space
+(not centered in the full card width, which would make them look
+off-center).
+
+Options:
+  A) Add padding-left: 45px to the card content to make room for
+     the icon strip, then center the image within that adjusted space.
+  B) Let the icons overlay the card edge and keep the image centered
+     as-is. This works if the icons sit in the padding area.
+
+Option B is simpler and likely looks better. The icons can live in
+the card's left padding zone without affecting the centered layout.
+
+Try Option B first. If icons overlap the box image on narrow screens,
+switch to Option A.
+
+
+================================================================================
+TESTING CHECKLIST
+================================================================================
+
+[ ] Old badge pill row is completely removed from cards
+[ ] Left-edge icon strip appears on all cards
+[ ] Only relevant icons show per box (e.g. no clock if no expiration)
+[ ] Tapping an icon shows tooltip bubble to the right
+[ ] Tooltip has arrow/caret pointing at the icon
+[ ] Only one tooltip visible at a time
+[ ] Tooltip auto-dismisses after 3 seconds
+[ ] Tapping outside dismisses tooltip
+[ ] Tapping icon does NOT trigger card navigation/opening
+[ ] Icon colors are correct (green for opens, purple for per-person, etc.)
+[ ] Opens icon changes color based on remaining (green/amber/red)
+[ ] Clock icon pulses when less than 1 hour remaining
+[ ] Icons don't obscure the box image on mobile
+[ ] Card still looks balanced with icons on left
+[ ] Share button still works for shared boxes
+[ ] GROUP/LOCAL badge still shows at top-left (no conflict with icons)
+[ ] Star, edit, delete still work at top-right
+[ ] Tooltips don't overflow off-screen on mobile
+[ ] Version number updated
+
+================================================================================
+END OF INSTRUCTIONS
+================================================================================
