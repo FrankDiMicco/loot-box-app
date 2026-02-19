@@ -1560,7 +1560,7 @@
     };
 
     // Header
-    const Header = ({ title = 'Loot Box Creator V1620', onMenuClick }) => {
+    const Header = ({ title = 'Loot Box Creator V1623', onMenuClick }) => {
       const isMobile = useIsMobile();
       return (
         <header style={{
@@ -1986,10 +1986,7 @@
           }}>
 
             {/* Image area with overlays */}
-            <div onClick={(e) => {
-              if (e.target.closest('[data-icon-strip]')) return;
-              onClick(e);
-            }} style={{
+            <div style={{
               position: 'relative',
               width: '100%',
               height: isMobile ? '220px' : '260px',
@@ -2000,7 +1997,7 @@
             }}>
 
               {/* Chest image */}
-              <div style={{ paddingLeft: '50px', paddingRight: '45px', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>
+              <div onClick={onClick} style={{ paddingLeft: '50px', paddingRight: '45px', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', cursor: 'pointer' }}>
                 {box.boxImageId ? (
                   <img
                     src={getBoxImageUrl(box.boxImageId)}
@@ -2096,7 +2093,6 @@
 
               {/* Left-edge icon strip */}
               <div
-                data-icon-strip="true"
                 onClick={(e) => e.stopPropagation()}
                 style={{
                   position: 'absolute',
