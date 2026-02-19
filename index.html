@@ -1560,7 +1560,7 @@
     };
 
     // Header
-    const Header = ({ title = 'Loot Box Creator V1101', onMenuClick }) => {
+    const Header = ({ title = 'Loot Box Creator V1104', onMenuClick }) => {
       const isMobile = useIsMobile();
       return (
         <header style={{
@@ -2261,10 +2261,10 @@
                   onClick(e);
                 }}
                 style={{
-                  width: '150px',
+                  width: '180px',
                   flexShrink: 0,
                   display: 'flex',
-                  alignItems: 'center',
+                  alignItems: 'flex-end',
                   justifyContent: 'center',
                   cursor: 'pointer',
                   position: 'relative',
@@ -2275,8 +2275,8 @@
                     src={getBoxImageUrl(box.boxImageId)}
                     alt={box.name}
                     style={{
-                      maxWidth: '88%',
-                      maxHeight: '80%',
+                      maxWidth: '100%',
+                      maxHeight: '90%',
                       objectFit: 'contain',
                       filter: 'drop-shadow(0 4px 16px rgba(0, 0, 0, 0.5))',
                       transition: 'transform 0.2s ease',
