@@ -1560,7 +1560,7 @@
     };
 
     // Header
-    const Header = ({ title = 'Loot Box Creator V1548', onMenuClick }) => {
+    const Header = ({ title = 'Loot Box Creator V1553', onMenuClick }) => {
       const isMobile = useIsMobile();
       return (
         <header style={{
@@ -1815,14 +1815,23 @@
       const opensIconColor = (() => {
         if (opensRemaining.unlimited) return '#94a3b8';
         if (opensRemaining.remaining <= 0) return '#ef4444';
-        if (opensRemaining.remaining <= 3) return '#f59e0b';
+        if (opensRemaining.remaining <= 2) return '#ef4444';
+        const pct = opensRemaining.remaining / opensRemaining.total;
+        if (pct <= 0.5) return '#f59e0b';
         return '#10b981';
       })();
 
+      const opensDepleted = !opensRemaining.unlimited && opensRemaining.remaining <= 0;
+
+      const opensValueText = (() => {
+        if (opensRemaining.unlimited) return '\u221E';
+        return `${pullHistory.length}/${opensRemaining.total}`;
+      })();
+
       const opensTooltipText = (() => {
-        if (opensRemaining.unlimited) return 'Unlimited opens';
-        if (opensRemaining.remaining <= 0) return 'No opens remaining';
-        return `${opensRemaining.remaining} of ${opensRemaining.total} opens remaining`;
+        if (opensRemaining.unlimited) return 'Unlimited opens available';
+        if (opensRemaining.remaining <= 0) return `${pullHistory.length} out of ${opensRemaining.total} opens used`;
+        return `${pullHistory.length} out of ${opensRemaining.total} opens used`;
       })();
 
       // Expiration color
@@ -1853,7 +1862,8 @@
         React.createElement('div', {
           style: {
             position: 'absolute',
-            left: '40px',
+            left: '100%',
+            marginLeft: '8px',
             top: '50%',
             transform: 'translateY(-50%)',
             background: 'rgba(15, 23, 42, 0.95)',
@@ -2134,44 +2144,60 @@
               <div style={{
                 position: 'absolute',
                 left: '12px',
-                top: '50%',
-                transform: 'translateY(-50%)',
+                top: '44px',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '10px',
+                gap: '14px',
                 zIndex: 2,
               }}>
                 {/* Item count icon */}
                 <div onClick={(e) => handleIconTap(e, 'items')} style={{
                   position: 'relative',
-                  width: '30px', height: '30px', borderRadius: '8px',
-                  background: 'rgba(15, 23, 42, 0.7)',
-                  border: '1px solid rgba(65, 105, 225, 0.2)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: 'pointer', transition: 'all 0.2s ease',
+                  display: 'flex', alignItems: 'center', gap: '6px',
+                  cursor: 'pointer',
                 }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polygon points="12 2 2 7 12 12 22 7 12 2" />
-                    <polyline points="2 17 12 22 22 17" />
-                    <polyline points="2 12 12 17 22 12" />
-                  </svg>
-                  {activeTooltip === 'items' && renderTooltip(`${items.length} item${items.length === 1 ? '' : 's'} in this box`)}
+                  <div style={{
+                    width: '30px', height: '30px', borderRadius: '8px',
+                    background: 'rgba(15, 23, 42, 0.7)',
+                    border: '1px solid rgba(148, 163, 184, 0.2)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'all 0.2s ease',
+                  }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polygon points="12 2 2 7 12 12 22 7 12 2" />
+                      <polyline points="2 17 12 22 22 17" />
+                      <polyline points="2 12 12 17 22 12" />
+                    </svg>
+                  </div>
+                  <span style={{ fontSize: '0.7rem', fontWeight: 600, color: '#94a3b8', textShadow: '0 1px 2px rgba(0, 0, 0, 0.5)' }}>
+                    {items.length}
+                  </span>
+                  {activeTooltip === 'items' && renderTooltip(`This box has ${items.length} item${items.length === 1 ? '' : 's'} to discover`)}
                 </div>
 
                 {/* Opens remaining icon */}
                 <div onClick={(e) => handleIconTap(e, 'opens')} style={{
                   position: 'relative',
-                  width: '30px', height: '30px', borderRadius: '8px',
-                  background: 'rgba(15, 23, 42, 0.7)',
-                  border: '1px solid rgba(65, 105, 225, 0.2)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: 'pointer', transition: 'all 0.2s ease',
+                  display: 'flex', alignItems: 'center', gap: '6px',
+                  cursor: 'pointer',
                 }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={opensIconColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" />
-                    <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-                    <line x1="12" y1="22.08" x2="12" y2="12" />
-                  </svg>
+                  <div style={{
+                    width: '30px', height: '30px', borderRadius: '8px',
+                    background: 'rgba(15, 23, 42, 0.7)',
+                    border: `1px solid ${opensIconColor}33`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'all 0.2s ease',
+                    opacity: opensDepleted ? 0.5 : 1,
+                  }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={opensIconColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" />
+                      <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+                      <line x1="12" y1="22.08" x2="12" y2="12" />
+                    </svg>
+                  </div>
+                  <span style={{ fontSize: '0.7rem', fontWeight: 600, color: opensIconColor, textShadow: '0 1px 2px rgba(0, 0, 0, 0.5)', opacity: opensDepleted ? 0.5 : 1 }}>
+                    {opensValueText}
+                  </span>
                   {activeTooltip === 'opens' && renderTooltip(opensTooltipText)}
                 </div>
 
@@ -2179,17 +2205,25 @@
                 {(maxPullsPerUser !== null && maxPullsPerUser !== undefined && maxPullsPerUser > 0) && (
                   <div onClick={(e) => handleIconTap(e, 'perPerson')} style={{
                     position: 'relative',
-                    width: '30px', height: '30px', borderRadius: '8px',
-                    background: 'rgba(15, 23, 42, 0.7)',
-                    border: '1px solid rgba(65, 105, 225, 0.2)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    cursor: 'pointer', transition: 'all 0.2s ease',
+                    display: 'flex', alignItems: 'center', gap: '6px',
+                    cursor: 'pointer',
                   }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
-                      <circle cx="12" cy="7" r="4" />
-                    </svg>
-                    {activeTooltip === 'perPerson' && renderTooltip(`Max ${maxPullsPerUser} open${maxPullsPerUser === 1 ? '' : 's'} per person`)}
+                    <div style={{
+                      width: '30px', height: '30px', borderRadius: '8px',
+                      background: 'rgba(15, 23, 42, 0.7)',
+                      border: '1px solid rgba(139, 92, 246, 0.2)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      transition: 'all 0.2s ease',
+                    }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
+                        <circle cx="12" cy="7" r="4" />
+                      </svg>
+                    </div>
+                    <span style={{ fontSize: '0.7rem', fontWeight: 600, color: '#8b5cf6', textShadow: '0 1px 2px rgba(0, 0, 0, 0.5)' }}>
+                      {maxPullsPerUser}
+                    </span>
+                    {activeTooltip === 'perPerson' && renderTooltip(`Each person can open ${maxPullsPerUser} time${maxPullsPerUser === 1 ? '' : 's'}`)}
                   </div>
                 )}
 
@@ -2197,19 +2231,27 @@
                 {box.expiresAt && (
                   <div onClick={(e) => handleIconTap(e, 'expiration')} style={{
                     position: 'relative',
-                    width: '30px', height: '30px', borderRadius: '8px',
-                    background: 'rgba(15, 23, 42, 0.7)',
-                    border: '1px solid rgba(65, 105, 225, 0.2)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    cursor: 'pointer', transition: 'all 0.2s ease',
-                    animation: expirationPulse ? 'pulse 2s ease-in-out infinite' : 'none',
+                    display: 'flex', alignItems: 'center', gap: '6px',
+                    cursor: 'pointer',
                   }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={expirationIconColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="12" cy="12" r="10" />
-                      <polyline points="12 6 12 12 16 14" />
-                    </svg>
+                    <div style={{
+                      width: '30px', height: '30px', borderRadius: '8px',
+                      background: 'rgba(15, 23, 42, 0.7)',
+                      border: `1px solid ${expirationIconColor}33`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      transition: 'all 0.2s ease',
+                      animation: expirationPulse ? 'pulse 2s ease-in-out infinite' : 'none',
+                    }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={expirationIconColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <polyline points="12 6 12 12 16 14" />
+                      </svg>
+                    </div>
+                    <span style={{ fontSize: '0.7rem', fontWeight: 600, color: expirationIconColor, textShadow: '0 1px 2px rgba(0, 0, 0, 0.5)' }}>
+                      {box.expiresAt - Date.now() <= 0 ? 'Expired' : formatExpirationCountdown(box.expiresAt)}
+                    </span>
                     {activeTooltip === 'expiration' && renderTooltip(
-                      box.expiresAt - Date.now() <= 0 ? 'Expired' : `Expires in ${formatExpirationCountdown(box.expiresAt)}`
+                      box.expiresAt - Date.now() <= 0 ? 'This box has expired' : `This box expires in ${formatExpirationCountdown(box.expiresAt)}`
                     )}
                   </div>
                 )}
@@ -2218,19 +2260,27 @@
                 {box.type === 'shared' && (
                   <div onClick={(e) => handleIconTap(e, 'shared')} style={{
                     position: 'relative',
-                    width: '30px', height: '30px', borderRadius: '8px',
-                    background: 'rgba(15, 23, 42, 0.7)',
-                    border: '1px solid rgba(65, 105, 225, 0.2)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    cursor: 'pointer', transition: 'all 0.2s ease',
+                    display: 'flex', alignItems: 'center', gap: '6px',
+                    cursor: 'pointer',
                   }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
-                      <circle cx="9" cy="7" r="4" />
-                      <path d="M23 21v-2a4 4 0 00-3-3.87" />
-                      <path d="M16 3.13a4 4 0 010 7.75" />
-                    </svg>
-                    {activeTooltip === 'shared' && renderTooltip(`Shared box - ${uniqueParticipants} ${uniqueParticipants === 1 ? 'person has' : 'people have'} opened`)}
+                    <div style={{
+                      width: '30px', height: '30px', borderRadius: '8px',
+                      background: 'rgba(15, 23, 42, 0.7)',
+                      border: '1px solid rgba(59, 130, 246, 0.2)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      transition: 'all 0.2s ease',
+                    }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                        <path d="M23 21v-2a4 4 0 00-3-3.87" />
+                        <path d="M16 3.13a4 4 0 010 7.75" />
+                      </svg>
+                    </div>
+                    <span style={{ fontSize: '0.7rem', fontWeight: 600, color: '#3b82f6', textShadow: '0 1px 2px rgba(0, 0, 0, 0.5)' }}>
+                      {uniqueParticipants}
+                    </span>
+                    {activeTooltip === 'shared' && renderTooltip(`${uniqueParticipants} ${uniqueParticipants === 1 ? 'person has' : 'people have'} opened this box`)}
                   </div>
                 )}
               </div>
