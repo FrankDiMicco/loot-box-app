@@ -1775,7 +1775,7 @@
     };
 
     // Header
-    const Header = ({ title = 'Loot Box Creator V1137', onMenuClick }) => {
+    const Header = ({ title = 'Loot Box Creator V1140', onMenuClick }) => {
       const isMobile = useIsMobile();
       return (
         <header style={{
@@ -3365,7 +3365,7 @@
       });
       const [boxImageId, setBoxImageId] = useState(editingBox ? editingBox.boxImageId || 'chest' : 'chest');
       const [showAdvanced, setShowAdvanced] = useState(
-        editingBox ? !!(editingBox.hideContents || editingBox.hideOdds || editingBox.expiresAt) : false
+        editingBox ? !!(editingBox.maxPulls || editingBox.hideContents || editingBox.hideOdds || editingBox.expiresAt) : false
       );
       const [expirationEnabled, setExpirationEnabled] = useState(
         editingBox ? !!editingBox.expiresAt : false
@@ -3558,17 +3558,8 @@
                 </div>
               </div>
 
-              <div style={{ marginTop: '0.75rem', display: 'grid', gridTemplateColumns: boxType === 'shared' ? '1fr 1fr' : '1fr', gap: '1rem', maxWidth: boxType === 'shared' ? '500px' : '250px' }}>
-                <Input
-                  type="number"
-                  label="Max Opens Total (Optional)"
-                  placeholder="Unlimited"
-                  value={maxPulls}
-                  onChange={(e) => setMaxPulls(e.target.value)}
-                  min="1"
-                  fullWidth
-                />
-                {boxType === 'shared' && (
+              {boxType === 'shared' && (
+                <div style={{ marginTop: '0.75rem', maxWidth: '250px' }}>
                   <Input
                     type="number"
                     label="Max Opens Per Person (Optional)"
@@ -3578,8 +3569,8 @@
                     min="1"
                     fullWidth
                   />
-                )}
-              </div>
+                </div>
+              )}
 
               {/* Advanced Settings */}
               <div style={{ marginTop: '0.75rem' }}>
@@ -3613,6 +3604,24 @@
 
                 {showAdvanced && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.5rem' }}>
+                    <div style={{ marginBottom: '1rem', maxWidth: '250px' }}>
+                      <Input
+                        type="number"
+                        label="Max Opens Total (Optional)"
+                        placeholder="Unlimited"
+                        value={maxPulls}
+                        onChange={(e) => setMaxPulls(e.target.value)}
+                        min="1"
+                        fullWidth
+                      />
+                      <div style={{
+                        fontSize: '0.7rem',
+                        color: '#64748b',
+                        marginTop: '0.25rem',
+                      }}>
+                        Limit the total number of times this box can be opened by all users combined.
+                      </div>
+                    </div>
                     {/* Hide Contents toggle */}
                     <div style={{
                       display: 'flex',
