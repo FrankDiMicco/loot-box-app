@@ -1774,8 +1774,27 @@
       }
     };
 
+    // Unlock AudioContext via raw DOM events (NOT React synthetic events).
+    // iOS Safari requires resume() during a real browser touch event.
+    // React 18's createRoot batches onClick handlers asynchronously,
+    // so they don't count as user gestures on iOS.
+    const _unlockAudioOnce = () => {
+      const ctx = _ensureAudio();
+      ctx.resume();
+      try {
+        const buffer = ctx.createBuffer(1, 1, 22050);
+        const source = ctx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(ctx.destination);
+        source.start(0);
+      } catch(e) {}
+    };
+    document.addEventListener('touchstart', _unlockAudioOnce, { once: true });
+    document.addEventListener('touchend', _unlockAudioOnce, { once: true });
+    document.addEventListener('click', _unlockAudioOnce, { once: true });
+
     // Header
-    const Header = ({ title = 'Loot Box Creator V1121', onMenuClick }) => {
+    const Header = ({ title = 'Loot Box Creator V1122', onMenuClick }) => {
       const isMobile = useIsMobile();
       return (
         <header style={{
