@@ -120,11 +120,11 @@
     @keyframes fadeIn {
       from {
         opacity: 0;
-        transform: translateY(calc(-50% + 6px));
+        transform: translateY(4px);
       }
       to {
         opacity: 1;
-        transform: translateY(-50%);
+        transform: translateY(0);
       }
     }
 
@@ -1560,7 +1560,7 @@
     };
 
     // Header
-    const Header = ({ title = 'Loot Box Creator V1643', onMenuClick }) => {
+    const Header = ({ title = 'Loot Box Creator V1101', onMenuClick }) => {
       const isMobile = useIsMobile();
       return (
         <header style={{
@@ -1876,15 +1876,16 @@
 
       const yourOpensDepleted = maxPullsPerUser > 0 && yourOpensUsed >= maxPullsPerUser;
 
+      const isExpired = box.expiresAt ? Date.now() > box.expiresAt : false;
+
       // Tooltip renderer
       const renderTooltip = (text) => (
         React.createElement('div', {
           style: {
             position: 'absolute',
-            left: '100%',
-            marginLeft: '8px',
-            top: '50%',
-            transform: 'translateY(-50%)',
+            bottom: '100%',
+            left: '0',
+            marginBottom: '6px',
             willChange: 'transform, opacity',
             background: 'rgba(15, 23, 42, 0.95)',
             border: '1px solid rgba(65, 105, 225, 0.3)',
@@ -1893,7 +1894,8 @@
             color: '#e2e8f0',
             fontSize: '0.75rem',
             fontWeight: 500,
-            whiteSpace: 'nowrap',
+            whiteSpace: 'normal',
+            maxWidth: '160px',
             zIndex: 10,
             boxShadow: '0 4px 12px rgba(0, 0, 0, 0.4)',
             animation: 'fadeIn 0.15s ease',
@@ -1903,14 +1905,13 @@
           React.createElement('div', {
             style: {
               position: 'absolute',
-              left: '-6px',
-              top: '50%',
-              transform: 'translateY(-50%)',
+              bottom: '-6px',
+              left: '12px',
               width: 0,
               height: 0,
-              borderTop: '6px solid transparent',
-              borderBottom: '6px solid transparent',
-              borderRight: '6px solid rgba(15, 23, 42, 0.95)',
+              borderLeft: '6px solid transparent',
+              borderRight: '6px solid transparent',
+              borderTop: '6px solid rgba(15, 23, 42, 0.95)',
             }
           }),
           text
@@ -1977,441 +1978,335 @@
       return (
         <>
           <div
-            onClick={(e) => {
-              if (e.target.closest('[data-no-open]')) return;
-              if (e.target.closest('button')) return;
-              if (e.target.closest('svg')) return;
-              const imageArea = e.currentTarget.querySelector('[data-open-target]');
-              if (imageArea && !imageArea.contains(e.target)) return;
-              onClick(e);
-            }}
             style={{
               background: 'rgba(26, 31, 53, 0.6)',
               border: '1px solid rgba(59, 130, 246, 0.2)',
               borderRadius: '12px',
-              overflow: 'visible',
+              overflow: 'hidden',
               transition: 'all 0.25s ease',
               cursor: 'default',
+              position: 'relative',
             }}
           >
 
-            {/* Image area with overlays */}
+            {/* Action buttons - top right, absolute positioned */}
+            <div
+              data-no-open="true"
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                position: 'absolute',
+                top: '0.5rem',
+                right: '0.5rem',
+                display: 'flex',
+                gap: '6px',
+                zIndex: 3,
+              }}
+            >
+              {/* Favorite */}
+              <button onClick={(e) => { e.stopPropagation(); onToggleFavorite && onToggleFavorite(boxFavId); }} style={{
+                width: '28px', height: '28px', borderRadius: '7px',
+                background: 'rgba(15, 23, 42, 0.75)',
+                backdropFilter: 'blur(4px)',
+                border: isFav ? '1px solid rgba(245, 158, 11, 0.3)' : '1px solid rgba(148, 163, 184, 0.2)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', transition: 'all 0.2s ease', padding: 0,
+              }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill={isFav ? '#f59e0b' : 'none'} stroke={isFav ? '#f59e0b' : '#94a3b8'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ filter: isFav ? 'drop-shadow(0 0 4px rgba(245, 158, 11, 0.5))' : 'none' }}>
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                </svg>
+              </button>
+
+              {/* Share - only for shared boxes where sharing is allowed */}
+              {box.type === 'shared' && (box.allowParticipantSharing || !box.isVisitor) && (
+                <button onClick={(e) => { e.stopPropagation(); handleShare(); }} style={{
+                  width: '28px', height: '28px', borderRadius: '7px',
+                  background: 'rgba(15, 23, 42, 0.75)',
+                  backdropFilter: 'blur(4px)',
+                  border: '1px solid rgba(59, 130, 246, 0.2)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer', transition: 'all 0.2s ease', padding: 0,
+                }}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" />
+                    <polyline points="16 6 12 2 8 6" />
+                    <line x1="12" y1="2" x2="12" y2="15" />
+                  </svg>
+                </button>
+              )}
+
+              {/* Edit - only for non-visitors */}
+              {!box.isVisitor && (
+                <button onClick={(e) => { e.stopPropagation(); onEdit && onEdit(box); }} style={{
+                  width: '28px', height: '28px', borderRadius: '7px',
+                  background: 'rgba(15, 23, 42, 0.75)',
+                  backdropFilter: 'blur(4px)',
+                  border: '1px solid rgba(148, 163, 184, 0.2)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer', transition: 'all 0.2s ease', padding: 0,
+                }}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+                    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+                  </svg>
+                </button>
+              )}
+
+              {/* Delete/Remove */}
+              <button onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(true); }} style={{
+                width: '28px', height: '28px', borderRadius: '7px',
+                background: 'rgba(15, 23, 42, 0.75)',
+                backdropFilter: 'blur(4px)',
+                border: '1px solid rgba(239, 68, 68, 0.2)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', transition: 'all 0.2s ease', padding: 0,
+              }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Main card content - horizontal flex */}
             <div style={{
-              position: 'relative',
-              width: '100%',
-              height: isMobile ? '220px' : '260px',
-              background: 'linear-gradient(135deg, rgba(30, 64, 175, 0.15), rgba(59, 130, 246, 0.15))',
               display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              overflow: 'visible',
+              minHeight: isMobile ? '190px' : '210px',
+              position: 'relative',
             }}>
 
-              {/* Chest image */}
-              <div data-open-target="true" style={{ paddingLeft: '50px', paddingRight: '45px', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', cursor: 'pointer' }}>
+              {/* LEFT SIDE: badges, name, info grid */}
+              <div
+                data-no-open="true"
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                  padding: '0.75rem 0 0.75rem 0.85rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  zIndex: 2,
+                }}
+              >
+                {/* Status badges */}
+                <div style={{
+                  display: 'flex',
+                  gap: '0.35rem',
+                  flexWrap: 'wrap',
+                  marginBottom: '0.35rem',
+                }}>
+                  {isNew && (
+                    <span style={{
+                      padding: '0.15rem 0.5rem', borderRadius: '5px',
+                      fontSize: '0.55rem', fontWeight: 700, color: '#ffffff',
+                      textTransform: 'uppercase', letterSpacing: '0.03em',
+                      background: 'rgba(16, 185, 129, 0.9)',
+                    }}>NEW</span>
+                  )}
+                  {box.type === 'shared' && !box.isVisitor && (
+                    <span style={{
+                      padding: '0.15rem 0.5rem', borderRadius: '5px',
+                      fontSize: '0.55rem', fontWeight: 700, color: '#ffffff',
+                      textTransform: 'uppercase', letterSpacing: '0.03em',
+                      background: 'rgba(139, 92, 246, 0.9)',
+                    }}>GROUP</span>
+                  )}
+                  {box.isVisitor && (
+                    <span style={{
+                      padding: '0.15rem 0.5rem', borderRadius: '5px',
+                      fontSize: '0.55rem', fontWeight: 700, color: '#ffffff',
+                      textTransform: 'uppercase', letterSpacing: '0.03em',
+                      background: 'rgba(16, 185, 129, 0.9)',
+                    }}>JOINED</span>
+                  )}
+                  {isExpired && (
+                    <span style={{
+                      padding: '0.15rem 0.5rem', borderRadius: '5px',
+                      fontSize: '0.55rem', fontWeight: 700, color: '#ffffff',
+                      textTransform: 'uppercase', letterSpacing: '0.03em',
+                      background: 'rgba(239, 68, 68, 0.9)',
+                    }}>EXPIRED</span>
+                  )}
+                </div>
+
+                {/* Box name */}
+                <div style={{
+                  fontSize: '1.05rem',
+                  fontWeight: 700,
+                  color: '#e2e8f0',
+                  marginBottom: '0.6rem',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  paddingRight: '4px',
+                }}>
+                  {name}
+                </div>
+
+                {/* Info icons - 2 column grid */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'auto auto',
+                  gap: '6px 10px',
+                  justifyContent: 'start',
+                  marginTop: 'auto',
+                }}>
+
+                  {/* 1. Items */}
+                  <div onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleIconTap(e, 'items'); }} style={{
+                    position: 'relative', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', padding: '2px 0',
+                  }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polygon points="12 2 2 7 12 12 22 7 12 2" />
+                      <polyline points="2 17 12 22 22 17" />
+                      <polyline points="2 12 12 17 22 12" />
+                    </svg>
+                    <span style={{ fontSize: '0.65rem', fontWeight: 600, color: '#94a3b8' }}>{items.length}</span>
+                    {activeTooltip === 'items' && renderTooltip(`This box has ${items.length} item${items.length === 1 ? '' : 's'} to discover`)}
+                  </div>
+
+                  {/* 2. Opens */}
+                  <div onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleIconTap(e, 'opens'); }} style={{
+                    position: 'relative', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', padding: '2px 0',
+                    opacity: opensDepleted ? 0.5 : 1,
+                  }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={opensIconColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" />
+                      <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+                      <line x1="12" y1="22.08" x2="12" y2="12" />
+                    </svg>
+                    <span style={{ fontSize: '0.65rem', fontWeight: 600, color: opensIconColor }}>{opensValueText}</span>
+                    {activeTooltip === 'opens' && renderTooltip(opensTooltipText)}
+                  </div>
+
+                  {/* 3. Per-person limit (conditional) */}
+                  {(maxPullsPerUser !== null && maxPullsPerUser !== undefined && maxPullsPerUser > 0) && (
+                    <div onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleIconTap(e, 'perPerson'); }} style={{
+                      position: 'relative', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', padding: '2px 0',
+                    }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
+                        <circle cx="12" cy="7" r="4" />
+                      </svg>
+                      <span style={{ fontSize: '0.65rem', fontWeight: 600, color: '#8b5cf6' }}>{maxPullsPerUser}</span>
+                      {activeTooltip === 'perPerson' && renderTooltip(`Each person can open ${maxPullsPerUser} time${maxPullsPerUser === 1 ? '' : 's'}`)}
+                    </div>
+                  )}
+
+                  {/* 4. Your opens (conditional) */}
+                  {(maxPullsPerUser !== null && maxPullsPerUser !== undefined && maxPullsPerUser > 0) && (
+                    <div onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleIconTap(e, 'yourOpens'); }} style={{
+                      position: 'relative', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', padding: '2px 0',
+                      opacity: yourOpensDepleted ? 0.5 : 1,
+                    }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={yourOpensColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+                        <circle cx="8.5" cy="7" r="4" />
+                        <polyline points="17 11 19 13 23 9" />
+                      </svg>
+                      <span style={{ fontSize: '0.65rem', fontWeight: 600, color: yourOpensColor }}>{`${yourOpensUsed}/${maxPullsPerUser}`}</span>
+                      {activeTooltip === 'yourOpens' && renderTooltip(
+                        yourOpensDepleted
+                          ? "You've used all your opens"
+                          : `You have ${yourOpensRemaining} open${yourOpensRemaining === 1 ? '' : 's'} remaining`
+                      )}
+                    </div>
+                  )}
+
+                  {/* 5. Participants (conditional - shared only) */}
+                  {box.type === 'shared' && (
+                    <div onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleIconTap(e, 'shared'); }} style={{
+                      position: 'relative', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', padding: '2px 0',
+                    }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                        <path d="M23 21v-2a4 4 0 00-3-3.87" />
+                        <path d="M16 3.13a4 4 0 010 7.75" />
+                      </svg>
+                      <span style={{ fontSize: '0.65rem', fontWeight: 600, color: '#3b82f6' }}>{uniqueParticipants}</span>
+                      {activeTooltip === 'shared' && renderTooltip(`${uniqueParticipants} ${uniqueParticipants === 1 ? 'person has' : 'people have'} opened this box`)}
+                    </div>
+                  )}
+
+                  {/* 6. Expiration (conditional) */}
+                  {box.expiresAt && (
+                    <div onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleIconTap(e, 'expiration'); }} style={{
+                      position: 'relative', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', padding: '2px 0',
+                    }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={expirationIconColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{
+                        animation: expirationPulse ? 'pulse 2s ease-in-out infinite' : 'none',
+                      }}>
+                        <circle cx="12" cy="12" r="10" />
+                        <polyline points="12 6 12 12 16 14" />
+                      </svg>
+                      <span style={{ fontSize: '0.65rem', fontWeight: 600, color: expirationIconColor }}>
+                        {box.expiresAt - Date.now() <= 0 ? 'Expired' : formatExpirationCountdown(box.expiresAt)}
+                      </span>
+                      {activeTooltip === 'expiration' && renderTooltip(
+                        box.expiresAt - Date.now() <= 0 ? 'This box has expired' : `This box expires in ${formatExpirationCountdown(box.expiresAt)}`
+                      )}
+                    </div>
+                  )}
+
+                </div>
+                {/* End info grid */}
+              </div>
+              {/* End left side */}
+
+              {/* RIGHT SIDE: chest image */}
+              <div
+                data-open-target="true"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onClick(e);
+                }}
+                style={{
+                  width: '150px',
+                  flexShrink: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  position: 'relative',
+                }}
+              >
                 {box.boxImageId ? (
                   <img
                     src={getBoxImageUrl(box.boxImageId)}
                     alt={box.name}
                     style={{
-                      maxWidth: '100%',
-                      maxHeight: '60%',
+                      maxWidth: '88%',
+                      maxHeight: '80%',
                       objectFit: 'contain',
+                      filter: 'drop-shadow(0 4px 16px rgba(0, 0, 0, 0.5))',
+                      transition: 'transform 0.2s ease',
                     }}
                   />
                 ) : (
                   <span style={{ fontSize: '4rem' }}>📦</span>
                 )}
               </div>
-
-              {/* Status badges - top left */}
-              <div style={{
-                position: 'absolute',
-                top: '0.5rem',
-                left: '0.5rem',
-                display: 'flex',
-                gap: '0.4rem',
-                flexWrap: 'wrap',
-              }}>
-                {isNew && (
-                  <span style={{
-                    padding: '0.2rem 0.6rem',
-                    background: 'rgba(16, 185, 129, 0.9)',
-                    backdropFilter: 'blur(4px)',
-                    borderRadius: '6px',
-                    fontSize: '0.65rem',
-                    fontWeight: 700,
-                    color: '#ffffff',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.03em',
-                  }}>
-                    New
-                  </span>
-                )}
-                {box.type === 'shared' && !box.isVisitor && (
-                  <span style={{
-                    padding: '0.2rem 0.6rem',
-                    background: 'rgba(139, 92, 246, 0.8)',
-                    backdropFilter: 'blur(4px)',
-                    borderRadius: '6px',
-                    fontSize: '0.65rem',
-                    fontWeight: 700,
-                    color: '#ffffff',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.03em',
-                  }}>
-                    Group
-                  </span>
-                )}
-                {box.isVisitor && (
-                  <span style={{
-                    padding: '0.2rem 0.6rem',
-                    background: 'rgba(16, 185, 129, 0.8)',
-                    backdropFilter: 'blur(4px)',
-                    borderRadius: '6px',
-                    fontSize: '0.65rem',
-                    fontWeight: 700,
-                    color: '#ffffff',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.03em',
-                  }}>
-                    Joined
-                  </span>
-                )}
-                {box.expiresAt && (
-                  <span style={{
-                    padding: '0.2rem 0.6rem',
-                    background: (() => {
-                      const diff = box.expiresAt - Date.now();
-                      if (diff <= 0) return 'rgba(239, 68, 68, 0.8)';
-                      if (diff <= 24 * 60 * 60 * 1000) return 'rgba(245, 158, 11, 0.8)';
-                      return 'rgba(16, 185, 129, 0.8)';
-                    })(),
-                    backdropFilter: 'blur(4px)',
-                    borderRadius: '6px',
-                    fontSize: '0.65rem',
-                    fontWeight: 700,
-                    color: '#ffffff',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.03em',
-                  }}>
-                    {box.expiresAt - Date.now() <= 0
-                      ? 'Expired'
-                      : formatExpirationCountdown(box.expiresAt) + ' left'}
-                  </span>
-                )}
-              </div>
-
-              {/* Left-edge icon strip */}
-              <div
-                data-no-open="true"
-                onClick={(e) => e.stopPropagation()}
-                style={{
-                  position: 'absolute',
-                  left: '12px',
-                  top: '44px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '14px',
-                  zIndex: 10,
-                }}
-              >
-                {/* Item count icon */}
-                <div onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleIconTap(e, 'items'); }} style={{
-                  position: 'relative',
-                  display: 'flex', alignItems: 'center', gap: '6px',
-                  cursor: 'pointer',
-                }}>
-                  <div style={{
-                    width: '30px', height: '30px', borderRadius: '8px',
-                    background: 'rgba(15, 23, 42, 0.7)',
-                    border: '1px solid rgba(148, 163, 184, 0.2)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    transition: 'all 0.2s ease',
-                  }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <polygon points="12 2 2 7 12 12 22 7 12 2" />
-                      <polyline points="2 17 12 22 22 17" />
-                      <polyline points="2 12 12 17 22 12" />
-                    </svg>
-                  </div>
-                  <span style={{ fontSize: '0.7rem', fontWeight: 600, color: '#94a3b8', textShadow: '0 1px 2px rgba(0, 0, 0, 0.5)' }}>
-                    {items.length}
-                  </span>
-                  {activeTooltip === 'items' && renderTooltip(`This box has ${items.length} item${items.length === 1 ? '' : 's'} to discover`)}
-                </div>
-
-                {/* Opens remaining icon */}
-                <div onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleIconTap(e, 'opens'); }} style={{
-                  position: 'relative',
-                  display: 'flex', alignItems: 'center', gap: '6px',
-                  cursor: 'pointer',
-                }}>
-                  <div style={{
-                    width: '30px', height: '30px', borderRadius: '8px',
-                    background: 'rgba(15, 23, 42, 0.7)',
-                    border: `1px solid ${opensIconColor}33`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    transition: 'all 0.2s ease',
-                    opacity: opensDepleted ? 0.5 : 1,
-                  }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={opensIconColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" />
-                      <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-                      <line x1="12" y1="22.08" x2="12" y2="12" />
-                    </svg>
-                  </div>
-                  <span style={{ fontSize: '0.7rem', fontWeight: 600, color: opensIconColor, textShadow: '0 1px 2px rgba(0, 0, 0, 0.5)', opacity: opensDepleted ? 0.5 : 1 }}>
-                    {opensValueText}
-                  </span>
-                  {activeTooltip === 'opens' && renderTooltip(opensTooltipText)}
-                </div>
-
-                {/* Per-person limit icon */}
-                {(maxPullsPerUser !== null && maxPullsPerUser !== undefined && maxPullsPerUser > 0) && (
-                  <div onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleIconTap(e, 'perPerson'); }} style={{
-                    position: 'relative',
-                    display: 'flex', alignItems: 'center', gap: '6px',
-                    cursor: 'pointer',
-                  }}>
-                    <div style={{
-                      width: '30px', height: '30px', borderRadius: '8px',
-                      background: 'rgba(15, 23, 42, 0.7)',
-                      border: '1px solid rgba(139, 92, 246, 0.2)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      transition: 'all 0.2s ease',
-                    }}>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
-                        <circle cx="12" cy="7" r="4" />
-                      </svg>
-                    </div>
-                    <span style={{ fontSize: '0.7rem', fontWeight: 600, color: '#8b5cf6', textShadow: '0 1px 2px rgba(0, 0, 0, 0.5)' }}>
-                      {maxPullsPerUser}
-                    </span>
-                    {activeTooltip === 'perPerson' && renderTooltip(`Each person can open ${maxPullsPerUser} time${maxPullsPerUser === 1 ? '' : 's'}`)}
-                  </div>
-                )}
-
-                {/* Your opens icon */}
-                {(maxPullsPerUser !== null && maxPullsPerUser !== undefined && maxPullsPerUser > 0) && (
-                  <div onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleIconTap(e, 'yourOpens'); }} style={{
-                    position: 'relative',
-                    display: 'flex', alignItems: 'center', gap: '6px',
-                    cursor: 'pointer',
-                  }}>
-                    <div style={{
-                      width: '30px', height: '30px', borderRadius: '8px',
-                      background: 'rgba(15, 23, 42, 0.7)',
-                      border: `1px solid ${yourOpensColor}33`,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      transition: 'all 0.2s ease',
-                      opacity: yourOpensDepleted ? 0.5 : 1,
-                    }}>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={yourOpensColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
-                        <circle cx="8.5" cy="7" r="4" />
-                        <polyline points="17 11 19 13 23 9" />
-                      </svg>
-                    </div>
-                    <span style={{ fontSize: '0.7rem', fontWeight: 600, color: yourOpensColor, textShadow: '0 1px 2px rgba(0, 0, 0, 0.5)', opacity: yourOpensDepleted ? 0.5 : 1 }}>
-                      {`${yourOpensUsed}/${maxPullsPerUser}`}
-                    </span>
-                    {activeTooltip === 'yourOpens' && renderTooltip(
-                      yourOpensDepleted
-                        ? "You've used all your opens"
-                        : `You have ${yourOpensRemaining} open${yourOpensRemaining === 1 ? '' : 's'} remaining`
-                    )}
-                  </div>
-                )}
-
-                {/* Shared / Participants icon */}
-                {box.type === 'shared' && (
-                  <div onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleIconTap(e, 'shared'); }} style={{
-                    position: 'relative',
-                    display: 'flex', alignItems: 'center', gap: '6px',
-                    cursor: 'pointer',
-                  }}>
-                    <div style={{
-                      width: '30px', height: '30px', borderRadius: '8px',
-                      background: 'rgba(15, 23, 42, 0.7)',
-                      border: '1px solid rgba(59, 130, 246, 0.2)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      transition: 'all 0.2s ease',
-                    }}>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
-                        <circle cx="9" cy="7" r="4" />
-                        <path d="M23 21v-2a4 4 0 00-3-3.87" />
-                        <path d="M16 3.13a4 4 0 010 7.75" />
-                      </svg>
-                    </div>
-                    <span style={{ fontSize: '0.7rem', fontWeight: 600, color: '#3b82f6', textShadow: '0 1px 2px rgba(0, 0, 0, 0.5)' }}>
-                      {uniqueParticipants}
-                    </span>
-                    {activeTooltip === 'shared' && renderTooltip(`${uniqueParticipants} ${uniqueParticipants === 1 ? 'person has' : 'people have'} opened this box`)}
-                  </div>
-                )}
-
-                {/* Expiration icon */}
-                {box.expiresAt && (
-                  <div onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleIconTap(e, 'expiration'); }} style={{
-                    position: 'relative',
-                    display: 'flex', alignItems: 'center', gap: '6px',
-                    cursor: 'pointer',
-                  }}>
-                    <div style={{
-                      width: '30px', height: '30px', borderRadius: '8px',
-                      background: 'rgba(15, 23, 42, 0.7)',
-                      border: `1px solid ${expirationIconColor}33`,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      transition: 'all 0.2s ease',
-                      animation: expirationPulse ? 'pulse 2s ease-in-out infinite' : 'none',
-                    }}>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={expirationIconColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="12" cy="12" r="10" />
-                        <polyline points="12 6 12 12 16 14" />
-                      </svg>
-                    </div>
-                    <span style={{ fontSize: '0.7rem', fontWeight: 600, color: expirationIconColor, textShadow: '0 1px 2px rgba(0, 0, 0, 0.5)' }}>
-                      {box.expiresAt - Date.now() <= 0 ? 'Expired' : formatExpirationCountdown(box.expiresAt)}
-                    </span>
-                    {activeTooltip === 'expiration' && renderTooltip(
-                      box.expiresAt - Date.now() <= 0 ? 'This box has expired' : `This box expires in ${formatExpirationCountdown(box.expiresAt)}`
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Right-edge action button strip */}
-              <div style={{
-                position: 'absolute',
-                right: '12px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '10px',
-                zIndex: 2,
-              }}>
-                {/* Star (favorite toggle) */}
-                <button onClick={(e) => { e.stopPropagation(); onToggleFavorite && onToggleFavorite(boxFavId); }} style={{
-                  width: '30px', height: '30px', borderRadius: '8px',
-                  background: 'rgba(15, 23, 42, 0.7)',
-                  border: isFav ? '1px solid rgba(245, 158, 11, 0.3)' : '1px solid rgba(148, 163, 184, 0.2)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: 'pointer', transition: 'all 0.2s ease',
-                  padding: 0,
-                }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill={isFav ? '#f59e0b' : 'none'} stroke={isFav ? '#f59e0b' : '#94a3b8'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{
-                    filter: isFav ? 'drop-shadow(0 0 4px rgba(245, 158, 11, 0.3))' : 'none',
-                    transition: 'all 0.2s ease',
-                  }}>
-                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                  </svg>
-                </button>
-
-                {/* Share (shared boxes only) */}
-                {box.type === 'shared' && (!box.isVisitor || box.allowParticipantSharing) && (
-                  <button onClick={handleShare} style={{
-                    width: '30px', height: '30px', borderRadius: '8px',
-                    background: 'rgba(15, 23, 42, 0.7)',
-                    border: '1px solid rgba(59, 130, 246, 0.2)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    cursor: 'pointer', transition: 'all 0.2s ease',
-                    padding: 0,
-                  }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" />
-                      <polyline points="16 6 12 2 8 6" />
-                      <line x1="12" y1="2" x2="12" y2="15" />
-                    </svg>
-                  </button>
-                )}
-
-                {/* Edit (pencil) - owner only */}
-                {!box.isVisitor && onEdit && (
-                  <button onClick={handleEdit} style={{
-                    width: '30px', height: '30px', borderRadius: '8px',
-                    background: 'rgba(15, 23, 42, 0.7)',
-                    border: '1px solid rgba(148, 163, 184, 0.2)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    cursor: 'pointer', transition: 'all 0.2s ease',
-                    padding: 0,
-                  }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M17 3a2.828 2.828 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
-                    </svg>
-                  </button>
-                )}
-
-                {/* Delete (X) - owner only */}
-                {!box.isVisitor && (
-                  <button onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(true); }} style={{
-                    width: '30px', height: '30px', borderRadius: '8px',
-                    background: 'rgba(239, 68, 68, 0.08)',
-                    border: '1px solid rgba(239, 68, 68, 0.2)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    cursor: 'pointer', transition: 'all 0.2s ease',
-                    padding: 0,
-                  }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="18" y1="6" x2="6" y2="18" />
-                      <line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
-                  </button>
-                )}
-              </div>
-
-              {/* Bottom gradient overlay for name readability */}
-              <div style={{
-                position: 'absolute',
-                bottom: 0,
-                left: 0,
-                right: 0,
-                height: '40%',
-                background: 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 100%)',
-                pointerEvents: 'none',
-                zIndex: 1,
-              }} />
-
-              {/* Box name - bottom center */}
-              <div data-no-open="true" style={{
-                position: 'absolute',
-                bottom: '0.75rem',
-                left: '0.75rem',
-                right: '0.75rem',
-                textAlign: 'center',
-                fontSize: isMobile ? '1rem' : '1.1rem',
-                fontWeight: 700,
-                color: '#ffffff',
-                textShadow: '0 2px 8px rgba(0,0,0,0.7)',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                zIndex: 2,
-              }}>
-                {box.name.length > 24 ? box.name.substring(0, 24) + '...' : box.name}
-              </div>
+              {/* End right side */}
 
             </div>
-            {/* End image area */}
+            {/* End card-inner */}
 
           </div>
+          {/* End card wrapper */}
 
-        <ConfirmDialog
-          show={showDeleteConfirm}
-          title={box.isVisitor ? "Remove from your feed?" : "Delete Loot Box?"}
-          message={box.isVisitor
-            ? `Remove "${name}" from your feed?`
-            : `Are you sure you want to delete "${name}"? This action cannot be undone and all open history will be lost.`
-          }
-          onConfirm={handleDeleteConfirm}
-          onCancel={handleDeleteCancel}
-          confirmText={box.isVisitor ? "Remove" : "Delete"}
-          cancelText="Cancel"
-        />
-      </>
+          <ConfirmDialog
+            show={showDeleteConfirm}
+            title={box.isVisitor ? "Remove from your feed?" : "Delete Loot Box?"}
+            message={box.isVisitor
+              ? `Remove "${name}" from your feed?`
+              : `Are you sure you want to delete "${name}"? This action cannot be undone and all open history will be lost.`
+            }
+            onConfirm={handleDeleteConfirm}
+            onCancel={handleDeleteCancel}
+            confirmText={box.isVisitor ? "Remove" : "Delete"}
+            cancelText="Cancel"
+          />
+        </>
       );
     };
 
