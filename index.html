@@ -150,22 +150,66 @@
       }
     }
 
-    @keyframes spin {
-      from {
-        transform: rotate(0deg);
-      }
-      to {
-        transform: rotate(360deg);
-      }
+    /* Enhanced box wiggle - initial tap feedback */
+    @keyframes boxWiggle {
+      0% { transform: rotate(0); }
+      20% { transform: rotate(-8deg); }
+      40% { transform: rotate(8deg); }
+      60% { transform: rotate(-5deg); }
+      80% { transform: rotate(5deg); }
+      100% { transform: rotate(0); }
     }
 
-    @keyframes boxWiggle {
-      0%, 100% { transform: rotate(0deg) scale(1); }
-      15% { transform: rotate(-3deg) scale(1.02); }
-      30% { transform: rotate(3deg) scale(1.04); }
-      45% { transform: rotate(-3deg) scale(1.02); }
-      60% { transform: rotate(2deg) scale(1.01); }
-      75% { transform: rotate(-1deg) scale(1); }
+    /* Intense shake with escalating glow - replaces spin */
+    @keyframes intenseShake {
+      0% { transform: translate(0, 0) rotate(0deg); filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.3)); }
+      10% { transform: translate(-3px, 0) rotate(-2deg); }
+      20% { transform: translate(3px, -2px) rotate(2deg); filter: drop-shadow(0 0 12px rgba(59, 130, 246, 0.5)); }
+      30% { transform: translate(-4px, 1px) rotate(-3deg); }
+      40% { transform: translate(4px, -1px) rotate(3deg); filter: drop-shadow(0 0 20px rgba(245, 158, 11, 0.6)); }
+      50% { transform: translate(-5px, 2px) rotate(-4deg); }
+      60% { transform: translate(5px, -2px) rotate(4deg); filter: drop-shadow(0 0 30px rgba(245, 158, 11, 0.8)); }
+      70% { transform: translate(-6px, 1px) rotate(-5deg); }
+      80% { transform: translate(6px, -1px) rotate(5deg); filter: drop-shadow(0 0 40px rgba(245, 158, 11, 1)); }
+      90% { transform: translate(-3px, 0) rotate(-2deg); filter: drop-shadow(0 0 50px rgba(255, 255, 255, 0.8)); }
+      100% { transform: translate(0, 0) rotate(0deg) scale(1.1); filter: drop-shadow(0 0 60px rgba(255, 255, 255, 1)); }
+    }
+
+    /* Glow ring pulse behind chest */
+    @keyframes glowPulse {
+      0% { opacity: 0; transform: scale(0.5); box-shadow: 0 0 20px rgba(59, 130, 246, 0.3); }
+      30% { opacity: 0.6; transform: scale(0.8); box-shadow: 0 0 40px rgba(59, 130, 246, 0.5), 0 0 80px rgba(245, 158, 11, 0.3); }
+      60% { opacity: 0.9; transform: scale(1); box-shadow: 0 0 60px rgba(245, 158, 11, 0.8), 0 0 120px rgba(245, 158, 11, 0.4); }
+      100% { opacity: 0; transform: scale(1.5); box-shadow: 0 0 80px rgba(255, 255, 255, 0.6), 0 0 160px rgba(245, 158, 11, 0.2); }
+    }
+
+    /* White flash burst */
+    @keyframes flashBurst {
+      0% { opacity: 1; transform: scale(0.5); }
+      50% { opacity: 0.8; transform: scale(1.2); }
+      100% { opacity: 0; transform: scale(2); }
+    }
+
+    /* Particle burst outward */
+    @keyframes particleBurst {
+      0% { opacity: 1; transform: translate(0, 0) scale(1); }
+      60% { opacity: 0.8; }
+      100% { opacity: 0; transform: translate(var(--tx), var(--ty)) scale(0); }
+    }
+
+    /* Result card bouncy reveal */
+    @keyframes resultReveal {
+      0% { opacity: 0; transform: scale(0.3) translateY(20px); }
+      50% { opacity: 1; transform: scale(1.08) translateY(-5px); }
+      70% { transform: scale(0.96) translateY(0); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    /* Shimmer on result item name */
+    @keyframes shimmerText {
+      0% { filter: brightness(1); }
+      50% { filter: brightness(1.5); }
+      100% { filter: brightness(1); }
     }
 
     @keyframes boxIdle {
@@ -1559,8 +1603,160 @@
       );
     };
 
+    // ========== SOUND ENGINE (Web Audio API, zero audio files) ==========
+    let _audioCtx = null;
+    const _getAudioCtx = () => {
+      if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (_audioCtx.state === 'suspended') _audioCtx.resume();
+      return _audioCtx;
+    };
+
+    // Rising tension buildup sound (plays during shake phase)
+    const playBuildUpSound = () => {
+      try {
+        const ctx = _getAudioCtx();
+        const now = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(200, now);
+        osc.frequency.exponentialRampToValueAtTime(600, now + 1.0);
+        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.linearRampToValueAtTime(0.2, now + 0.8);
+        gain.gain.linearRampToValueAtTime(0, now + 1.2);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 1.2);
+        const bufferSize = ctx.sampleRate * 1.2;
+        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * 0.3;
+        const noise = ctx.createBufferSource();
+        noise.buffer = buffer;
+        const noiseGain = ctx.createGain();
+        const noiseFilter = ctx.createBiquadFilter();
+        noiseFilter.type = 'bandpass';
+        noiseFilter.frequency.setValueAtTime(800, now);
+        noiseFilter.frequency.exponentialRampToValueAtTime(2000, now + 1.0);
+        noiseFilter.Q.value = 2;
+        noiseGain.gain.setValueAtTime(0.04, now);
+        noiseGain.gain.linearRampToValueAtTime(0.12, now + 0.9);
+        noiseGain.gain.linearRampToValueAtTime(0, now + 1.2);
+        noise.connect(noiseFilter).connect(noiseGain).connect(ctx.destination);
+        noise.start(now);
+        noise.stop(now + 1.2);
+      } catch(e) { console.warn('Sound error:', e); }
+    };
+
+    // Sparkly reveal chime (plays on result reveal)
+    const playRevealSound = () => {
+      try {
+        const ctx = _getAudioCtx();
+        const now = ctx.currentTime;
+        [523, 659, 784, 1047].forEach((freq, i) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.value = freq;
+          gain.gain.setValueAtTime(0, now + i * 0.04);
+          gain.gain.linearRampToValueAtTime(0.1, now + i * 0.04 + 0.05);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.04 + 0.8);
+          osc.connect(gain).connect(ctx.destination);
+          osc.start(now + i * 0.04);
+          osc.stop(now + i * 0.04 + 0.8);
+        });
+        const osc2 = ctx.createOscillator();
+        const gain2 = ctx.createGain();
+        osc2.type = 'triangle';
+        osc2.frequency.setValueAtTime(2000, now);
+        osc2.frequency.exponentialRampToValueAtTime(4000, now + 0.3);
+        osc2.frequency.exponentialRampToValueAtTime(2000, now + 0.6);
+        gain2.gain.setValueAtTime(0.02, now);
+        gain2.gain.linearRampToValueAtTime(0.05, now + 0.15);
+        gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+        osc2.connect(gain2).connect(ctx.destination);
+        osc2.start(now);
+        osc2.stop(now + 0.6);
+      } catch(e) { console.warn('Sound error:', e); }
+    };
+
+    // Epic rare item fanfare (for items with <10% chance)
+    const playRareSound = () => {
+      try {
+        const ctx = _getAudioCtx();
+        const now = ctx.currentTime;
+        const notes = [523, 659, 784, 1047, 1319];
+        notes.forEach((freq, i) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = i < 3 ? 'triangle' : 'sine';
+          osc.frequency.value = freq;
+          const t = now + i * 0.12;
+          gain.gain.setValueAtTime(0, t);
+          gain.gain.linearRampToValueAtTime(0.12, t + 0.04);
+          gain.gain.setValueAtTime(0.12, t + 0.08);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+          osc.connect(gain).connect(ctx.destination);
+          osc.start(t);
+          osc.stop(t + 0.5);
+        });
+        [1047, 1319, 1568].forEach((freq) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.value = freq;
+          const t = now + 0.6;
+          gain.gain.setValueAtTime(0, t);
+          gain.gain.linearRampToValueAtTime(0.06, t + 0.05);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 1.2);
+          osc.connect(gain).connect(ctx.destination);
+          osc.start(t);
+          osc.stop(t + 1.2);
+        });
+      } catch(e) { console.warn('Sound error:', e); }
+    };
+
+    // Helper: create particle elements and append to a container DOM node
+    const spawnParticles = (containerEl, color = '#f59e0b', count = 24) => {
+      if (!containerEl) return;
+      containerEl.innerHTML = '';
+      const rect = containerEl.getBoundingClientRect();
+      const cx = rect.width / 2;
+      const cy = rect.height / 2;
+      for (let i = 0; i < count; i++) {
+        const p = document.createElement('div');
+        const isStar = Math.random() > 0.5;
+        const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.5;
+        const distance = 80 + Math.random() * 100;
+        const tx = Math.cos(angle) * distance;
+        const ty = Math.sin(angle) * distance;
+        const size = 4 + Math.random() * 8;
+        const duration = 0.6 + Math.random() * 0.6;
+        const delay = Math.random() * 0.15;
+        const colors = [color, color, color, '#ffffff', '#fbbf24'];
+        const pColor = colors[Math.floor(Math.random() * colors.length)];
+        p.style.cssText = `
+          position: absolute;
+          left: ${cx - size/2}px;
+          top: ${cy - size/2}px;
+          width: ${size}px;
+          height: ${size}px;
+          border-radius: ${isStar ? '0' : '50%'};
+          ${isStar ? 'clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);' : ''}
+          background: ${pColor};
+          box-shadow: 0 0 ${size}px ${pColor}80;
+          opacity: 0;
+          pointer-events: none;
+          --tx: ${tx}px;
+          --ty: ${ty}px;
+          animation: particleBurst ${duration}s ${delay}s ease-out forwards;
+        `;
+        containerEl.appendChild(p);
+      }
+    };
+
     // Header
-    const Header = ({ title = 'Loot Box Creator V1104', onMenuClick }) => {
+    const Header = ({ title = 'Loot Box Creator V1112', onMenuClick }) => {
       const isMobile = useIsMobile();
       return (
         <header style={{
@@ -3714,10 +3910,10 @@
 
     const BoxOpener = ({ box, onBack, onBoxUpdate, success, error, info }) => {
       const [pullHistory, setPullHistory] = useState(box.pullHistory || []);
-      const [isOpening, setIsOpening] = useState(false);
       const [currentPull, setCurrentPull] = useState(null);
       const [showResult, setShowResult] = useState(false);
-      const [isWiggling, setIsWiggling] = useState(false);
+      const [openingPhase, setOpeningPhase] = useState('idle');
+      const particleContainerRef = React.useRef(null);
       const [userName, setUserName] = useState(() => {
         if (box.type === 'shared' && box.shareCode) {
           // Check for a name saved specifically for this box
@@ -3762,6 +3958,15 @@
         }
       }, [box.shareCode, box.type]);
 
+      // Reset state on unmount
+      useEffect(() => {
+        return () => {
+          setOpeningPhase('idle');
+          setShowResult(false);
+          setCurrentPull(null);
+        };
+      }, []);
+
       const remainingPulls = box.maxPulls ? box.maxPulls - pullHistory.length : null;
 
       // Calculate per-user remaining pulls
@@ -3782,47 +3987,35 @@
       // Calculate current odds with dynamic adjustment
       const currentOdds = calculateDynamicOdds(box.items, pullHistory);
 
-      const handleOpen = () => {
+      const handleBoxTap = () => {
+        if (!canPull || openingPhase !== 'idle' || isExpired || currentOdds.length === 0) return;
+
         // Check if box is shared and needs user name
         if (box.type === 'shared' && (!userName || userName === 'Guest') && !needsName) {
           setNeedsName(true);
           return;
         }
 
-        if (!canPull) {
-          if (isExpired) {
-            error('This box has expired!');
-          } else if (!userLimitOk) {
-            error('You have used all your opens!');
-          } else {
-            error('No opens remaining!');
+        // Phase 1: Wiggle (0-400ms)
+        setOpeningPhase('wiggle');
+
+        setTimeout(() => {
+          // Phase 2: Intense shake + glow (400-1600ms)
+          setOpeningPhase('shaking');
+          playBuildUpSound();
+
+          // Do the actual pull calculation now (during shake animation)
+          const totalPercentage = currentOdds.reduce((sum, item) => sum + item.adjustedPercentage, 0);
+          let random = Math.random() * totalPercentage;
+          let selectedItem = currentOdds[0];
+          for (const item of currentOdds) {
+            random -= item.adjustedPercentage;
+            if (random <= 0) {
+              selectedItem = item;
+              break;
+            }
           }
-          return;
-        }
 
-        if (currentOdds.length === 0) {
-          error('All items have been claimed!');
-          return;
-        }
-
-        setIsOpening(true);
-        setShowResult(false);
-
-        // Weighted random selection
-        const totalPercentage = currentOdds.reduce((sum, item) => sum + item.adjustedPercentage, 0);
-        let random = Math.random() * totalPercentage;
-        
-        let selectedItem = currentOdds[0];
-        for (const item of currentOdds) {
-          random -= item.adjustedPercentage;
-          if (random <= 0) {
-            selectedItem = item;
-            break;
-          }
-        }
-
-        // Simulate opening animation (2 seconds)
-        setTimeout(async () => {
           const pull = {
             itemId: selectedItem.id,
             itemName: selectedItem.name,
@@ -3834,42 +4027,48 @@
             deviceId: getDeviceId(),
           };
 
-          setCurrentPull(pull);
-          setIsOpening(false);
-          setShowResult(true);
+          setTimeout(() => {
+            // Phase 3: Reveal (1600ms+)
+            setOpeningPhase('reveal');
+            setCurrentPull(pull);
+            setShowResult(true);
 
-          // Auto-expand history after a pull if user hasn't manually toggled
-          if (!historyExpanded && !userToggledHistory.current) {
-            setHistoryExpanded(true);
-          }
-
-          // Save pull to box
-          if (box.type === 'shared') {
-            try {
-              await addPullToSharedBox(box.shareCode, pull);
-              // The real-time listener will update pullHistory automatically
-            } catch (err) {
-              console.error('Failed to save pull:', err);
-              error('Failed to save open to shared box');
+            // Spawn particles
+            if (particleContainerRef.current) {
+              spawnParticles(particleContainerRef.current, selectedItem.color, 28);
             }
-          } else {
-            // Local box - save to localStorage
-            const newHistory = [...pullHistory, pull];
-            setPullHistory(newHistory);
 
-            const updatedBox = { ...box, pullHistory: newHistory };
-            saveBox(updatedBox);
-            onBoxUpdate && onBoxUpdate(updatedBox);
-          }
-        }, 2000);
-      };
+            // Play sound based on rarity
+            if (selectedItem.percentage < 10) {
+              playRareSound();
+            } else {
+              playRevealSound();
+            }
 
-      const handleBoxTap = () => {
-        if (!canPull || isOpening || isExpired || currentOdds.length === 0) return;
-        setIsWiggling(true);
-        setTimeout(() => {
-          setIsWiggling(false);
-          handleOpen();
+            // Auto-expand history
+            if (!historyExpanded && !userToggledHistory.current) {
+              setHistoryExpanded(true);
+            }
+
+            // Save the pull
+            if (box.type === 'shared') {
+              addPullToSharedBox(box.shareCode, pull).catch(err => {
+                console.error('Failed to save pull:', err);
+                error('Failed to save open to shared box');
+              });
+            } else {
+              const newHistory = [...pullHistory, pull];
+              setPullHistory(newHistory);
+              const updatedBox = { ...box, pullHistory: newHistory };
+              saveBox(updatedBox);
+              onBoxUpdate && onBoxUpdate(updatedBox);
+            }
+
+            // Phase 4: Done (after animations settle)
+            setTimeout(() => {
+              setOpeningPhase('done');
+            }, 800);
+          }, 1200);
         }, 400);
       };
 
@@ -3889,7 +4088,7 @@
             success('Name changed to ' + trimmedName);
             setIsNameChange(false);
           } else {
-            handleOpen();
+            handleBoxTap();
           }
         }
       };
@@ -4016,35 +4215,132 @@
           </div>
 
           {/* Main Opening Area */}
-          <Card style={{ marginBottom: '1.5rem', minHeight: '300px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-            {isOpening ? (
+          <Card style={{
+            marginBottom: '1.5rem',
+            minHeight: '300px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            position: 'relative',
+            overflow: 'hidden',
+          }}>
+
+            {/* Glow ring - visible during shaking phase */}
+            <div style={{
+              position: 'absolute',
+              width: '200px',
+              height: '200px',
+              borderRadius: '50%',
+              opacity: 0,
+              pointerEvents: 'none',
+              animation: openingPhase === 'shaking' ? 'glowPulse 1.2s ease-in-out forwards' : 'none',
+            }} />
+
+            {/* Flash overlay - visible at reveal moment */}
+            <div style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'radial-gradient(circle, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 70%)',
+              opacity: 0,
+              zIndex: 5,
+              pointerEvents: 'none',
+              borderRadius: '16px',
+              animation: openingPhase === 'reveal' ? 'flashBurst 0.6s ease-out forwards' : 'none',
+            }} />
+
+            {/* Particle container */}
+            <div
+              ref={particleContainerRef}
+              style={{
+                position: 'absolute',
+                inset: 0,
+                pointerEvents: 'none',
+                zIndex: 4,
+                overflow: 'hidden',
+                borderRadius: '16px',
+              }}
+            />
+
+            {/* Chest image - visible during idle, wiggle, shaking phases */}
+            {(openingPhase === 'idle' || openingPhase === 'wiggle' || openingPhase === 'shaking') && (
               <div style={{ textAlign: 'center' }}>
-                <div style={{
-                  width: '200px',
-                  height: '200px',
-                  animation: 'spin 2s linear infinite',
-                  marginBottom: '1rem',
-                  margin: '0 auto 1rem',
-                }}>
+                <div
+                  onClick={openingPhase === 'idle' && canPull && !isExpired ? handleBoxTap : undefined}
+                  style={{
+                    width: '200px',
+                    height: '200px',
+                    margin: '0 auto 1.5rem',
+                    cursor: openingPhase === 'idle' && canPull && !isExpired ? 'pointer' : 'default',
+                    animation:
+                      openingPhase === 'wiggle'
+                        ? 'boxWiggle 0.4s ease'
+                        : openingPhase === 'shaking'
+                          ? 'intenseShake 1.2s ease-in-out'
+                          : canPull && !isExpired
+                            ? 'boxIdle 3s ease-in-out infinite'
+                            : 'none',
+                    transition: 'transform 0.2s ease',
+                    filter: 'drop-shadow(0 0 25px rgba(59, 130, 246, 0.6))',
+                    borderRadius: '16px',
+                    zIndex: 2,
+                    position: 'relative',
+                  }}
+                >
                   <img
                     src={getBoxImageUrl(box.boxImageId)}
                     alt={box.name}
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'contain',
-                    }}
+                    style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                     onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }}
                   />
                   <div style={{ fontSize: '6rem', display: 'none' }}>📦</div>
                 </div>
-                <div style={{ fontSize: '1.25rem', color: '#94a3b8' }}>
-                  Opening...
-                </div>
+
+                {openingPhase === 'idle' && canPull && !isExpired && (
+                  <div style={{
+                    fontSize: '1rem', color: '#94a3b8',
+                    animation: 'tapHint 2s ease-in-out infinite',
+                    marginTop: '-0.5rem', marginBottom: '0.5rem', fontWeight: 500,
+                  }}>
+                    {isMobile ? 'Tap to Open!' : 'Click to Open!'}
+                  </div>
+                )}
+
+                {openingPhase === 'shaking' && (
+                  <div style={{
+                    fontSize: '1rem', color: '#f59e0b',
+                    fontWeight: 600, marginTop: '-0.5rem',
+                  }}>
+                    Opening...
+                  </div>
+                )}
+
+                {openingPhase === 'idle' && (isExpired || !canPull) && (
+                  <>
+                    <div style={{ fontSize: '1.25rem', color: '#fca5a5', marginBottom: '0.5rem' }}>
+                      {isExpired ? 'This box has expired' : 'No opens remaining'}
+                    </div>
+                    <div style={{ fontSize: '0.875rem', color: '#64748b' }}>
+                      {isExpired
+                        ? 'You can still view the open history below'
+                        : 'Check the open history to see what was opened'}
+                    </div>
+                  </>
+                )}
               </div>
-            ) : showResult && currentPull ? (
+            )}
+
+            {/* Result card - visible during reveal and done phases */}
+            {(openingPhase === 'reveal' || openingPhase === 'done') && showResult && currentPull && (
               <div
-                onClick={canPull && !isExpired ? handleBoxTap : undefined}
+                onClick={() => {
+                  if (canPull && !isExpired) {
+                    setOpeningPhase('idle');
+                    setShowResult(false);
+                    setCurrentPull(null);
+                    if (particleContainerRef.current) particleContainerRef.current.innerHTML = '';
+                  }
+                }}
                 style={{
                   textAlign: 'center',
                   padding: '3rem',
@@ -4058,57 +4354,44 @@
                   boxShadow: isLightColor(currentPull.color)
                     ? '0 0 40px rgba(100, 116, 139, 0.6)'
                     : `0 0 40px ${currentPull.color}60`,
-                  animation: 'fadeIn 0.5s ease',
                   width: '100%',
                   maxWidth: '500px',
                   cursor: canPull && !isExpired ? 'pointer' : 'default',
-                }}>
+                  zIndex: 6,
+                  position: 'relative',
+                  opacity: 0,
+                  transform: 'scale(0.3) translateY(20px)',
+                  animation: 'resultReveal 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
+                }}
+              >
                 {currentPull.imageUrl ? (
-                  <div style={{
-                    width: '200px',
-                    height: '200px',
-                    margin: '0 auto 1rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}>
-                    <img
-                      src={currentPull.imageUrl}
-                      alt={currentPull.itemName}
-                      style={{
-                        maxWidth: '100%',
-                        maxHeight: '100%',
-                        objectFit: 'contain',
-                        borderRadius: '12px',
-                        filter: 'drop-shadow(0 0 20px rgba(0, 0, 0, 0.5))',
-                      }}
-                    />
-                  </div>
+                  <img
+                    src={currentPull.imageUrl}
+                    alt={currentPull.itemName}
+                    style={{
+                      width: '80px', height: '80px',
+                      objectFit: 'contain', borderRadius: '8px',
+                      marginBottom: '1rem',
+                      border: `2px solid ${currentPull.color}40`,
+                    }}
+                  />
                 ) : null}
-                <h3 style={{
-                  fontSize: '2rem',
-                  fontWeight: 700,
-                  color: isLightColor(currentPull.color) ? '#1e293b' : '#e2e8f0',
-                  marginBottom: '0.5rem',
+                <div style={{
+                  fontSize: '2rem', fontWeight: 800, marginBottom: '0.5rem',
+                  color: isLightColor(currentPull.color) ? '#1e293b' : currentPull.color,
+                  animation: 'shimmerText 1.5s ease-in-out 0.5s',
                 }}>
                   {currentPull.itemName}
-                </h3>
+                </div>
                 <div style={{
-                  display: 'inline-block',
-                  padding: '0.5rem 1.5rem',
-                  background: currentPull.color,
-                  borderRadius: '8px',
-                  fontSize: '1rem',
-                  fontWeight: 600,
-                  color: isLightColor(currentPull.color) ? '#1e293b' : '#ffffff',
-                  border: isLightColor(currentPull.color) ? '2px solid #334155' : 'none',
+                  fontSize: '1rem', fontWeight: 500,
+                  color: isLightColor(currentPull.color) ? '#475569' : '#94a3b8',
                 }}>
                   {currentPull.percentage}% chance
                 </div>
                 {canPull && !isExpired && (
                   <div style={{
-                    fontSize: '0.875rem',
-                    color: '#94a3b8',
+                    fontSize: '0.875rem', color: '#64748b',
                     marginTop: '1rem',
                     animation: 'tapHint 2s ease-in-out infinite',
                   }}>
@@ -4116,75 +4399,8 @@
                   </div>
                 )}
               </div>
-            ) : (
-              <div style={{ textAlign: 'center' }}>
-                <div
-                  onClick={canPull && !isExpired ? handleBoxTap : undefined}
-                  style={{
-                    width: '200px',
-                    height: '200px',
-                    margin: '0 auto 1.5rem',
-                    cursor: canPull && !isExpired ? 'pointer' : 'default',
-                    animation: isWiggling
-                      ? 'boxWiggle 0.4s ease'
-                      : canPull && !isExpired
-                        ? 'boxIdle 3s ease-in-out infinite'
-                        : 'none',
-                    transition: 'transform 0.2s ease',
-                    filter: 'drop-shadow(0 0 25px rgba(59, 130, 246, 0.6))',
-                    boxShadow: canPull && !isExpired
-                      ? '0 0 35px rgba(59, 130, 246, 0.5), 0 0 70px rgba(59, 130, 246, 0.25)'
-                      : 'none',
-                    borderRadius: '16px',
-                  }}
-                >
-                  <img
-                    src={getBoxImageUrl(box.boxImageId)}
-                    alt={box.name}
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'contain',
-                    }}
-                    onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }}
-                  />
-                  <div style={{ fontSize: '6rem', display: 'none' }}>📦</div>
-                </div>
-                {canPull && !isExpired && !isOpening && (
-                  <div style={{
-                    fontSize: '1rem',
-                    color: '#94a3b8',
-                    animation: 'tapHint 2s ease-in-out infinite',
-                    marginTop: '-0.5rem',
-                    marginBottom: '0.5rem',
-                    fontWeight: 500,
-                  }}>
-                    {isMobile ? 'Tap to Open!' : 'Click to Open!'}
-                  </div>
-                )}
-
-                {/* Only show status text for expired or depleted states */}
-                {(isExpired || !canPull) && (
-                  <div style={{
-                    fontSize: '1.25rem',
-                    color: '#fca5a5',
-                    marginBottom: '0.5rem',
-                  }}>
-                    {isExpired ? 'This box has expired' : 'No opens remaining'}
-                  </div>
-                )}
-                {(isExpired || !canPull) && (
-                  <div style={{
-                    fontSize: '0.875rem',
-                    color: '#64748b',
-                  }}>
-                    {isExpired
-                      ? 'You can still view the open history below'
-                      : 'Check the open history to see what was opened'}
-                  </div>
-                )}
-              </div>
             )}
+
           </Card>
 
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : (box.hideOdds ? '1fr' : '1fr 1fr'), gap: isMobile ? '1rem' : '1.5rem' }}>
