@@ -1560,7 +1560,7 @@
     };
 
     // Header
-    const Header = ({ title = 'Loot Box Creator V1553', onMenuClick }) => {
+    const Header = ({ title = 'Loot Box Creator V1557', onMenuClick }) => {
       const isMobile = useIsMobile();
       return (
         <header style={{
@@ -1856,6 +1856,24 @@
         });
         return seen.size;
       })();
+
+      // Your opens (per-person usage for current user)
+      const yourOpensUsed = (() => {
+        if (!maxPullsPerUser || maxPullsPerUser <= 0) return 0;
+        const myDeviceId = getDeviceId();
+        return (pullHistory || []).filter(p => p.deviceId === myDeviceId).length;
+      })();
+
+      const yourOpensRemaining = maxPullsPerUser ? Math.max(0, maxPullsPerUser - yourOpensUsed) : 0;
+
+      const yourOpensColor = (() => {
+        if (!maxPullsPerUser || maxPullsPerUser <= 0) return '#ec4899';
+        if (yourOpensUsed === 0) return '#10b981';
+        if (yourOpensUsed >= maxPullsPerUser) return '#ef4444';
+        return '#ec4899';
+      })();
+
+      const yourOpensDepleted = maxPullsPerUser > 0 && yourOpensUsed >= maxPullsPerUser;
 
       // Tooltip renderer
       const renderTooltip = (text) => (
@@ -2227,9 +2245,9 @@
                   </div>
                 )}
 
-                {/* Expiration icon */}
-                {box.expiresAt && (
-                  <div onClick={(e) => handleIconTap(e, 'expiration')} style={{
+                {/* Your opens icon */}
+                {(maxPullsPerUser !== null && maxPullsPerUser !== undefined && maxPullsPerUser > 0) && (
+                  <div onClick={(e) => handleIconTap(e, 'yourOpens')} style={{
                     position: 'relative',
                     display: 'flex', alignItems: 'center', gap: '6px',
                     cursor: 'pointer',
@@ -2237,21 +2255,24 @@
                     <div style={{
                       width: '30px', height: '30px', borderRadius: '8px',
                       background: 'rgba(15, 23, 42, 0.7)',
-                      border: `1px solid ${expirationIconColor}33`,
+                      border: `1px solid ${yourOpensColor}33`,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       transition: 'all 0.2s ease',
-                      animation: expirationPulse ? 'pulse 2s ease-in-out infinite' : 'none',
+                      opacity: yourOpensDepleted ? 0.5 : 1,
                     }}>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={expirationIconColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="12" cy="12" r="10" />
-                        <polyline points="12 6 12 12 16 14" />
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={yourOpensColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+                        <circle cx="8.5" cy="7" r="4" />
+                        <polyline points="17 11 19 13 23 9" />
                       </svg>
                     </div>
-                    <span style={{ fontSize: '0.7rem', fontWeight: 600, color: expirationIconColor, textShadow: '0 1px 2px rgba(0, 0, 0, 0.5)' }}>
-                      {box.expiresAt - Date.now() <= 0 ? 'Expired' : formatExpirationCountdown(box.expiresAt)}
+                    <span style={{ fontSize: '0.7rem', fontWeight: 600, color: yourOpensColor, textShadow: '0 1px 2px rgba(0, 0, 0, 0.5)', opacity: yourOpensDepleted ? 0.5 : 1 }}>
+                      {`${yourOpensUsed}/${maxPullsPerUser}`}
                     </span>
-                    {activeTooltip === 'expiration' && renderTooltip(
-                      box.expiresAt - Date.now() <= 0 ? 'This box has expired' : `This box expires in ${formatExpirationCountdown(box.expiresAt)}`
+                    {activeTooltip === 'yourOpens' && renderTooltip(
+                      yourOpensDepleted
+                        ? "You've used all your opens"
+                        : `You have ${yourOpensRemaining} open${yourOpensRemaining === 1 ? '' : 's'} remaining`
                     )}
                   </div>
                 )}
@@ -2281,6 +2302,35 @@
                       {uniqueParticipants}
                     </span>
                     {activeTooltip === 'shared' && renderTooltip(`${uniqueParticipants} ${uniqueParticipants === 1 ? 'person has' : 'people have'} opened this box`)}
+                  </div>
+                )}
+
+                {/* Expiration icon */}
+                {box.expiresAt && (
+                  <div onClick={(e) => handleIconTap(e, 'expiration')} style={{
+                    position: 'relative',
+                    display: 'flex', alignItems: 'center', gap: '6px',
+                    cursor: 'pointer',
+                  }}>
+                    <div style={{
+                      width: '30px', height: '30px', borderRadius: '8px',
+                      background: 'rgba(15, 23, 42, 0.7)',
+                      border: `1px solid ${expirationIconColor}33`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      transition: 'all 0.2s ease',
+                      animation: expirationPulse ? 'pulse 2s ease-in-out infinite' : 'none',
+                    }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={expirationIconColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <polyline points="12 6 12 12 16 14" />
+                      </svg>
+                    </div>
+                    <span style={{ fontSize: '0.7rem', fontWeight: 600, color: expirationIconColor, textShadow: '0 1px 2px rgba(0, 0, 0, 0.5)' }}>
+                      {box.expiresAt - Date.now() <= 0 ? 'Expired' : formatExpirationCountdown(box.expiresAt)}
+                    </span>
+                    {activeTooltip === 'expiration' && renderTooltip(
+                      box.expiresAt - Date.now() <= 0 ? 'This box has expired' : `This box expires in ${formatExpirationCountdown(box.expiresAt)}`
+                    )}
                   </div>
                 )}
               </div>
