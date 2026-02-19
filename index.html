@@ -1560,7 +1560,7 @@
     };
 
     // Header
-    const Header = ({ title = 'Loot Box Creator V1623', onMenuClick }) => {
+    const Header = ({ title = 'Loot Box Creator V1626', onMenuClick }) => {
       const isMobile = useIsMobile();
       return (
         <header style={{
@@ -1976,14 +1976,20 @@
 
       return (
         <>
-          <div style={{
-            background: 'rgba(26, 31, 53, 0.6)',
-            border: '1px solid rgba(59, 130, 246, 0.2)',
-            borderRadius: '12px',
-            overflow: 'hidden',
-            transition: 'all 0.25s ease',
-            cursor: 'pointer',
-          }}>
+          <div
+            onClick={(e) => {
+              if (e.target.closest('[data-no-open]')) return;
+              onClick(e);
+            }}
+            style={{
+              background: 'rgba(26, 31, 53, 0.6)',
+              border: '1px solid rgba(59, 130, 246, 0.2)',
+              borderRadius: '12px',
+              overflow: 'hidden',
+              transition: 'all 0.25s ease',
+              cursor: 'pointer',
+            }}
+          >
 
             {/* Image area with overlays */}
             <div style={{
@@ -1997,7 +2003,7 @@
             }}>
 
               {/* Chest image */}
-              <div onClick={onClick} style={{ paddingLeft: '50px', paddingRight: '45px', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', cursor: 'pointer' }}>
+              <div style={{ paddingLeft: '50px', paddingRight: '45px', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>
                 {box.boxImageId ? (
                   <img
                     src={getBoxImageUrl(box.boxImageId)}
@@ -2093,6 +2099,7 @@
 
               {/* Left-edge icon strip */}
               <div
+                data-no-open="true"
                 onClick={(e) => e.stopPropagation()}
                 style={{
                   position: 'absolute',
