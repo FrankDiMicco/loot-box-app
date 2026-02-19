@@ -1605,16 +1605,47 @@
 
     // ========== SOUND ENGINE (Web Audio API, zero audio files) ==========
     let _audioCtx = null;
+    let _audioUnlocked = false;
+
     const _getAudioCtx = () => {
-      if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      if (_audioCtx.state === 'suspended') _audioCtx.resume();
+      if (!_audioCtx) {
+        _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
       return _audioCtx;
     };
+
+    // iOS requires AudioContext to be resumed during a direct user gesture.
+    // We unlock it once on first touch/click, then it stays open forever.
+    const _unlockAudio = () => {
+      if (_audioUnlocked) return;
+      const ctx = _getAudioCtx();
+      if (ctx.state === 'suspended') {
+        ctx.resume().then(() => {
+          _audioUnlocked = true;
+        });
+      } else {
+        _audioUnlocked = true;
+      }
+      // Also play a silent buffer to fully unlock on iOS
+      try {
+        const buffer = ctx.createBuffer(1, 1, 22050);
+        const source = ctx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(ctx.destination);
+        source.start(0);
+      } catch(e) {}
+    };
+
+    // Attach unlock to first user interaction
+    document.addEventListener('touchstart', _unlockAudio, { once: true });
+    document.addEventListener('touchend', _unlockAudio, { once: true });
+    document.addEventListener('click', _unlockAudio, { once: true });
 
     // Rising tension buildup sound (plays during shake phase)
     const playBuildUpSound = () => {
       try {
         const ctx = _getAudioCtx();
+        if (ctx.state === 'suspended') ctx.resume();
         const now = ctx.currentTime;
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
@@ -1652,6 +1683,7 @@
     const playRevealSound = () => {
       try {
         const ctx = _getAudioCtx();
+        if (ctx.state === 'suspended') ctx.resume();
         const now = ctx.currentTime;
         [523, 659, 784, 1047].forEach((freq, i) => {
           const osc = ctx.createOscillator();
@@ -1684,6 +1716,7 @@
     const playRareSound = () => {
       try {
         const ctx = _getAudioCtx();
+        if (ctx.state === 'suspended') ctx.resume();
         const now = ctx.currentTime;
         const notes = [523, 659, 784, 1047, 1319];
         notes.forEach((freq, i) => {
@@ -1756,7 +1789,7 @@
     };
 
     // Header
-    const Header = ({ title = 'Loot Box Creator V1115', onMenuClick }) => {
+    const Header = ({ title = 'Loot Box Creator V1118', onMenuClick }) => {
       const isMobile = useIsMobile();
       return (
         <header style={{
