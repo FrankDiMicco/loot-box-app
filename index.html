@@ -1560,7 +1560,7 @@
     };
 
     // Header
-    const Header = ({ title = 'Loot Box Creator V1610', onMenuClick }) => {
+    const Header = ({ title = 'Loot Box Creator V1613', onMenuClick }) => {
       const isMobile = useIsMobile();
       return (
         <header style={{
@@ -2091,15 +2091,18 @@
               </div>
 
               {/* Left-edge icon strip */}
-              <div style={{
-                position: 'absolute',
-                left: '12px',
-                top: '44px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '14px',
-                zIndex: 2,
-              }}>
+              <div
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  position: 'absolute',
+                  left: '12px',
+                  top: '44px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '14px',
+                  zIndex: 2,
+                }}
+              >
                 {/* Item count icon */}
                 <div onClick={(e) => handleIconTap(e, 'items')} style={{
                   position: 'relative',
