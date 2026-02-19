@@ -1756,7 +1756,7 @@
     };
 
     // Header
-    const Header = ({ title = 'Loot Box Creator V1112', onMenuClick }) => {
+    const Header = ({ title = 'Loot Box Creator V1115', onMenuClick }) => {
       const isMobile = useIsMobile();
       return (
         <header style={{
@@ -2214,7 +2214,7 @@
 
               {/* Share - only for shared boxes where sharing is allowed */}
               {box.type === 'shared' && (box.allowParticipantSharing || !box.isVisitor) && (
-                <button onClick={(e) => { e.stopPropagation(); handleShare(); }} style={{
+                <button onClick={(e) => { e.stopPropagation(); handleShare(e); }} style={{
                   width: '28px', height: '28px', borderRadius: '7px',
                   background: 'rgba(15, 23, 42, 0.75)',
                   backdropFilter: 'blur(4px)',
