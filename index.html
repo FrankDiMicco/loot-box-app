@@ -1560,7 +1560,7 @@
     };
 
     // Header
-    const Header = ({ title = 'Loot Box Creator V1613', onMenuClick }) => {
+    const Header = ({ title = 'Loot Box Creator V1620', onMenuClick }) => {
       const isMobile = useIsMobile();
       return (
         <header style={{
@@ -1785,6 +1785,7 @@
 
       const handleIconTap = (e, iconId) => {
         e.stopPropagation();
+        e.nativeEvent.stopImmediatePropagation();
         setActiveTooltip(activeTooltip === iconId ? null : iconId);
       };
 
@@ -1985,7 +1986,10 @@
           }}>
 
             {/* Image area with overlays */}
-            <div onClick={onClick} style={{
+            <div onClick={(e) => {
+              if (e.target.closest('[data-icon-strip]')) return;
+              onClick(e);
+            }} style={{
               position: 'relative',
               width: '100%',
               height: isMobile ? '220px' : '260px',
@@ -2092,6 +2096,7 @@
 
               {/* Left-edge icon strip */}
               <div
+                data-icon-strip="true"
                 onClick={(e) => e.stopPropagation()}
                 style={{
                   position: 'absolute',
