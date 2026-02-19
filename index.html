@@ -120,11 +120,11 @@
     @keyframes fadeIn {
       from {
         opacity: 0;
-        transform: translateY(10px);
+        transform: translateY(calc(-50% + 6px));
       }
       to {
         opacity: 1;
-        transform: translateY(0);
+        transform: translateY(-50%);
       }
     }
 
@@ -1560,7 +1560,7 @@
     };
 
     // Header
-    const Header = ({ title = 'Loot Box Creator V1602', onMenuClick }) => {
+    const Header = ({ title = 'Loot Box Creator V1610', onMenuClick }) => {
       const isMobile = useIsMobile();
       return (
         <header style={{
@@ -1884,6 +1884,7 @@
             marginLeft: '8px',
             top: '50%',
             transform: 'translateY(-50%)',
+            willChange: 'transform, opacity',
             background: 'rgba(15, 23, 42, 0.95)',
             border: '1px solid rgba(65, 105, 225, 0.3)',
             borderRadius: '8px',
@@ -2210,7 +2211,7 @@
 
                 {/* Shared / Participants icon */}
                 {box.type === 'shared' && (
-                  <div onClick={(e) => handleIconTap(e, 'shared')} style={{
+                  <div onClick={(e) => { e.stopPropagation(); handleIconTap(e, 'shared'); }} style={{
                     position: 'relative',
                     display: 'flex', alignItems: 'center', gap: '6px',
                     cursor: 'pointer',
