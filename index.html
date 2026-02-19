@@ -1605,28 +1605,22 @@
 
     // ========== SOUND ENGINE (Web Audio API, zero audio files) ==========
     let _audioCtx = null;
-    let _audioUnlocked = false;
 
-    const _getAudioCtx = () => {
+    const _ensureAudio = () => {
       if (!_audioCtx) {
         _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      // Always try to resume - this is the key for iOS
+      if (_audioCtx.state === 'suspended') {
+        _audioCtx.resume();
       }
       return _audioCtx;
     };
 
-    // iOS requires AudioContext to be resumed during a direct user gesture.
-    // We unlock it once on first touch/click, then it stays open forever.
-    const _unlockAudio = () => {
-      if (_audioUnlocked) return;
-      const ctx = _getAudioCtx();
-      if (ctx.state === 'suspended') {
-        ctx.resume().then(() => {
-          _audioUnlocked = true;
-        });
-      } else {
-        _audioUnlocked = true;
-      }
-      // Also play a silent buffer to fully unlock on iOS
+    // Warm up audio on any user interaction (belt and suspenders)
+    const _warmUpAudio = () => {
+      const ctx = _ensureAudio();
+      // Play a silent buffer to fully unlock iOS audio
       try {
         const buffer = ctx.createBuffer(1, 1, 22050);
         const source = ctx.createBufferSource();
@@ -1636,16 +1630,10 @@
       } catch(e) {}
     };
 
-    // Attach unlock to first user interaction
-    document.addEventListener('touchstart', _unlockAudio, { once: true });
-    document.addEventListener('touchend', _unlockAudio, { once: true });
-    document.addEventListener('click', _unlockAudio, { once: true });
-
     // Rising tension buildup sound (plays during shake phase)
     const playBuildUpSound = () => {
       try {
-        const ctx = _getAudioCtx();
-        if (ctx.state === 'suspended') ctx.resume();
+        const ctx = _ensureAudio();
         const now = ctx.currentTime;
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
@@ -1682,8 +1670,7 @@
     // Sparkly reveal chime (plays on result reveal)
     const playRevealSound = () => {
       try {
-        const ctx = _getAudioCtx();
-        if (ctx.state === 'suspended') ctx.resume();
+        const ctx = _ensureAudio();
         const now = ctx.currentTime;
         [523, 659, 784, 1047].forEach((freq, i) => {
           const osc = ctx.createOscillator();
@@ -1715,8 +1702,7 @@
     // Epic rare item fanfare (for items with <10% chance)
     const playRareSound = () => {
       try {
-        const ctx = _getAudioCtx();
-        if (ctx.state === 'suspended') ctx.resume();
+        const ctx = _ensureAudio();
         const now = ctx.currentTime;
         const notes = [523, 659, 784, 1047, 1319];
         notes.forEach((freq, i) => {
@@ -1789,7 +1775,7 @@
     };
 
     // Header
-    const Header = ({ title = 'Loot Box Creator V1118', onMenuClick }) => {
+    const Header = ({ title = 'Loot Box Creator V1121', onMenuClick }) => {
       const isMobile = useIsMobile();
       return (
         <header style={{
@@ -4022,6 +4008,9 @@
 
       const handleBoxTap = () => {
         if (!canPull || openingPhase !== 'idle' || isExpired || currentOdds.length === 0) return;
+
+        // Unlock audio on this user gesture (critical for iOS)
+        _warmUpAudio();
 
         // Check if box is shared and needs user name
         if (box.type === 'shared' && (!userName || userName === 'Guest') && !needsName) {
