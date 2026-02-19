@@ -1560,7 +1560,7 @@
     };
 
     // Header
-    const Header = ({ title = 'Loot Box Creator V1626', onMenuClick }) => {
+    const Header = ({ title = 'Loot Box Creator V1630', onMenuClick }) => {
       const isMobile = useIsMobile();
       return (
         <header style={{
@@ -1979,6 +1979,10 @@
           <div
             onClick={(e) => {
               if (e.target.closest('[data-no-open]')) return;
+              if (e.target.closest('button')) return;
+              if (e.target.closest('svg')) return;
+              const imageArea = e.currentTarget.querySelector('[data-open-target]');
+              if (imageArea && !imageArea.contains(e.target)) return;
               onClick(e);
             }}
             style={{
@@ -1987,7 +1991,7 @@
               borderRadius: '12px',
               overflow: 'hidden',
               transition: 'all 0.25s ease',
-              cursor: 'pointer',
+              cursor: 'default',
             }}
           >
 
@@ -2003,7 +2007,7 @@
             }}>
 
               {/* Chest image */}
-              <div style={{ paddingLeft: '50px', paddingRight: '45px', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>
+              <div data-open-target="true" style={{ paddingLeft: '50px', paddingRight: '45px', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', cursor: 'pointer' }}>
                 {box.boxImageId ? (
                   <img
                     src={getBoxImageUrl(box.boxImageId)}
@@ -2112,7 +2116,7 @@
                 }}
               >
                 {/* Item count icon */}
-                <div onClick={(e) => handleIconTap(e, 'items')} style={{
+                <div onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleIconTap(e, 'items'); }} style={{
                   position: 'relative',
                   display: 'flex', alignItems: 'center', gap: '6px',
                   cursor: 'pointer',
@@ -2137,7 +2141,7 @@
                 </div>
 
                 {/* Opens remaining icon */}
-                <div onClick={(e) => handleIconTap(e, 'opens')} style={{
+                <div onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleIconTap(e, 'opens'); }} style={{
                   position: 'relative',
                   display: 'flex', alignItems: 'center', gap: '6px',
                   cursor: 'pointer',
@@ -2164,7 +2168,7 @@
 
                 {/* Per-person limit icon */}
                 {(maxPullsPerUser !== null && maxPullsPerUser !== undefined && maxPullsPerUser > 0) && (
-                  <div onClick={(e) => handleIconTap(e, 'perPerson')} style={{
+                  <div onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleIconTap(e, 'perPerson'); }} style={{
                     position: 'relative',
                     display: 'flex', alignItems: 'center', gap: '6px',
                     cursor: 'pointer',
@@ -2190,7 +2194,7 @@
 
                 {/* Your opens icon */}
                 {(maxPullsPerUser !== null && maxPullsPerUser !== undefined && maxPullsPerUser > 0) && (
-                  <div onClick={(e) => handleIconTap(e, 'yourOpens')} style={{
+                  <div onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleIconTap(e, 'yourOpens'); }} style={{
                     position: 'relative',
                     display: 'flex', alignItems: 'center', gap: '6px',
                     cursor: 'pointer',
@@ -2222,7 +2226,7 @@
 
                 {/* Shared / Participants icon */}
                 {box.type === 'shared' && (
-                  <div onClick={(e) => { e.stopPropagation(); handleIconTap(e, 'shared'); }} style={{
+                  <div onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleIconTap(e, 'shared'); }} style={{
                     position: 'relative',
                     display: 'flex', alignItems: 'center', gap: '6px',
                     cursor: 'pointer',
@@ -2250,7 +2254,7 @@
 
                 {/* Expiration icon */}
                 {box.expiresAt && (
-                  <div onClick={(e) => handleIconTap(e, 'expiration')} style={{
+                  <div onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleIconTap(e, 'expiration'); }} style={{
                     position: 'relative',
                     display: 'flex', alignItems: 'center', gap: '6px',
                     cursor: 'pointer',
@@ -2371,7 +2375,7 @@
               }} />
 
               {/* Box name - bottom center */}
-              <div style={{
+              <div data-no-open="true" style={{
                 position: 'absolute',
                 bottom: '0.75rem',
                 left: '0.75rem',
