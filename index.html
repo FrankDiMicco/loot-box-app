@@ -1798,7 +1798,7 @@
     };
 
     // Header
-    const Header = ({ title = 'Loot Box Creator V1440', onMenuClick }) => {
+    const Header = ({ title = 'Loot Box Creator V1641', onMenuClick }) => {
       const isMobile = useIsMobile();
       return (
         <header style={{
@@ -2179,7 +2179,7 @@
           <Card style={{ padding: '0.5rem 1rem' }}>
             <SettingsRow
               label="Loot Box Creator"
-              rightContent={<span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>V1440</span>}
+              rightContent={<span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>V1641</span>}
             />
             <SettingsRow
               label="Current Tier"
@@ -2224,18 +2224,33 @@
     };
 
     // BoxCard (simplified for brevity)
-    const BoxCard = ({ box, onClick, onEdit, onDelete, success, isNew, isFav, onToggleFavorite }) => {
+    const BoxCard = ({ box, onClick, onEdit, onDelete, onDuplicate, success, isNew, isFav, onToggleFavorite }) => {
       const isMobile = useIsMobile();
       const { name, items = [], pullHistory = [], maxPulls, maxPullsPerUser, type = 'local' } = box;
       const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
       const [activeTooltip, setActiveTooltip] = useState(null);
+      const [showOverflowMenu, setShowOverflowMenu] = useState(false);
       const boxFavId = box.shareCode || box.id;
 
       const handleIconTap = (e, iconId) => {
         e.stopPropagation();
         e.nativeEvent.stopImmediatePropagation();
+        setShowOverflowMenu(false);
         setActiveTooltip(activeTooltip === iconId ? null : iconId);
       };
+
+      // Close overflow menu on outside click
+      useEffect(() => {
+        if (!showOverflowMenu) return;
+        const handleClickOutside = () => setShowOverflowMenu(false);
+        const timer = setTimeout(() => {
+          document.addEventListener('click', handleClickOutside);
+        }, 10);
+        return () => {
+          clearTimeout(timer);
+          document.removeEventListener('click', handleClickOutside);
+        };
+      }, [showOverflowMenu]);
 
       useEffect(() => {
         if (activeTooltip) {
@@ -2483,37 +2498,102 @@
                 </svg>
               </button>
 
-              {/* Edit - only for non-visitor boxes */}
-              {!box.isVisitor && (
-                <button onClick={(e) => { e.stopPropagation(); handleEdit(e); }} style={{
-                  width: '28px', height: '28px', borderRadius: '7px',
-                  background: 'rgba(15, 23, 42, 0.75)',
-                  backdropFilter: 'blur(4px)',
-                  border: '1px solid rgba(148, 163, 184, 0.2)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: 'pointer', transition: 'all 0.2s ease', padding: 0,
-                }}>
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
-                    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+              {/* Three-dot overflow menu */}
+              <div style={{ position: 'relative' }}>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    e.nativeEvent.stopImmediatePropagation();
+                    setActiveTooltip(null);
+                    setShowOverflowMenu(!showOverflowMenu);
+                  }}
+                  style={{
+                    width: '28px', height: '28px', borderRadius: '7px',
+                    background: showOverflowMenu ? 'rgba(59, 130, 246, 0.3)' : 'rgba(15, 23, 42, 0.75)',
+                    backdropFilter: 'blur(4px)',
+                    border: showOverflowMenu ? '1px solid rgba(59, 130, 246, 0.4)' : '1px solid rgba(148, 163, 184, 0.2)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    cursor: 'pointer', transition: 'all 0.2s ease', padding: 0,
+                  }}
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="#94a3b8">
+                    <circle cx="12" cy="5" r="2" />
+                    <circle cx="12" cy="12" r="2" />
+                    <circle cx="12" cy="19" r="2" />
                   </svg>
                 </button>
-              )}
 
-              {/* Delete/Remove */}
-              <button onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(true); }} style={{
-                width: '28px', height: '28px', borderRadius: '7px',
-                background: 'rgba(15, 23, 42, 0.75)',
-                backdropFilter: 'blur(4px)',
-                border: '1px solid rgba(239, 68, 68, 0.2)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: 'pointer', transition: 'all 0.2s ease', padding: 0,
-              }}>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
+                {showOverflowMenu && (
+                  <div
+                    onClick={(e) => e.stopPropagation()}
+                    style={{
+                      position: 'absolute', top: '100%', right: '0', marginTop: '4px',
+                      background: 'rgba(15, 23, 42, 0.95)', border: '1px solid rgba(65, 105, 225, 0.3)',
+                      borderRadius: '10px', padding: '4px', minWidth: '140px', zIndex: 20,
+                      boxShadow: '0 8px 24px rgba(0, 0, 0, 0.5)',
+                    }}
+                  >
+                    {!box.isVisitor && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setShowOverflowMenu(false); onEdit && onEdit(box); }}
+                        style={{
+                          width: '100%', padding: '10px 12px', background: 'transparent', border: 'none',
+                          borderRadius: '8px', color: '#e2e8f0', fontSize: '0.85rem', fontWeight: 500,
+                          fontFamily: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center',
+                          gap: '10px', transition: 'background 0.15s ease',
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(59, 130, 246, 0.1)'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+                          <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+                        </svg>
+                        Edit
+                      </button>
+                    )}
+                    {!box.isVisitor && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setShowOverflowMenu(false); onDuplicate && onDuplicate(box); }}
+                        style={{
+                          width: '100%', padding: '10px 12px', background: 'transparent', border: 'none',
+                          borderRadius: '8px', color: '#e2e8f0', fontSize: '0.85rem', fontWeight: 500,
+                          fontFamily: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center',
+                          gap: '10px', transition: 'background 0.15s ease',
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(59, 130, 246, 0.1)'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                          <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+                        </svg>
+                        Duplicate
+                      </button>
+                    )}
+                    {!box.isVisitor && (
+                      <div style={{ height: '1px', background: 'rgba(148, 163, 184, 0.1)', margin: '4px 8px' }} />
+                    )}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setShowOverflowMenu(false); setShowDeleteConfirm(true); }}
+                      style={{
+                        width: '100%', padding: '10px 12px', background: 'transparent', border: 'none',
+                        borderRadius: '8px', color: '#ef4444', fontSize: '0.85rem', fontWeight: 500,
+                        fontFamily: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center',
+                        gap: '10px', transition: 'background 0.15s ease',
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="3 6 5 6 21 6" />
+                        <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                      </svg>
+                      {box.isVisitor ? 'Remove' : 'Delete'}
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Main card content - HORIZONTAL flex: left info + right chest */}
@@ -5096,6 +5176,32 @@
         }
       };
 
+      const handleDuplicateBox = (box) => {
+        if (box.isVisitor) {
+          info('You can only duplicate boxes you created');
+          return;
+        }
+        if (!canCreateLocalBox()) {
+          error('Free users can only have 5 local boxes. Delete one first or upgrade to Premium!');
+          return;
+        }
+        const duplicatedBox = {
+          ...box,
+          id: Date.now().toString(),
+          name: `${box.name} (Copy)`,
+          pullHistory: [],
+          createdAt: Date.now(),
+          shareCode: generateShareCode(),
+          isVisitor: false,
+          isSharedRef: false,
+          type: 'local',
+        };
+        saveBox(duplicatedBox);
+        loadData();
+        triggerHaptic('success');
+        success(`"${box.name}" duplicated!`);
+      };
+
       const handleToggleFavorite = (boxId) => {
         triggerHaptic('light');
         const newFavs = toggleFavorite(boxId);
@@ -5252,6 +5358,7 @@
                       onClick={() => handleOpenBox(box)}
                       onEdit={handleEditBox}
                       onDelete={handleDeleteBox}
+                      onDuplicate={handleDuplicateBox}
                       success={success}
                       isNew={!getSeenBoxes().includes(box.id)}
                       isFav={favorites.includes(box.shareCode || box.id)}
