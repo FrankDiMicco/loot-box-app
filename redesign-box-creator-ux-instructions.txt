@@ -1,0 +1,567 @@
+BOX CREATOR UX REDESIGN - VISUAL HIERARCHY & INTUITIVENESS
+=============================================================
+
+VERSION NUMBER
+--------------
+After making ALL changes in this file, update the version number displayed
+next to the main app title ("Loot Box Creator"). The version format is the
+letter V followed by the current time in HHMM format (e.g. if it is 1:32pm,
+write V132). Update this wherever the main title is rendered in the header.
+
+
+================================================================================
+OVERVIEW
+================================================================================
+
+The BoxCreator form currently treats every field with equal visual weight.
+The Box Name input looks identical to item inputs, the image picker blends
+into the type selector, and first-time users (especially younger users)
+don't know where to start or what's required.
+
+This redesign adds:
+  1. A hero-style Box Name input that clearly says "start here"
+  2. Numbered step sections so users know the flow
+  3. Required field indicators
+  4. Visual separation between box setup and item creation
+  5. An empty state prompt for the items section
+  6. Inline helper text for confusing fields
+
+IMPORTANT: Do NOT change any functionality or state logic. This is purely
+a visual/layout restructure of the existing BoxCreator component. All
+existing props, handlers, and state variables stay the same.
+
+
+================================================================================
+STEP 1: HERO BOX NAME INPUT
+================================================================================
+
+The Box Name input currently uses the standard Input component inside a Card.
+Replace it with a visually distinct "hero" input that immediately draws the
+eye.
+
+CURRENT (approximate):
+  <Card>
+    <Input label="Box Name" placeholder="e.g., Epic Mystery Box" ... />
+    <ImagePicker ... />
+    <Box Type selector ... />
+  </Card>
+
+NEW STRUCTURE:
+  The Box Name should be pulled OUT of the Card and given its own prominent
+  treatment at the very top, before any cards.
+
+  Style the Box Name section like this:
+
+  <div style={{
+    marginBottom: '1.5rem',
+  }}>
+    {/* Step label */}
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.5rem',
+      marginBottom: '0.75rem',
+    }}>
+      <div style={{
+        width: '24px',
+        height: '24px',
+        borderRadius: '50%',
+        background: 'linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: '0.75rem',
+        fontWeight: 700,
+        color: '#ffffff',
+        flexShrink: 0,
+      }}>
+        1
+      </div>
+      <span style={{
+        fontSize: '0.8rem',
+        fontWeight: 600,
+        color: '#94a3b8',
+        textTransform: 'uppercase',
+        letterSpacing: '0.05em',
+      }}>
+        Name Your Box
+      </span>
+      <span style={{
+        fontSize: '0.7rem',
+        fontWeight: 600,
+        color: '#f97316',
+        marginLeft: '0.25rem',
+      }}>
+        REQUIRED
+      </span>
+    </div>
+
+    {/* Hero input - bigger, brighter, different background */}
+    <input
+      type="text"
+      value={boxName}
+      onChange={(e) => setBoxName(e.target.value)}
+      placeholder="What's your box called?"
+      style={{
+        width: '100%',
+        padding: '16px 20px',
+        fontSize: '1.2rem',
+        fontFamily: 'inherit',
+        fontWeight: 600,
+        color: '#e2e8f0',
+        background: 'rgba(30, 64, 175, 0.15)',
+        border: boxName.trim()
+          ? '2px solid rgba(59, 130, 246, 0.5)'
+          : '2px solid rgba(249, 115, 22, 0.4)',
+        borderRadius: '14px',
+        outline: 'none',
+        transition: 'all 0.25s ease',
+        boxShadow: '0 0 20px rgba(59, 130, 246, 0.1)',
+      }}
+      onFocus={(e) => {
+        e.target.style.borderColor = '#3b82f6';
+        e.target.style.boxShadow = '0 0 24px rgba(59, 130, 246, 0.25)';
+        e.target.style.background = 'rgba(30, 64, 175, 0.2)';
+      }}
+      onBlur={(e) => {
+        e.target.style.borderColor = boxName.trim()
+          ? 'rgba(59, 130, 246, 0.5)'
+          : 'rgba(249, 115, 22, 0.4)';
+        e.target.style.boxShadow = '0 0 20px rgba(59, 130, 246, 0.1)';
+        e.target.style.background = 'rgba(30, 64, 175, 0.15)';
+      }}
+    />
+
+    {/* Validation hint - shows when empty after user has interacted */}
+    {!boxName.trim() && (
+      <div style={{
+        fontSize: '0.75rem',
+        color: '#f97316',
+        marginTop: '0.5rem',
+        paddingLeft: '0.25rem',
+      }}>
+        Give your box a name to get started
+      </div>
+    )}
+  </div>
+
+KEY DIFFERENCES from normal inputs:
+  - Larger font size (1.2rem vs 1rem)
+  - Font weight 600 (bolder)
+  - Blue-tinted background (rgba(30, 64, 175, 0.15)) instead of the
+    standard dark slate (rgba(30, 41, 59, 0.8))
+  - Orange border when empty to signal "fill me in"
+  - Blue border when filled to signal "good to go"
+  - Larger padding (16px 20px vs 12px 16px)
+  - Subtle blue glow shadow
+  - Friendly placeholder: "What's your box called?" instead of
+    "e.g., Epic Mystery Box"
+  - fontSize must still be at least 16px for iOS zoom prevention
+
+
+================================================================================
+STEP 2: CARD FOR BOX APPEARANCE (Step 2)
+================================================================================
+
+Wrap the ImagePicker and Box Type selector in a Card with a step header.
+
+  <div style={{ marginBottom: '1.5rem' }}>
+    {/* Step label */}
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.5rem',
+      marginBottom: '0.75rem',
+    }}>
+      <div style={{
+        width: '24px',
+        height: '24px',
+        borderRadius: '50%',
+        background: boxName.trim()
+          ? 'linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)'
+          : 'rgba(51, 65, 85, 0.6)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: '0.75rem',
+        fontWeight: 700,
+        color: boxName.trim() ? '#ffffff' : '#64748b',
+        flexShrink: 0,
+        transition: 'all 0.3s ease',
+      }}>
+        2
+      </div>
+      <span style={{
+        fontSize: '0.8rem',
+        fontWeight: 600,
+        color: '#94a3b8',
+        textTransform: 'uppercase',
+        letterSpacing: '0.05em',
+      }}>
+        Choose Appearance
+      </span>
+    </div>
+
+    <Card>
+      {/* ImagePicker goes here (existing component, unchanged) */}
+      <ImagePicker ... />
+
+      {/* Box Type selector goes here (existing buttons, unchanged) */}
+      <div style={{ marginTop: '0.75rem' }}>
+        <label ...>Box Type</label>
+        ... existing Local/Shared buttons ...
+      </div>
+    </Card>
+  </div>
+
+NOTE: The step 2 circle is gray when Box Name is empty, and turns blue
+once the name is filled in. This provides a subtle visual cue of progress.
+
+
+================================================================================
+STEP 3: ITEMS SECTION WITH EMPTY STATE (Step 3)
+================================================================================
+
+The items section (ItemCreator + ItemList) should also get a step header
+and an improved empty state.
+
+  <div style={{ marginBottom: '1.5rem' }}>
+    {/* Step label */}
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.5rem',
+      marginBottom: '0.75rem',
+    }}>
+      <div style={{
+        width: '24px',
+        height: '24px',
+        borderRadius: '50%',
+        background: items.length > 0
+          ? 'linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)'
+          : 'rgba(51, 65, 85, 0.6)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: '0.75rem',
+        fontWeight: 700,
+        color: items.length > 0 ? '#ffffff' : '#64748b',
+        flexShrink: 0,
+        transition: 'all 0.3s ease',
+      }}>
+        3
+      </div>
+      <span style={{
+        fontSize: '0.8rem',
+        fontWeight: 600,
+        color: '#94a3b8',
+        textTransform: 'uppercase',
+        letterSpacing: '0.05em',
+      }}>
+        Add Items
+      </span>
+      <span style={{
+        fontSize: '0.7rem',
+        fontWeight: 600,
+        color: '#f97316',
+        marginLeft: '0.25rem',
+      }}>
+        REQUIRED
+      </span>
+    </div>
+
+    {/* Show helpful empty state when no items yet */}
+    {items.length === 0 && (
+      <div style={{
+        padding: '1rem 1.25rem',
+        background: 'rgba(249, 115, 22, 0.06)',
+        border: '1px dashed rgba(249, 115, 22, 0.3)',
+        borderRadius: '12px',
+        marginBottom: '1rem',
+        textAlign: 'center',
+      }}>
+        <div style={{
+          fontSize: '0.85rem',
+          color: '#f59e0b',
+          fontWeight: 500,
+        }}>
+          Add the items people can win! Each item needs a name and a
+          percentage chance. All percentages must add up to 100%.
+        </div>
+      </div>
+    )}
+
+    {/* Existing ItemCreator component (unchanged) */}
+    <ItemCreator ... />
+
+    {/* Existing ItemList component (unchanged) */}
+    <ItemList ... />
+  </div>
+
+
+================================================================================
+STEP 4: ADVANCED SETTINGS (Step 4 - Optional)
+================================================================================
+
+The existing Advanced Settings toggle/section should also get a step header,
+but marked as optional.
+
+  <div style={{ marginBottom: '1.5rem' }}>
+    {/* Step label */}
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.5rem',
+      marginBottom: '0.75rem',
+    }}>
+      <div style={{
+        width: '24px',
+        height: '24px',
+        borderRadius: '50%',
+        background: 'rgba(51, 65, 85, 0.6)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: '0.75rem',
+        fontWeight: 700,
+        color: '#64748b',
+        flexShrink: 0,
+      }}>
+        4
+      </div>
+      <span style={{
+        fontSize: '0.8rem',
+        fontWeight: 600,
+        color: '#94a3b8',
+        textTransform: 'uppercase',
+        letterSpacing: '0.05em',
+      }}>
+        Advanced Settings
+      </span>
+      <span style={{
+        fontSize: '0.7rem',
+        fontWeight: 500,
+        color: '#64748b',
+        marginLeft: '0.25rem',
+      }}>
+        OPTIONAL
+      </span>
+    </div>
+
+    {/* Existing advanced settings toggle and content (unchanged) */}
+    ... existing showAdvanced toggle button ...
+    ... existing advanced fields (maxPulls, maxPullsPerUser, etc.) ...
+  </div>
+
+
+================================================================================
+STEP 5: ITEM CREATOR CARD - VISUAL IMPROVEMENTS
+================================================================================
+
+Inside the ItemCreator component, make these visual tweaks to help
+differentiate it from the box-level fields:
+
+5a. ADD "REQUIRED" INDICATOR TO ITEM NAME AND PERCENTAGE
+
+For the Item Name label, change:
+  <Input label="Item Name" ... />
+To render the label with a required indicator. Since the Input component
+takes a label prop as a string, we need to handle this differently.
+
+Option A (preferred): Pass a custom label that includes the indicator:
+  Replace the label prop with a manually rendered label above the Input:
+
+  <div>
+    <label style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.5rem',
+      fontSize: '0.875rem',
+      fontWeight: 500,
+      color: '#cbd5e1',
+      marginBottom: '0.5rem',
+    }}>
+      Item Name
+      <span style={{ fontSize: '0.65rem', color: '#f97316', fontWeight: 600 }}>
+        REQUIRED
+      </span>
+    </label>
+    <Input
+      placeholder="e.g., Legendary Sword"
+      value={itemForm.name}
+      onChange={(e) => setItemForm({ ...itemForm, name: e.target.value })}
+      fullWidth
+      required
+    />
+  </div>
+
+  Do the same for the Percentage input:
+  <div>
+    <label style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.5rem',
+      fontSize: '0.875rem',
+      fontWeight: 500,
+      color: '#cbd5e1',
+      marginBottom: '0.5rem',
+    }}>
+      Percentage
+      <span style={{ fontSize: '0.65rem', color: '#f97316', fontWeight: 600 }}>
+        REQUIRED
+      </span>
+    </label>
+    <Input
+      type="number"
+      placeholder={`Max ${remainingPercentage.toFixed(2)}%`}
+      value={itemForm.percentage}
+      onChange={(e) => setItemForm({ ...itemForm, percentage: e.target.value })}
+      step="0.01"
+      min="0.01"
+      max={remainingPercentage}
+      fullWidth
+      required
+    />
+  </div>
+
+  For "Max Qty" and "Item Color", do NOT add REQUIRED since they are optional.
+
+
+5b. ADD HELPER TEXT UNDER PERCENTAGE INPUT
+
+Below the percentage input (inside the grid), add a tiny helper:
+
+  <div style={{
+    gridColumn: '1 / -1',
+    fontSize: '0.7rem',
+    color: '#64748b',
+    marginTop: '-0.5rem',
+  }}>
+    All item percentages must add up to exactly 100%
+  </div>
+
+  This should go right after the grid that contains Percentage and Max Qty.
+
+
+================================================================================
+STEP 6: PERCENTAGE VALIDATION BAR IMPROVEMENT
+================================================================================
+
+The existing percentage validation bar at the bottom of BoxCreator shows
+whether percentages add up to 100%. Keep it as-is, but add a small
+improvement: when items.length === 0, hide the validation bar entirely
+(it's confusing to see "0%" when no items exist yet). Only show it once
+at least one item has been added.
+
+CURRENT:
+  {validation && ( <div ...> {validation.message} ({validation.total}%) </div> )}
+
+NEW:
+  {validation && items.length > 0 && (
+    <div ...> {validation.message} ({validation.total}%) </div>
+  )}
+
+
+================================================================================
+STEP 7: CREATE BUTTON IMPROVEMENTS
+================================================================================
+
+The Create Box button at the bottom should be more prominent when the form
+is complete and ready. Add a subtle visual cue:
+
+CURRENT disabled condition:
+  disabled={!validation.valid || !boxName.trim()}
+
+Also add a style change when the button IS enabled (form is complete):
+
+  For the Create Box Button, when enabled (validation.valid && boxName.trim()),
+  add a subtle pulsing glow to draw attention:
+
+  style={{
+    ...(validation.valid && boxName.trim() && items.length > 0 ? {
+      boxShadow: '0 4px 20px rgba(59, 130, 246, 0.5)',
+    } : {}),
+  }}
+
+  This is subtle enough to not be annoying but signals "you're good to go!"
+
+
+================================================================================
+STEP 8: ENSURE iOS COMPATIBILITY
+================================================================================
+
+All text inputs must have fontSize of at least '16px' to prevent iOS
+Safari from auto-zooming when focused. The hero Box Name input uses
+1.2rem (approximately 19.2px) so it's fine. Just double-check that no
+new inputs are added with a font size below 16px.
+
+
+================================================================================
+FULL LAYOUT ORDER (for reference)
+================================================================================
+
+The BoxCreator component should now render in this order:
+
+1. Header (Back arrow + "Create Loot Box" / "Edit Loot Box" title)
+
+2. STEP 1 - Name Your Box (REQUIRED)
+   - Step number circle (always blue)
+   - Hero Box Name input (special styling, orange border when empty)
+   - Validation hint when empty
+
+3. STEP 2 - Choose Appearance
+   - Step number circle (blue when name filled, gray when empty)
+   - Card containing:
+     - ImagePicker (unchanged)
+     - Box Type selector (unchanged)
+
+4. STEP 3 - Add Items (REQUIRED)
+   - Step number circle (blue when items > 0, gray when empty)
+   - Empty state hint (shown when no items)
+   - ItemCreator card (with REQUIRED labels on name/percentage)
+   - ItemList (unchanged)
+
+5. STEP 4 - Advanced Settings (OPTIONAL)
+   - Step number circle (always gray - it's optional)
+   - Advanced settings toggle and fields (unchanged)
+
+6. Percentage validation bar (only shown when items.length > 0)
+
+7. Cancel / Create Box buttons (Create glows when form is complete)
+
+
+================================================================================
+WHAT NOT TO CHANGE
+================================================================================
+
+- Do NOT change any state variables, handlers, or logic
+- Do NOT change the ItemCreator form submission logic
+- Do NOT change the ImagePicker component
+- Do NOT change the Advanced Settings fields or toggle behavior
+- Do NOT change the Create/Save button's disabled logic
+- Do NOT remove any existing functionality
+- Do NOT change how editing works (pre-filling, etc.)
+- Keep all existing props and component interfaces the same
+- Keep all CSS animations (fadeIn, slideUp, etc.) as they are
+
+
+================================================================================
+TESTING CHECKLIST
+================================================================================
+
+After implementation, verify:
+[ ] Box Name input is visually distinct (bigger, blue-tinted, stands out)
+[ ] Box Name shows orange border when empty, blue when filled
+[ ] Step numbers appear correctly (1, 2, 3, 4)
+[ ] Step circles turn blue as sections are completed
+[ ] REQUIRED labels appear on Box Name, Item Name, and Percentage
+[ ] OPTIONAL label appears on Advanced Settings
+[ ] Empty state hint appears when no items are added
+[ ] Empty state hint disappears once first item is added
+[ ] Percentage validation bar is hidden when no items exist
+[ ] Create Box button glows subtly when form is complete
+[ ] All existing functionality still works (create, edit, save)
+[ ] Edit mode pre-fills all fields correctly (step circles reflect state)
+[ ] iOS does not auto-zoom on any input focus (all inputs >= 16px)
+[ ] Overall flow feels guided: Name -> Appearance -> Items -> (Optional)
+[ ] Version number is updated next to main title
