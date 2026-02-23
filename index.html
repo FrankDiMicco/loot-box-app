@@ -1798,7 +1798,7 @@
     };
 
     // Header
-    const Header = ({ title = 'Loot Box Creator V1436', onMenuClick }) => {
+    const Header = ({ title = 'Loot Box Creator V1440', onMenuClick }) => {
       const isMobile = useIsMobile();
       return (
         <header style={{
@@ -2179,7 +2179,7 @@
           <Card style={{ padding: '0.5rem 1rem' }}>
             <SettingsRow
               label="Loot Box Creator"
-              rightContent={<span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>V1436</span>}
+              rightContent={<span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>V1440</span>}
             />
             <SettingsRow
               label="Current Tier"
@@ -2332,10 +2332,8 @@
           style: {
             position: 'absolute',
             bottom: '100%',
-            left: '50%',
-            transform: 'translateX(-50%)',
+            left: '0',
             marginBottom: '6px',
-            willChange: 'transform, opacity',
             background: 'rgba(15, 23, 42, 0.95)',
             border: '1px solid rgba(65, 105, 225, 0.3)',
             borderRadius: '8px',
@@ -2345,21 +2343,20 @@
             fontWeight: 500,
             lineHeight: '1.4',
             whiteSpace: 'normal',
-            minWidth: '140px',
+            minWidth: '160px',
             maxWidth: '240px',
             width: 'max-content',
             zIndex: 10,
             boxShadow: '0 4px 12px rgba(0, 0, 0, 0.4)',
-            animation: 'fadeIn 0.15s ease',
             pointerEvents: 'none',
+            opacity: 1,
           }
         },
           React.createElement('div', {
             style: {
               position: 'absolute',
               bottom: '-6px',
-              left: '50%',
-              transform: 'translateX(-50%)',
+              left: '12px',
               width: 0,
               height: 0,
               borderLeft: '6px solid transparent',
