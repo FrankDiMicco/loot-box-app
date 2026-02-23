@@ -520,6 +520,8 @@
 
     // ========== STORAGE ==========
     
+    const APP_VERSION = 'V1712';
+
     const STORAGE_KEYS = {
       BOXES: 'lootBoxes',
       USER_SETTINGS: 'userSettings',
@@ -1404,7 +1406,7 @@
             <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#e2e8f0', marginBottom: '0.25rem' }}>
               Loot Box Creator
             </div>
-            <div style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '1rem' }}>v1.0.0</div>
+            <div style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '1rem' }}>{APP_VERSION}</div>
             <div style={{ fontSize: '0.9rem', color: '#94a3b8', marginBottom: '1.5rem', lineHeight: 1.5 }}>
               Create, customize, and share loot boxes with friends. Built with love.
             </div>
@@ -1436,7 +1438,7 @@
             <line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 01-8 0" />
           </svg>
         )},
-        { key: 'templates', label: 'Box Templates', badge: 'Soon', icon: (
+        { key: 'templates', label: 'Discover', badge: 'Soon', icon: (
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
             <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
@@ -1798,7 +1800,7 @@
     };
 
     // Header
-    const Header = ({ title = 'Loot Box Creator V1641', onMenuClick }) => {
+    const Header = ({ title = `Loot Box Creator ${APP_VERSION}`, onMenuClick }) => {
       const isMobile = useIsMobile();
       return (
         <header style={{
@@ -2179,7 +2181,7 @@
           <Card style={{ padding: '0.5rem 1rem' }}>
             <SettingsRow
               label="Loot Box Creator"
-              rightContent={<span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>V1641</span>}
+              rightContent={<span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{APP_VERSION}</span>}
             />
             <SettingsRow
               label="Current Tier"
@@ -3693,6 +3695,7 @@
         return '';
       });
       const [boxImageId, setBoxImageId] = useState(editingBox ? editingBox.boxImageId || 'chest' : 'chest');
+      const [imageSelected, setImageSelected] = useState(editingBox ? true : false);
       const [showAdvanced, setShowAdvanced] = useState(
         editingBox ? !!(editingBox.maxPulls || editingBox.hideContents || editingBox.hideOdds || editingBox.expiresAt) : false
       );
@@ -3831,9 +3834,10 @@
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
               <div style={{
                 width: '24px', height: '24px', borderRadius: '50%',
-                background: 'linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)',
+                background: boxName.trim() ? 'linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)' : 'rgba(51, 65, 85, 0.6)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '0.75rem', fontWeight: 700, color: '#ffffff', flexShrink: 0,
+                fontSize: '0.75rem', fontWeight: 700, color: boxName.trim() ? '#ffffff' : '#64748b',
+                flexShrink: 0, transition: 'all 0.3s ease',
               }}>1</div>
               <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 Name Your Box
@@ -3870,9 +3874,9 @@
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
               <div style={{
                 width: '24px', height: '24px', borderRadius: '50%',
-                background: boxName.trim() ? 'linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)' : 'rgba(51, 65, 85, 0.6)',
+                background: imageSelected ? 'linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)' : 'rgba(51, 65, 85, 0.6)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '0.75rem', fontWeight: 700, color: boxName.trim() ? '#ffffff' : '#64748b',
+                fontSize: '0.75rem', fontWeight: 700, color: imageSelected ? '#ffffff' : '#64748b',
                 flexShrink: 0, transition: 'all 0.3s ease',
               }}>2</div>
               <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
@@ -3883,7 +3887,7 @@
               <div>
                 <ImagePicker
                   selectedImageId={boxImageId}
-                  onSelectImage={setBoxImageId}
+                  onSelectImage={(id) => { setBoxImageId(id); setImageSelected(true); }}
                   userSettings={userSettings}
                   success={success}
                   error={error}
@@ -5159,7 +5163,7 @@
         switch (key) {
           case 'myBoxes': setMode('home'); break;
           case 'marketplace': info('Marketplace coming soon!'); break;
-          case 'templates': info('Browse templates when creating a box'); break;
+          case 'templates': info('Discover is coming soon! Browse community boxes and more.'); break;
           case 'stats': info('Stats coming soon!'); break;
           case 'account': info('Account system coming soon!'); break;
           case 'settings': setMode('settings'); break;
