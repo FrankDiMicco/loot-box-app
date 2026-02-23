@@ -1604,6 +1604,7 @@
     };
 
     // ========== SOUND ENGINE (Web Audio API, zero audio files) ==========
+    let soundEnabled = getUserSettings().soundEnabled !== false;
     let _audioCtx = null;
 
     const _ensureAudio = () => {
@@ -1632,6 +1633,7 @@
 
     // Rising tension buildup sound (plays during shake phase)
     const playBuildUpSound = () => {
+      if (!soundEnabled) return;
       try {
         const ctx = _ensureAudio();
         const now = ctx.currentTime;
@@ -1669,6 +1671,7 @@
 
     // Sparkly reveal chime (plays on result reveal)
     const playRevealSound = () => {
+      if (!soundEnabled) return;
       try {
         const ctx = _ensureAudio();
         const now = ctx.currentTime;
@@ -1701,6 +1704,7 @@
 
     // Epic rare item fanfare (for items with <10% chance)
     const playRareSound = () => {
+      if (!soundEnabled) return;
       try {
         const ctx = _ensureAudio();
         const now = ctx.currentTime;
@@ -1775,7 +1779,7 @@
     };
 
     // Header
-    const Header = ({ title = 'Loot Box Creator V1141', onMenuClick }) => {
+    const Header = ({ title = 'Loot Box Creator V1326', onMenuClick }) => {
       const isMobile = useIsMobile();
       return (
         <header style={{
@@ -1919,73 +1923,249 @@
       );
     };
 
-    // SettingsModal Component
-    const SettingsModal = ({ show, onClose, userSettings, onSave }) => {
+    // ToggleSwitch Component
+    const ToggleSwitch = ({ enabled, onToggle }) => {
+      return (
+        <div
+          onClick={onToggle}
+          style={{ minHeight: '44px', display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+        >
+          <div style={{
+            width: '44px',
+            height: '24px',
+            borderRadius: '12px',
+            background: enabled ? 'rgba(59, 130, 246, 0.8)' : 'rgba(51, 65, 85, 0.6)',
+            transition: 'background 0.2s ease',
+            position: 'relative',
+            flexShrink: 0,
+          }}>
+            <div style={{
+              width: '20px',
+              height: '20px',
+              borderRadius: '50%',
+              background: '#ffffff',
+              position: 'absolute',
+              top: '2px',
+              left: enabled ? '22px' : '2px',
+              transition: 'left 0.2s ease',
+            }} />
+          </div>
+        </div>
+      );
+    };
+
+    // SettingsRow Component
+    const SettingsRow = ({ label, description, rightContent, onClick, isLast = false }) => {
+      const [isHovered, setIsHovered] = useState(false);
+      return (
+        <div
+          onClick={onClick}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '0.875rem 0',
+            borderBottom: isLast ? 'none' : '1px solid rgba(148, 163, 184, 0.08)',
+            cursor: onClick ? 'pointer' : 'default',
+            background: onClick && isHovered ? 'rgba(59, 130, 246, 0.05)' : 'transparent',
+            borderRadius: onClick ? '8px' : '0',
+            transition: 'background 0.15s ease',
+          }}
+        >
+          <div style={{ flex: 1 }}>
+            <div style={{ color: '#e2e8f0', fontSize: '0.95rem', fontWeight: 500 }}>{label}</div>
+            {description && (
+              <div style={{ color: '#64748b', fontSize: '0.8rem', marginTop: '0.15rem' }}>{description}</div>
+            )}
+          </div>
+          <div style={{ marginLeft: '1rem', flexShrink: 0 }}>{rightContent}</div>
+        </div>
+      );
+    };
+
+    // SettingsPage Component
+    const SettingsPage = ({ onBack, userSettings, onSettingsChange, success, error, info }) => {
       const [displayName, setDisplayName] = useState(userSettings.displayName || '');
+      const [soundOn, setSoundOn] = useState(userSettings.soundEnabled !== false);
+      const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+      const [showClearConfirm, setShowClearConfirm] = useState(false);
       const isMobile = useIsMobile();
 
-      if (!show) return null;
+      const allBoxes = getAllBoxes();
+      const localBoxCount = allBoxes.length;
+      const totalOpens = allBoxes.reduce((sum, b) => sum + (b.pullHistory ? b.pullHistory.length : 0), 0);
 
-      const handleSave = () => {
-        onSave({ ...userSettings, displayName: displayName.trim() });
-        onClose();
+      const handleBack = () => {
+        if (hasUnsavedChanges) {
+          const updated = { ...userSettings, displayName: displayName.trim() };
+          onSettingsChange(updated);
+          if (displayName.trim() !== (userSettings.displayName || '')) {
+            localStorage.setItem('lootBoxLastName', displayName.trim());
+          }
+        }
+        onBack();
       };
 
+      const handleSoundToggle = () => {
+        const newVal = !soundOn;
+        setSoundOn(newVal);
+        soundEnabled = newVal;
+        const updated = { ...userSettings, soundEnabled: newVal };
+        onSettingsChange(updated);
+      };
+
+      const handleSave = () => {
+        const updated = { ...userSettings, displayName: displayName.trim() };
+        onSettingsChange(updated);
+        if (displayName.trim() !== (userSettings.displayName || '')) {
+          localStorage.setItem('lootBoxLastName', displayName.trim());
+        }
+        success('Settings saved');
+        setHasUnsavedChanges(false);
+      };
+
+      const handleClearAllData = () => {
+        // Clear all lootBox* keys
+        Object.keys(localStorage).forEach(key => {
+          if (key.startsWith('lootBox')) localStorage.removeItem(key);
+        });
+        localStorage.removeItem(STORAGE_KEYS.BOXES);
+        localStorage.removeItem(STORAGE_KEYS.USER_SETTINGS);
+        localStorage.removeItem(STORAGE_KEYS.FAVORITES);
+        localStorage.removeItem('lootBoxSeenBoxes');
+
+        const defaults = getUserSettings();
+        onSettingsChange(defaults);
+        success('All data cleared');
+        onBack();
+      };
+
+      const sectionHeaderStyle = (isFirst) => ({
+        fontSize: '0.75rem',
+        fontWeight: 600,
+        color: '#64748b',
+        textTransform: 'uppercase',
+        letterSpacing: '0.05em',
+        marginBottom: '0.5rem',
+        marginTop: isFirst ? 0 : '1.5rem',
+      });
+
       return (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0, 0, 0, 0.7)',
-          backdropFilter: 'blur(4px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 9999,
-          animation: 'fadeIn 0.2s ease',
-        }}>
-          <Card style={{
-            maxWidth: '400px',
-            width: '90%',
-            animation: 'slideUp 0.3s ease',
-          }}>
-            <h3 style={{
-              fontSize: '1.5rem',
-              fontWeight: 700,
-              color: '#e2e8f0',
-              marginBottom: '1.5rem',
+        <div style={{ maxWidth: '600px', margin: '0 auto', animation: 'fadeIn 0.3s ease' }}>
+          {/* Header */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
+            <button onClick={handleBack} style={{
+              width: '44px', height: '44px',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: '#e2e8f0', padding: 0, flexShrink: 0,
             }}>
-              Settings
-            </h3>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M19 12H5" /><polyline points="12 19 5 12 12 5" />
+              </svg>
+            </button>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#e2e8f0', margin: 0 }}>Settings</h2>
+          </div>
 
-            <Input
-              label="Display Name"
-              placeholder="Enter your name"
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              fullWidth
-              style={{ fontSize: '16px' }}
-            />
-            <div style={{
-              fontSize: '0.75rem',
-              color: '#94a3b8',
-              marginTop: '0.25rem',
-              marginBottom: '1.5rem',
-            }}>
-              Used for solo boxes and as the default for new group boxes.
+          {/* Profile Section */}
+          <div style={sectionHeaderStyle(true)}>Profile</div>
+          <Card style={{ padding: '0.5rem 1rem' }}>
+            <div style={{ padding: '0.875rem 0' }}>
+              <Input
+                label="Display Name"
+                placeholder="Enter your name"
+                value={displayName}
+                onChange={(e) => { setDisplayName(e.target.value); setHasUnsavedChanges(true); }}
+                fullWidth
+                style={{ fontSize: '16px' }}
+              />
+              <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.35rem' }}>
+                Your default name for solo boxes and new shared boxes
+              </div>
             </div>
+          </Card>
 
-            <div style={{ display: 'flex', gap: '1rem' }}>
-              <Button variant="ghost" onClick={onClose} fullWidth>
-                Cancel
-              </Button>
-              <Button variant="primary" onClick={handleSave} fullWidth>
-                Save
+          {/* Sound & Feedback Section */}
+          <div style={sectionHeaderStyle(false)}>Sound & Feedback</div>
+          <Card style={{ padding: '0.5rem 1rem' }}>
+            <SettingsRow
+              label="Sound Effects"
+              description="Opening sounds and UI feedback"
+              rightContent={<ToggleSwitch enabled={soundOn} onToggle={handleSoundToggle} />}
+              isLast
+            />
+          </Card>
+
+          {/* Data & Storage Section */}
+          <div style={sectionHeaderStyle(false)}>Data & Storage</div>
+          <Card style={{ padding: '0.5rem 1rem' }}>
+            <SettingsRow
+              label="Local Boxes"
+              rightContent={<span style={{ color: '#94a3b8', fontSize: '0.9rem' }}>{localBoxCount}</span>}
+            />
+            <SettingsRow
+              label="Total Opens"
+              rightContent={<span style={{ color: '#94a3b8', fontSize: '0.9rem' }}>{totalOpens}</span>}
+            />
+            <div style={{ padding: '0.875rem 0' }}>
+              <Button
+                variant="ghost"
+                fullWidth
+                onClick={() => setShowClearConfirm(true)}
+                style={{ color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.3)' }}
+              >
+                Clear All Data
               </Button>
             </div>
           </Card>
+
+          {/* About Section */}
+          <div style={sectionHeaderStyle(false)}>About</div>
+          <Card style={{ padding: '0.5rem 1rem' }}>
+            <SettingsRow
+              label="Loot Box Creator"
+              rightContent={<span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>V1326</span>}
+            />
+            <SettingsRow
+              label="Current Tier"
+              rightContent={
+                <span style={{
+                  padding: '0.2rem 0.6rem',
+                  borderRadius: '6px',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  background: userSettings.tier === 'paid' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(59, 130, 246, 0.2)',
+                  color: userSettings.tier === 'paid' ? '#fbbf24' : '#60a5fa',
+                  border: `1px solid ${userSettings.tier === 'paid' ? 'rgba(245, 158, 11, 0.4)' : 'rgba(59, 130, 246, 0.4)'}`,
+                }}>
+                  {userSettings.tier === 'paid' ? 'Premium' : 'Free'}
+                </span>
+              }
+              isLast
+            />
+          </Card>
+
+          {/* Save Button */}
+          {hasUnsavedChanges && (
+            <div style={{ marginTop: '1.5rem', marginBottom: '2rem' }}>
+              <Button variant="primary" fullWidth onClick={handleSave}>
+                Save Changes
+              </Button>
+            </div>
+          )}
+
+          {/* Clear Data Confirm Dialog */}
+          <ConfirmDialog
+            show={showClearConfirm}
+            title="Clear All Data?"
+            message="This will delete all your local boxes, settings, and preferences. Shared boxes on the server will not be affected. This cannot be undone."
+            confirmText="Delete Everything"
+            cancelText="Keep My Data"
+            onConfirm={() => { setShowClearConfirm(false); handleClearAllData(); }}
+            onCancel={() => setShowClearConfirm(false)}
+          />
         </div>
       );
     };
@@ -4655,7 +4835,6 @@
       const [editingBox, setEditingBox] = useState(null);
       const [openingBox, setOpeningBox] = useState(null);
       const [pendingTemplate, setPendingTemplate] = useState(null);
-      const [showSettings, setShowSettings] = useState(false);
       const [drawerOpen, setDrawerOpen] = useState(false);
       const [showAboutModal, setShowAboutModal] = useState(false);
       const { showToast, toastElement, success, error, info } = useToast();
@@ -4927,7 +5106,7 @@
           case 'templates': info('Browse templates when creating a box'); break;
           case 'stats': info('Stats coming soon!'); break;
           case 'account': info('Account system coming soon!'); break;
-          case 'settings': setTimeout(() => setShowSettings(true), 100); break;
+          case 'settings': setMode('settings'); break;
           case 'shareApp': {
             const appUrl = `${window.location.origin}${window.location.pathname}`;
             if (navigator.share) {
@@ -5129,6 +5308,20 @@
             />
           )}
 
+          {mode === 'settings' && (
+            <SettingsPage
+              onBack={() => setMode('home')}
+              userSettings={userSettings}
+              onSettingsChange={(newSettings) => {
+                saveUserSettings(newSettings);
+                setUserSettings(newSettings);
+              }}
+              success={success}
+              error={error}
+              info={info}
+            />
+          )}
+
           {/* Template Import Confirmation Dialog */}
           {pendingTemplate && (
             <div style={{
@@ -5200,13 +5393,6 @@
               </Card>
             </div>
           )}
-
-          <SettingsModal
-            show={showSettings}
-            onClose={() => setShowSettings(false)}
-            userSettings={userSettings}
-            onSave={handleSaveSettings}
-          />
 
           <SideDrawer
             isOpen={drawerOpen}
