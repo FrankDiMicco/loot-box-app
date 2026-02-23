@@ -1779,7 +1779,7 @@
     };
 
     // Header
-    const Header = ({ title = 'Loot Box Creator V1326', onMenuClick }) => {
+    const Header = ({ title = 'Loot Box Creator V1355', onMenuClick }) => {
       const isMobile = useIsMobile();
       return (
         <header style={{
@@ -2801,28 +2801,38 @@
           </h3>
 
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <Input
-              label="Item Name"
-              placeholder="e.g., Legendary Sword"
-              value={itemForm.name}
-              onChange={(e) => setItemForm({ ...itemForm, name: e.target.value })}
-              fullWidth
-              required
-            />
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', alignItems: 'end' }}>
+            <div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', fontWeight: 500, color: '#cbd5e1', marginBottom: '0.5rem' }}>
+                Item Name
+                <span style={{ fontSize: '0.65rem', color: '#f97316', fontWeight: 600 }}>REQUIRED</span>
+              </label>
               <Input
-                type="number"
-                label="Percentage"
-                placeholder={`Max ${remainingPercentage.toFixed(2)}%`}
-                value={itemForm.percentage}
-                onChange={(e) => setItemForm({ ...itemForm, percentage: e.target.value })}
-                step="0.01"
-                min="0.01"
-                max={remainingPercentage}
+                placeholder="e.g., Legendary Sword"
+                value={itemForm.name}
+                onChange={(e) => setItemForm({ ...itemForm, name: e.target.value })}
                 fullWidth
                 required
               />
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', alignItems: 'end' }}>
+              <div>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', fontWeight: 500, color: '#cbd5e1', marginBottom: '0.5rem' }}>
+                  Percentage
+                  <span style={{ fontSize: '0.65rem', color: '#f97316', fontWeight: 600 }}>REQUIRED</span>
+                </label>
+                <Input
+                  type="number"
+                  placeholder={`Max ${remainingPercentage.toFixed(2)}%`}
+                  value={itemForm.percentage}
+                  onChange={(e) => setItemForm({ ...itemForm, percentage: e.target.value })}
+                  step="0.01"
+                  min="0.01"
+                  max={remainingPercentage}
+                  fullWidth
+                  required
+                />
+              </div>
 
               <Input
                 type="number"
@@ -2833,6 +2843,10 @@
                 min="1"
                 fullWidth
               />
+
+              <div style={{ gridColumn: '1 / -1', fontSize: '0.7rem', color: '#64748b', marginTop: '-0.5rem' }}>
+                All item percentages must add up to exactly 100%
+              </div>
             </div>
 
             <div>
@@ -3675,17 +3689,61 @@
             </h2>
           </div>
 
-          <div style={{ marginBottom: '2rem' }}>
-            <Card>
-              <Input
-                label="Box Name"
-                placeholder="e.g., Epic Mystery Box"
-                value={boxName}
-                onChange={(e) => setBoxName(e.target.value)}
-                fullWidth
-              />
+          {/* STEP 1 - Name Your Box */}
+          <div style={{ marginBottom: '1.5rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+              <div style={{
+                width: '24px', height: '24px', borderRadius: '50%',
+                background: 'linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '0.75rem', fontWeight: 700, color: '#ffffff', flexShrink: 0,
+              }}>1</div>
+              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Name Your Box
+              </span>
+              <span style={{ fontSize: '0.7rem', fontWeight: 600, color: '#f97316', marginLeft: '0.25rem' }}>REQUIRED</span>
+            </div>
+            <input
+              type="text"
+              value={boxName}
+              onChange={(e) => setBoxName(e.target.value)}
+              placeholder="What's your box called?"
+              style={{
+                width: '100%', padding: '16px 20px', fontSize: '1.2rem', fontFamily: 'inherit', fontWeight: 600,
+                color: '#e2e8f0', background: 'rgba(30, 64, 175, 0.15)',
+                border: boxName.trim() ? '2px solid rgba(59, 130, 246, 0.5)' : '2px solid rgba(249, 115, 22, 0.4)',
+                borderRadius: '14px', outline: 'none', transition: 'all 0.25s ease',
+                boxShadow: '0 0 20px rgba(59, 130, 246, 0.1)',
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = '#3b82f6';
+                e.target.style.boxShadow = '0 0 24px rgba(59, 130, 246, 0.25)';
+                e.target.style.background = 'rgba(30, 64, 175, 0.2)';
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = boxName.trim() ? 'rgba(59, 130, 246, 0.5)' : 'rgba(249, 115, 22, 0.4)';
+                e.target.style.boxShadow = '0 0 20px rgba(59, 130, 246, 0.1)';
+                e.target.style.background = 'rgba(30, 64, 175, 0.15)';
+              }}
+            />
+          </div>
 
-              <div style={{ marginTop: '0.75rem' }}>
+          {/* STEP 2 - Choose Appearance */}
+          <div style={{ marginBottom: '1.5rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+              <div style={{
+                width: '24px', height: '24px', borderRadius: '50%',
+                background: boxName.trim() ? 'linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)' : 'rgba(51, 65, 85, 0.6)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '0.75rem', fontWeight: 700, color: boxName.trim() ? '#ffffff' : '#64748b',
+                flexShrink: 0, transition: 'all 0.3s ease',
+              }}>2</div>
+              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Choose Appearance
+              </span>
+            </div>
+            <Card>
+              <div>
                 <ImagePicker
                   selectedImageId={boxImageId}
                   onSelectImage={setBoxImageId}
@@ -3708,9 +3766,7 @@
                       border: `2px solid ${boxType === 'local' ? '#3b82f6' : 'rgba(59, 130, 246, 0.2)'}`,
                       borderRadius: '12px',
                       color: boxType === 'local' ? '#ffffff' : '#94a3b8',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      fontFamily: 'inherit',
+                      fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
                     }}
                     onClick={() => setBoxType('local')}
                   >
@@ -3724,9 +3780,7 @@
                       border: `2px solid ${boxType === 'shared' ? '#3b82f6' : 'rgba(59, 130, 246, 0.2)'}`,
                       borderRadius: '12px',
                       color: boxType === 'shared' ? '#ffffff' : '#94a3b8',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      fontFamily: 'inherit',
+                      fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
                       opacity: isPaidUser ? 1 : 0.6,
                     }}
                     onClick={() => setBoxType('shared')}
@@ -3752,308 +3806,21 @@
                 </div>
               )}
 
-              {/* Advanced Settings */}
-              <div style={{ marginTop: '0.75rem' }}>
-                <div
-                  onClick={() => setShowAdvanced(!showAdvanced)}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                    padding: '0.55rem 0.85rem',
-                    background: 'rgba(15, 22, 36, 0.6)',
-                    border: '1px solid rgba(59, 130, 246, 0.2)',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    userSelect: 'none',
-                  }}
-                >
-                  <span style={{ color: '#cbd5e1', fontWeight: 600, fontSize: '0.875rem' }}>
-                    Advanced Settings
-                  </span>
-                  <span style={{
-                    color: '#94a3b8',
-                    fontSize: '0.75rem',
-                    transition: 'transform 0.2s ease',
-                    transform: showAdvanced ? 'rotate(180deg)' : 'rotate(0deg)',
-                    display: 'inline-block',
-                  }}>
-                    ▼
-                  </span>
-                </div>
-
-                {showAdvanced && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.5rem' }}>
-                    <div style={{ marginBottom: '1rem', maxWidth: '250px' }}>
-                      <Input
-                        type="number"
-                        label="Max Opens Total (Optional)"
-                        placeholder="Unlimited"
-                        value={maxPulls}
-                        onChange={(e) => setMaxPulls(e.target.value)}
-                        min="1"
-                        fullWidth
-                      />
-                      <div style={{
-                        fontSize: '0.7rem',
-                        color: '#64748b',
-                        marginTop: '0.25rem',
-                      }}>
-                        Limit the total number of times this box can be opened by all users combined.
-                      </div>
-                    </div>
-                    {/* Hide Contents toggle */}
-                    <div style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      padding: '0.6rem 0.75rem',
-                      background: 'rgba(30, 64, 175, 0.15)',
-                      border: '1px solid rgba(59, 130, 246, 0.2)',
-                      borderRadius: '8px',
-                    }}>
-                      <div>
-                        <div style={{ color: '#e2e8f0', fontWeight: 600, fontSize: '0.9rem' }}>
-                          Hide Contents
-                        </div>
-                        <div style={{ color: '#94a3b8', fontSize: '0.75rem', marginTop: '0.15rem' }}>
-                          Items hidden until opened
-                        </div>
-                      </div>
-                      <label style={{
-                        position: 'relative',
-                        display: 'inline-block',
-                        width: '44px',
-                        height: '24px',
-                        cursor: 'pointer',
-                        flexShrink: 0,
-                      }}>
-                        <input
-                          type="checkbox"
-                          checked={hideContents}
-                          onChange={(e) => setHideContents(e.target.checked)}
-                          style={{ opacity: 0, width: 0, height: 0 }}
-                        />
-                        <span style={{
-                          position: 'absolute',
-                          top: 0, left: 0, right: 0, bottom: 0,
-                          background: hideContents
-                            ? 'linear-gradient(135deg, #4169e1, #1e40af)'
-                            : 'rgba(100, 116, 139, 0.4)',
-                          borderRadius: '12px',
-                          transition: 'all 0.3s ease',
-                        }}>
-                          <span style={{
-                            position: 'absolute',
-                            height: '18px',
-                            width: '18px',
-                            left: hideContents ? '22px' : '3px',
-                            bottom: '3px',
-                            background: '#fff',
-                            borderRadius: '50%',
-                            transition: 'all 0.3s ease',
-                          }} />
-                        </span>
-                      </label>
-                    </div>
-
-                    {/* Hide Odds toggle */}
-                    <div style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      padding: '0.6rem 0.75rem',
-                      background: 'rgba(30, 64, 175, 0.15)',
-                      border: '1px solid rgba(59, 130, 246, 0.2)',
-                      borderRadius: '8px',
-                    }}>
-                      <div>
-                        <div style={{ color: '#e2e8f0', fontWeight: 600, fontSize: '0.9rem' }}>
-                          Hide Odds
-                        </div>
-                        <div style={{ color: '#94a3b8', fontSize: '0.75rem', marginTop: '0.15rem' }}>
-                          Percentages stay secret
-                        </div>
-                      </div>
-                      <label style={{
-                        position: 'relative',
-                        display: 'inline-block',
-                        width: '44px',
-                        height: '24px',
-                        cursor: 'pointer',
-                        flexShrink: 0,
-                      }}>
-                        <input
-                          type="checkbox"
-                          checked={hideOdds}
-                          onChange={(e) => setHideOdds(e.target.checked)}
-                          style={{ opacity: 0, width: 0, height: 0 }}
-                        />
-                        <span style={{
-                          position: 'absolute',
-                          top: 0, left: 0, right: 0, bottom: 0,
-                          background: hideOdds
-                            ? 'linear-gradient(135deg, #4169e1, #1e40af)'
-                            : 'rgba(100, 116, 139, 0.4)',
-                          borderRadius: '12px',
-                          transition: 'all 0.3s ease',
-                        }}>
-                          <span style={{
-                            position: 'absolute',
-                            height: '18px',
-                            width: '18px',
-                            left: hideOdds ? '22px' : '3px',
-                            bottom: '3px',
-                            background: '#fff',
-                            borderRadius: '50%',
-                            transition: 'all 0.3s ease',
-                          }} />
-                        </span>
-                      </label>
-                    </div>
-
-                    {/* Expiration Date toggle */}
-                    <div style={{
-                      padding: '0.6rem 0.75rem',
-                      background: 'rgba(30, 64, 175, 0.15)',
-                      border: '1px solid rgba(59, 130, 246, 0.2)',
-                      borderRadius: '8px',
-                    }}>
-                      <div style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                      }}>
-                        <div>
-                          <div style={{ color: '#e2e8f0', fontWeight: 600, fontSize: '0.9rem' }}>
-                            Expiration Date
-                          </div>
-                          <div style={{ color: '#94a3b8', fontSize: '0.75rem', marginTop: '0.15rem' }}>
-                            Box expires after a set date
-                          </div>
-                        </div>
-                        <label style={{
-                          position: 'relative',
-                          display: 'inline-block',
-                          width: '44px',
-                          height: '24px',
-                          cursor: 'pointer',
-                          flexShrink: 0,
-                        }}>
-                          <input
-                            type="checkbox"
-                            checked={expirationEnabled}
-                            onChange={(e) => {
-                              setExpirationEnabled(e.target.checked);
-                              if (!e.target.checked) setExpiresAt('');
-                            }}
-                            style={{ opacity: 0, width: 0, height: 0 }}
-                          />
-                          <span style={{
-                            position: 'absolute',
-                            top: 0, left: 0, right: 0, bottom: 0,
-                            background: expirationEnabled
-                              ? 'linear-gradient(135deg, #4169e1, #1e40af)'
-                              : 'rgba(100, 116, 139, 0.4)',
-                            borderRadius: '12px',
-                            transition: 'all 0.3s ease',
-                          }}>
-                            <span style={{
-                              position: 'absolute',
-                              height: '18px',
-                              width: '18px',
-                              left: expirationEnabled ? '22px' : '3px',
-                              bottom: '3px',
-                              background: '#fff',
-                              borderRadius: '50%',
-                              transition: 'all 0.3s ease',
-                            }} />
-                          </span>
-                        </label>
-                      </div>
-                      {expirationEnabled && (
-                        <div style={{ marginTop: '0.5rem' }}>
-                          <input
-                            type="datetime-local"
-                            value={expiresAt}
-                            onChange={(e) => setExpiresAt(e.target.value)}
-                            style={{
-                              width: '100%',
-                              padding: '0.5rem 0.75rem',
-                              background: 'rgba(15, 22, 36, 0.6)',
-                              border: '1px solid rgba(59, 130, 246, 0.3)',
-                              borderRadius: '8px',
-                              color: '#e2e8f0',
-                              fontSize: '0.875rem',
-                              fontFamily: 'inherit',
-                              outline: 'none',
-                            }}
-                          />
-                          {expiresAt && (
-                            <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>
-                              Expires: {new Date(expiresAt).toLocaleString()}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-
               {/* Allow Participants to Share - outside Advanced Settings */}
               {boxType === 'shared' && (
                 <div style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '0.6rem 0.75rem',
-                  background: 'rgba(30, 64, 175, 0.15)',
-                  border: '1px solid rgba(59, 130, 246, 0.2)',
-                  borderRadius: '8px',
-                  marginTop: '0.5rem',
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  padding: '0.6rem 0.75rem', background: 'rgba(30, 64, 175, 0.15)',
+                  border: '1px solid rgba(59, 130, 246, 0.2)', borderRadius: '8px', marginTop: '0.5rem',
                 }}>
                   <div>
-                    <div style={{ color: '#e2e8f0', fontWeight: 600, fontSize: '0.9rem' }}>
-                      Allow Participants to Share
-                    </div>
-                    <div style={{ color: '#94a3b8', fontSize: '0.75rem', marginTop: '0.15rem' }}>
-                      Let people who join this box share the link with others
-                    </div>
+                    <div style={{ color: '#e2e8f0', fontWeight: 600, fontSize: '0.9rem' }}>Allow Participants to Share</div>
+                    <div style={{ color: '#94a3b8', fontSize: '0.75rem', marginTop: '0.15rem' }}>Let people who join this box share the link with others</div>
                   </div>
-                  <label style={{
-                    position: 'relative',
-                    display: 'inline-block',
-                    width: '44px',
-                    height: '24px',
-                    cursor: 'pointer',
-                    flexShrink: 0,
-                  }}>
-                    <input
-                      type="checkbox"
-                      checked={allowParticipantSharing}
-                      onChange={(e) => setAllowParticipantSharing(e.target.checked)}
-                      style={{ opacity: 0, width: 0, height: 0 }}
-                    />
-                    <span style={{
-                      position: 'absolute',
-                      top: 0, left: 0, right: 0, bottom: 0,
-                      background: allowParticipantSharing
-                        ? 'linear-gradient(135deg, #4169e1, #1e40af)'
-                        : 'rgba(100, 116, 139, 0.4)',
-                      borderRadius: '12px',
-                      transition: 'all 0.3s ease',
-                    }}>
-                      <span style={{
-                        position: 'absolute',
-                        height: '18px',
-                        width: '18px',
-                        left: allowParticipantSharing ? '22px' : '3px',
-                        bottom: '3px',
-                        background: '#fff',
-                        borderRadius: '50%',
-                        transition: 'all 0.3s ease',
-                      }} />
+                  <label style={{ position: 'relative', display: 'inline-block', width: '44px', height: '24px', cursor: 'pointer', flexShrink: 0 }}>
+                    <input type="checkbox" checked={allowParticipantSharing} onChange={(e) => setAllowParticipantSharing(e.target.checked)} style={{ opacity: 0, width: 0, height: 0 }} />
+                    <span style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: allowParticipantSharing ? 'linear-gradient(135deg, #4169e1, #1e40af)' : 'rgba(100, 116, 139, 0.4)', borderRadius: '12px', transition: 'all 0.3s ease' }}>
+                      <span style={{ position: 'absolute', height: '18px', width: '18px', left: allowParticipantSharing ? '22px' : '3px', bottom: '3px', background: '#fff', borderRadius: '50%', transition: 'all 0.3s ease' }} />
                     </span>
                   </label>
                 </div>
@@ -4061,25 +3828,170 @@
             </Card>
           </div>
 
-          <ItemCreator
-            items={items}
-            onAddItem={handleAddItem}
-            editingItem={editingItem}
-            onUpdateItem={handleUpdateItem}
-            onCancelEdit={handleCancelEdit}
-            userSettings={userSettings}
-          />
-          {items.length > 0 && (
-            <div style={{ marginBottom: '1.5rem' }}>
-              <ItemList
-                items={items}
-                onRemoveItem={(itemId) => setItems(items.filter(i => i.id !== itemId))}
-                onEditItem={handleEditItem}
-              />
+          {/* STEP 3 - Add Items */}
+          <div style={{ marginBottom: '1.5rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+              <div style={{
+                width: '24px', height: '24px', borderRadius: '50%',
+                background: items.length > 0 ? 'linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)' : 'rgba(51, 65, 85, 0.6)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '0.75rem', fontWeight: 700, color: items.length > 0 ? '#ffffff' : '#64748b',
+                flexShrink: 0, transition: 'all 0.3s ease',
+              }}>3</div>
+              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Add Items
+              </span>
+              <span style={{ fontSize: '0.7rem', fontWeight: 600, color: '#f97316', marginLeft: '0.25rem' }}>REQUIRED</span>
             </div>
-          )}
 
-          {items.length > 0 && (
+
+            <ItemCreator
+              items={items}
+              onAddItem={handleAddItem}
+              editingItem={editingItem}
+              onUpdateItem={handleUpdateItem}
+              onCancelEdit={handleCancelEdit}
+              userSettings={userSettings}
+            />
+            {items.length > 0 && (
+              <div style={{ marginBottom: '0.5rem' }}>
+                <ItemList
+                  items={items}
+                  onRemoveItem={(itemId) => setItems(items.filter(i => i.id !== itemId))}
+                  onEditItem={handleEditItem}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* STEP 4 - Advanced Settings (Optional) */}
+          <div style={{ marginBottom: '1.5rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+              <div style={{
+                width: '24px', height: '24px', borderRadius: '50%',
+                background: 'rgba(51, 65, 85, 0.6)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '0.75rem', fontWeight: 700, color: '#64748b', flexShrink: 0,
+              }}>4</div>
+              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Advanced Settings
+              </span>
+              <span style={{ fontSize: '0.7rem', fontWeight: 500, color: '#64748b', marginLeft: '0.25rem' }}>OPTIONAL</span>
+            </div>
+
+            <div
+              onClick={() => setShowAdvanced(!showAdvanced)}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
+                padding: '0.55rem 0.85rem', background: 'rgba(15, 22, 36, 0.6)',
+                border: '1px solid rgba(59, 130, 246, 0.2)', borderRadius: '8px',
+                cursor: 'pointer', userSelect: 'none',
+              }}
+            >
+              <span style={{ color: '#cbd5e1', fontWeight: 600, fontSize: '0.875rem' }}>
+                {showAdvanced ? 'Hide' : 'Show'} Advanced
+              </span>
+              <span style={{
+                color: '#94a3b8', fontSize: '0.75rem', transition: 'transform 0.2s ease',
+                transform: showAdvanced ? 'rotate(180deg)' : 'rotate(0deg)', display: 'inline-block',
+              }}>▼</span>
+            </div>
+
+            {showAdvanced && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.5rem' }}>
+                <div style={{ marginBottom: '1rem', maxWidth: '250px' }}>
+                  <Input
+                    type="number"
+                    label="Max Opens Total (Optional)"
+                    placeholder="Unlimited"
+                    value={maxPulls}
+                    onChange={(e) => setMaxPulls(e.target.value)}
+                    min="1"
+                    fullWidth
+                  />
+                  <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.25rem' }}>
+                    Limit the total number of times this box can be opened by all users combined.
+                  </div>
+                </div>
+                {/* Hide Contents toggle */}
+                <div style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  padding: '0.6rem 0.75rem', background: 'rgba(30, 64, 175, 0.15)',
+                  border: '1px solid rgba(59, 130, 246, 0.2)', borderRadius: '8px',
+                }}>
+                  <div>
+                    <div style={{ color: '#e2e8f0', fontWeight: 600, fontSize: '0.9rem' }}>Hide Contents</div>
+                    <div style={{ color: '#94a3b8', fontSize: '0.75rem', marginTop: '0.15rem' }}>Items hidden until opened</div>
+                  </div>
+                  <label style={{ position: 'relative', display: 'inline-block', width: '44px', height: '24px', cursor: 'pointer', flexShrink: 0 }}>
+                    <input type="checkbox" checked={hideContents} onChange={(e) => setHideContents(e.target.checked)} style={{ opacity: 0, width: 0, height: 0 }} />
+                    <span style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: hideContents ? 'linear-gradient(135deg, #4169e1, #1e40af)' : 'rgba(100, 116, 139, 0.4)', borderRadius: '12px', transition: 'all 0.3s ease' }}>
+                      <span style={{ position: 'absolute', height: '18px', width: '18px', left: hideContents ? '22px' : '3px', bottom: '3px', background: '#fff', borderRadius: '50%', transition: 'all 0.3s ease' }} />
+                    </span>
+                  </label>
+                </div>
+
+                {/* Hide Odds toggle */}
+                <div style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  padding: '0.6rem 0.75rem', background: 'rgba(30, 64, 175, 0.15)',
+                  border: '1px solid rgba(59, 130, 246, 0.2)', borderRadius: '8px',
+                }}>
+                  <div>
+                    <div style={{ color: '#e2e8f0', fontWeight: 600, fontSize: '0.9rem' }}>Hide Odds</div>
+                    <div style={{ color: '#94a3b8', fontSize: '0.75rem', marginTop: '0.15rem' }}>Percentages stay secret</div>
+                  </div>
+                  <label style={{ position: 'relative', display: 'inline-block', width: '44px', height: '24px', cursor: 'pointer', flexShrink: 0 }}>
+                    <input type="checkbox" checked={hideOdds} onChange={(e) => setHideOdds(e.target.checked)} style={{ opacity: 0, width: 0, height: 0 }} />
+                    <span style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: hideOdds ? 'linear-gradient(135deg, #4169e1, #1e40af)' : 'rgba(100, 116, 139, 0.4)', borderRadius: '12px', transition: 'all 0.3s ease' }}>
+                      <span style={{ position: 'absolute', height: '18px', width: '18px', left: hideOdds ? '22px' : '3px', bottom: '3px', background: '#fff', borderRadius: '50%', transition: 'all 0.3s ease' }} />
+                    </span>
+                  </label>
+                </div>
+
+                {/* Expiration Date toggle */}
+                <div style={{
+                  padding: '0.6rem 0.75rem', background: 'rgba(30, 64, 175, 0.15)',
+                  border: '1px solid rgba(59, 130, 246, 0.2)', borderRadius: '8px',
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <div style={{ color: '#e2e8f0', fontWeight: 600, fontSize: '0.9rem' }}>Expiration Date</div>
+                      <div style={{ color: '#94a3b8', fontSize: '0.75rem', marginTop: '0.15rem' }}>Box expires after a set date</div>
+                    </div>
+                    <label style={{ position: 'relative', display: 'inline-block', width: '44px', height: '24px', cursor: 'pointer', flexShrink: 0 }}>
+                      <input type="checkbox" checked={expirationEnabled} onChange={(e) => { setExpirationEnabled(e.target.checked); if (!e.target.checked) setExpiresAt(''); }} style={{ opacity: 0, width: 0, height: 0 }} />
+                      <span style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: expirationEnabled ? 'linear-gradient(135deg, #4169e1, #1e40af)' : 'rgba(100, 116, 139, 0.4)', borderRadius: '12px', transition: 'all 0.3s ease' }}>
+                        <span style={{ position: 'absolute', height: '18px', width: '18px', left: expirationEnabled ? '22px' : '3px', bottom: '3px', background: '#fff', borderRadius: '50%', transition: 'all 0.3s ease' }} />
+                      </span>
+                    </label>
+                  </div>
+                  {expirationEnabled && (
+                    <div style={{ marginTop: '0.5rem' }}>
+                      <input
+                        type="datetime-local"
+                        value={expiresAt}
+                        onChange={(e) => setExpiresAt(e.target.value)}
+                        style={{
+                          width: '100%', padding: '0.5rem 0.75rem', background: 'rgba(15, 22, 36, 0.6)',
+                          border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: '8px',
+                          color: '#e2e8f0', fontSize: '0.875rem', fontFamily: 'inherit', outline: 'none',
+                        }}
+                      />
+                      {expiresAt && (
+                        <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>
+                          Expires: {new Date(expiresAt).toLocaleString()}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Percentage validation bar - only when items exist */}
+          {validation && items.length > 0 && (
             <div style={{
               padding: '1rem',
               background: validation.valid ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
@@ -4096,7 +4008,9 @@
 
           <div style={{ display: 'flex', gap: '1rem' }}>
             <Button variant="secondary" onClick={onCancel} fullWidth>Cancel</Button>
-            <Button variant="primary" onClick={handleCreate} disabled={!validation.valid || !boxName.trim()} fullWidth>
+            <Button variant="primary" onClick={handleCreate} disabled={!validation.valid || !boxName.trim()} fullWidth style={{
+              ...(validation.valid && boxName.trim() && items.length > 0 ? { boxShadow: '0 4px 20px rgba(59, 130, 246, 0.5)' } : {}),
+            }}>
               {editingBox ? 'Save Changes' : 'Create Box'}
             </Button>
           </div>
