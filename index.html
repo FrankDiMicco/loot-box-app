@@ -589,7 +589,7 @@
 
     // ========== STORAGE ==========
     
-    const APP_VERSION = 'V1914';
+    const APP_VERSION = 'V1937';
 
     const STORAGE_KEYS = {
       BOXES: 'lootBoxes',
@@ -1137,7 +1137,7 @@
 
     // ========== BOX TEMPLATES ==========
 
-    const saveBoxTemplate = async (box) => {
+    const saveBoxTemplate = async (box, options = {}) => {
       if (!firebaseEnabled || !db) return null;
       try {
         const shareCode = generateShareCode();
@@ -1160,6 +1160,9 @@
           createdAt: Date.now(),
           shareCode: shareCode,
           expiresAt: null,
+          description: options.description || '',
+          category: options.category || 'General',
+          curated: options.curated || false,
         };
         await db.collection('boxTemplates').doc(shareCode).set(templateData);
         return shareCode;
@@ -1180,6 +1183,19 @@
       } catch (error) {
         console.error('Error fetching box template:', error);
         return null;
+      }
+    };
+
+    const fetchCuratedTemplates = async () => {
+      if (!firebaseEnabled || !db) return [];
+      try {
+        const snapshot = await db.collection('boxTemplates')
+          .where('curated', '==', true)
+          .get();
+        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      } catch (error) {
+        console.error('Error fetching curated templates:', error);
+        return [];
       }
     };
 
@@ -1507,7 +1523,7 @@
             <line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 01-8 0" />
           </svg>
         )},
-        { key: 'templates', label: 'Discover', badge: 'Soon', icon: (
+        { key: 'templates', label: 'Discover', icon: (
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
             <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
@@ -1520,11 +1536,6 @@
           </svg>
         )},
         'divider',
-        { key: 'account', label: 'My Account', badge: 'Soon', icon: (
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" />
-          </svg>
-        )},
         { key: 'settings', label: 'Settings', icon: (
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="12" r="3" />
@@ -2043,6 +2054,257 @@
             )}
           </div>
           <div style={{ marginLeft: '1rem', flexShrink: 0 }}>{rightContent}</div>
+        </div>
+      );
+    };
+
+    // DiscoverScreen Component
+    const DiscoverScreen = ({ onBack, onImport, success, info }) => {
+      const isMobile = useIsMobile();
+      const [templates, setTemplates] = useState([]);
+      const [loading, setLoading] = useState(true);
+      const [activeCategory, setActiveCategory] = useState('All');
+      const [confirmTemplate, setConfirmTemplate] = useState(null);
+
+      useEffect(() => {
+        const load = async () => {
+          setLoading(true);
+          const results = await fetchCuratedTemplates();
+          // Sort by createdAt newest first
+          results.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+          setTemplates(results);
+          setLoading(false);
+        };
+        load();
+      }, []);
+
+      const categories = ['All', ...Array.from(new Set(templates.map(t => t.category || 'General')))];
+
+      const filtered = activeCategory === 'All'
+        ? templates
+        : templates.filter(t => (t.category || 'General') === activeCategory);
+
+      const handleImport = (template) => {
+        setConfirmTemplate(template);
+      };
+
+      const handleConfirmImport = () => {
+        if (!confirmTemplate) return;
+        onImport(confirmTemplate);
+        setConfirmTemplate(null);
+        success(`"${confirmTemplate.name}" added to your boxes!`);
+      };
+
+      const cardStyle = {
+        background: 'rgba(15, 23, 42, 0.6)',
+        border: '1px solid rgba(59, 130, 246, 0.15)',
+        borderRadius: '14px',
+        padding: '1rem',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0.6rem',
+      };
+
+      return (
+        <div style={{ maxWidth: '600px', margin: '0 auto', padding: isMobile ? '1rem' : '2rem', minHeight: '100vh' }}>
+
+          {/* Back Header */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
+            <button onClick={onBack} style={{
+              background: 'rgba(15, 23, 42, 0.6)',
+              border: '1px solid rgba(59, 130, 246, 0.2)',
+              borderRadius: '10px', padding: '8px 10px', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8',
+            }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+            </button>
+            <div>
+              <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800, color: '#e2e8f0' }}>Discover</h2>
+              <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '1px' }}>
+                Ready-made boxes to inspire you
+              </div>
+            </div>
+          </div>
+
+          {/* Category Filter Tabs */}
+          {!loading && templates.length > 0 && (
+            <div style={{
+              display: 'flex', gap: '0.5rem', marginBottom: '1rem',
+              overflowX: 'auto', paddingBottom: '2px',
+            }}>
+              {categories.map(cat => {
+                const isActive = cat === activeCategory;
+                return (
+                  <button key={cat} onClick={() => setActiveCategory(cat)} style={{
+                    flex: '0 0 auto',
+                    padding: '0.35rem 0.85rem',
+                    fontSize: '0.8rem', fontWeight: 600,
+                    color: isActive ? '#ffffff' : '#94a3b8',
+                    background: isActive
+                      ? 'linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)'
+                      : 'rgba(15, 22, 36, 0.6)',
+                    border: `1px solid ${isActive ? '#3b82f6' : 'rgba(59, 130, 246, 0.2)'}`,
+                    borderRadius: '8px', cursor: 'pointer',
+                    fontFamily: 'inherit', transition: 'all 0.2s ease',
+                  }}>
+                    {cat}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Loading */}
+          {loading && (
+            <div style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>
+              Loading templates...
+            </div>
+          )}
+
+          {/* Empty State */}
+          {!loading && templates.length === 0 && (
+            <div style={{
+              textAlign: 'center', padding: '3rem 2rem',
+              color: '#64748b', fontSize: '0.9rem', lineHeight: '1.6',
+            }}>
+              <div style={{ fontSize: '2rem', marginBottom: '0.75rem', opacity: 0.4 }}>
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ margin: '0 auto', display: 'block' }}>
+                  <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+              </div>
+              No templates yet. Check back soon!
+            </div>
+          )}
+
+          {/* Template Cards */}
+          {!loading && filtered.length > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {filtered.map(template => {
+                const itemCount = (template.items || []).length;
+                const imageUrl = template.boxImageId
+                  ? (template.boxImageId.startsWith('http')
+                      ? template.boxImageId
+                      : `./assets/images/boxes/free/${template.boxImageId}.png`)
+                  : './assets/images/boxes/free/chest.png';
+
+                return (
+                  <div key={template.id} style={cardStyle}>
+                    <div style={{ display: 'flex', gap: '0.875rem', alignItems: 'flex-start' }}>
+                      {/* Box Image */}
+                      <div style={{
+                        width: '56px', height: '56px', flexShrink: 0,
+                        borderRadius: '10px',
+                        background: 'rgba(30, 64, 175, 0.2)',
+                        border: '1px solid rgba(59, 130, 246, 0.2)',
+                        overflow: 'hidden',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      }}>
+                        <img
+                          src={imageUrl}
+                          alt={template.name}
+                          style={{ width: '44px', height: '44px', objectFit: 'contain' }}
+                          onError={e => { e.target.style.display = 'none'; }}
+                        />
+                      </div>
+
+                      {/* Info */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{
+                          fontSize: '1rem', fontWeight: 700, color: '#e2e8f0',
+                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                        }}>
+                          {template.name}
+                        </div>
+                        {template.description && (
+                          <div style={{
+                            fontSize: '0.8rem', color: '#94a3b8',
+                            marginTop: '2px', lineHeight: '1.4',
+                          }}>
+                            {template.description}
+                          </div>
+                        )}
+                        <div style={{ display: 'flex', gap: '0.5rem', marginTop: '6px', flexWrap: 'wrap' }}>
+                          <span style={{
+                            fontSize: '0.65rem', fontWeight: 600, color: '#64748b',
+                            background: 'rgba(100, 116, 139, 0.15)',
+                            border: '1px solid rgba(100, 116, 139, 0.2)',
+                            borderRadius: '6px', padding: '2px 7px',
+                          }}>
+                            {itemCount} {itemCount === 1 ? 'item' : 'items'}
+                          </span>
+                          {template.category && template.category !== 'General' && (
+                            <span style={{
+                              fontSize: '0.65rem', fontWeight: 600, color: '#60a5fa',
+                              background: 'rgba(59, 130, 246, 0.1)',
+                              border: '1px solid rgba(59, 130, 246, 0.2)',
+                              borderRadius: '6px', padding: '2px 7px',
+                            }}>
+                              {template.category}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Import Button */}
+                      <button
+                        onClick={() => handleImport(template)}
+                        style={{
+                          flexShrink: 0,
+                          padding: '0.45rem 0.9rem',
+                          background: 'linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)',
+                          border: 'none', borderRadius: '8px',
+                          color: '#fff', fontWeight: 700, fontSize: '0.8rem',
+                          cursor: 'pointer', fontFamily: 'inherit',
+                          alignSelf: 'center',
+                        }}>
+                        Import
+                      </button>
+                    </div>
+
+                    {/* Item Preview Pills */}
+                    {itemCount > 0 && (
+                      <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', paddingTop: '0.25rem' }}>
+                        {(template.items || []).slice(0, 5).map((item, i) => (
+                          <span key={i} style={{
+                            fontSize: '0.7rem', fontWeight: 500,
+                            color: item.color || '#94a3b8',
+                            background: `${item.color || '#94a3b8'}18`,
+                            border: `1px solid ${item.color || '#94a3b8'}33`,
+                            borderRadius: '6px', padding: '2px 8px',
+                          }}>
+                            {item.name}
+                          </span>
+                        ))}
+                        {itemCount > 5 && (
+                          <span style={{
+                            fontSize: '0.7rem', color: '#64748b',
+                            padding: '2px 4px',
+                          }}>
+                            +{itemCount - 5} more
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Confirm Import Dialog */}
+          {confirmTemplate && (
+            <ConfirmDialog
+              show={true}
+              title={`Import "${confirmTemplate.name}"?`}
+              message={`This will add a copy of this box to your collection. You can edit it however you like.`}
+              onConfirm={handleConfirmImport}
+              onCancel={() => setConfirmTemplate(null)}
+              confirmText="Import"
+              cancelText="Cancel"
+            />
+          )}
         </div>
       );
     };
@@ -5179,6 +5441,12 @@
         success('Box imported successfully!');
       };
 
+      const handleDiscoverImport = (templateData) => {
+        const newBox = importBoxFromTemplate(templateData);
+        saveBox(newBox);
+        loadData();
+      };
+
       const handleSaveSettings = (updatedSettings) => {
         saveUserSettings(updatedSettings);
         setUserSettings(updatedSettings);
@@ -5392,7 +5660,7 @@
         switch (key) {
           case 'myBoxes': setMode('home'); break;
           case 'marketplace': info('Marketplace coming soon!'); break;
-          case 'templates': info('Discover is coming soon! Browse community boxes and more.'); break;
+          case 'templates': setMode('discover'); break;
           case 'stats': setMode('stats'); break;
           case 'account': info('Account system coming soon!'); break;
           case 'settings': setMode('settings'); break;
@@ -5693,6 +5961,15 @@
               userSettings={userSettings}
               boxes={boxes}
               onBack={() => setMode('home')}
+            />
+          )}
+
+          {mode === 'discover' && (
+            <DiscoverScreen
+              onBack={() => setMode('home')}
+              onImport={handleDiscoverImport}
+              success={success}
+              info={info}
             />
           )}
 
