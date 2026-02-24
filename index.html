@@ -589,7 +589,7 @@
 
     // ========== STORAGE ==========
     
-    const APP_VERSION = 'V1125';
+    const APP_VERSION = 'V1657';
 
     const STORAGE_KEYS = {
       BOXES: 'lootBoxes',
@@ -2083,7 +2083,7 @@
       const allPulls = boxes.flatMap(b => b.pullHistory || []);
       const localBoxes = boxes.filter(b => b.type === 'local' && !b.isVisitor);
       const sharedBoxes = boxes.filter(b => b.type === 'shared' && !b.isVisitor);
-      const visitedBoxes = boxes.filter(b => b.isVisitor);
+
       const totalOpens = allPulls.length;
       const totalBoxes = localBoxes.length + sharedBoxes.length;
 
@@ -2103,81 +2103,6 @@
       // Unique items discovered
       const uniqueItemNames = new Set(allPulls.map(p => p.itemName)).size;
 
-      // Achievements
-      const achievements = [
-        {
-          id: 'first_box',
-          label: 'Box Maker',
-          desc: 'Created your first box',
-          unlocked: totalBoxes >= 1,
-          icon: '📦',
-        },
-        {
-          id: 'five_boxes',
-          label: 'Collector',
-          desc: 'Created 5 boxes',
-          unlocked: totalBoxes >= 5,
-          icon: '🗂️',
-        },
-        {
-          id: 'first_open',
-          label: 'First Pull',
-          desc: 'Opened a box for the first time',
-          unlocked: totalOpens >= 1,
-          icon: '🎁',
-        },
-        {
-          id: 'ten_opens',
-          label: 'Hooked',
-          desc: '10 total opens',
-          unlocked: totalOpens >= 10,
-          icon: '🔟',
-        },
-        {
-          id: 'fifty_opens',
-          label: 'Addicted',
-          desc: '50 total opens',
-          unlocked: totalOpens >= 50,
-          icon: '🔥',
-        },
-        {
-          id: 'hundred_opens',
-          label: 'Legend',
-          desc: '100 total opens',
-          unlocked: totalOpens >= 100,
-          icon: '🏆',
-        },
-        {
-          id: 'shared_box',
-          label: 'Sharer',
-          desc: 'Created a shared box',
-          unlocked: sharedBoxes.length >= 1,
-          icon: '🔗',
-        },
-        {
-          id: 'joined_box',
-          label: 'Joiner',
-          desc: 'Joined someone else\'s box',
-          unlocked: visitedBoxes.length >= 1,
-          icon: '👥',
-        },
-        {
-          id: 'rare_hunter',
-          label: 'Rare Hunter',
-          desc: 'Pulled an item with under 5% odds',
-          unlocked: allPulls.some(p => p.percentage < 5),
-          icon: '💎',
-        },
-        {
-          id: 'mythic_hunter',
-          label: 'Mythic',
-          desc: 'Pulled an item with under 1% odds',
-          unlocked: allPulls.some(p => p.percentage < 1),
-          icon: '🌟',
-        },
-      ];
-
-      const unlockedCount = achievements.filter(a => a.unlocked).length;
 
       const statCardStyle = {
         background: 'rgba(15, 23, 42, 0.6)',
@@ -2231,7 +2156,7 @@
                 <polyline points="15 18 9 12 15 6" />
               </svg>
             </button>
-            <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800, color: '#e2e8f0' }}>Stats & Achievements</h2>
+            <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800, color: '#e2e8f0' }}>Stats</h2>
           </div>
 
           {/* Stats Grid */}
@@ -2264,7 +2189,7 @@
                     ...statCardStyle,
                     flexDirection: 'row', alignItems: 'center', gap: '0.75rem',
                   }}>
-                    <span style={{ fontSize: '1.4rem' }}>💎</span>
+                    <span style={{ fontSize: '1.4rem' }}></span>
                     <div>
                       <div style={statLabelStyle}>Rarest Pull</div>
                       <div style={{ color: '#e2e8f0', fontWeight: 700, fontSize: '0.95rem' }}>
@@ -2281,7 +2206,7 @@
                     ...statCardStyle,
                     flexDirection: 'row', alignItems: 'center', gap: '0.75rem',
                   }}>
-                    <span style={{ fontSize: '1.4rem' }}>🔁</span>
+                    <span style={{ fontSize: '1.4rem' }}></span>
                     <div>
                       <div style={statLabelStyle}>Most Pulled</div>
                       <div style={{ color: '#e2e8f0', fontWeight: 700, fontSize: '0.95rem' }}>
@@ -2297,51 +2222,6 @@
             </>
           )}
 
-          {/* Achievements */}
-          <div style={sectionHeaderStyle}>
-            Achievements
-            <span style={{
-              marginLeft: '8px',
-              background: 'rgba(59, 130, 246, 0.15)',
-              color: '#60a5fa',
-              fontSize: '0.65rem',
-              fontWeight: 700,
-              padding: '2px 8px',
-              borderRadius: '10px',
-            }}>
-              {unlockedCount}/{achievements.length}
-            </span>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            {achievements.map(ach => (
-              <div key={ach.id} style={{
-                ...statCardStyle,
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: '0.75rem',
-                opacity: ach.unlocked ? 1 : 0.4,
-                border: ach.unlocked
-                  ? '1px solid rgba(245, 158, 11, 0.25)'
-                  : '1px solid rgba(59, 130, 246, 0.1)',
-              }}>
-                <span style={{ fontSize: '1.4rem', filter: ach.unlocked ? 'none' : 'grayscale(1)' }}>
-                  {ach.icon}
-                </span>
-                <div style={{ flex: 1 }}>
-                  <div style={{ color: ach.unlocked ? '#e2e8f0' : '#64748b', fontWeight: 700, fontSize: '0.9rem' }}>
-                    {ach.label}
-                  </div>
-                  <div style={{ color: '#64748b', fontSize: '0.75rem' }}>{ach.desc}</div>
-                </div>
-                {ach.unlocked && (
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                )}
-              </div>
-            ))}
-          </div>
 
           {/* Empty State */}
           {totalOpens === 0 && (
