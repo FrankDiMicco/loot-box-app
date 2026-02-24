@@ -589,7 +589,7 @@
 
     // ========== STORAGE ==========
     
-    const APP_VERSION = 'V1657';
+    const APP_VERSION = 'V1914';
 
     const STORAGE_KEYS = {
       BOXES: 'lootBoxes',
@@ -1545,12 +1545,6 @@
             <line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
           </svg>
         )},
-        'divider',
-        { key: 'toggleTier', label: 'Toggle Tier', tierIndicator: true, icon: (
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z" />
-          </svg>
-        )},
       ];
 
       const displayName = userSettings?.displayName || 'Loot Box User';
@@ -1606,22 +1600,6 @@
                 <div style={{ fontWeight: 700, color: '#e2e8f0', fontSize: '1rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {displayName}
                 </div>
-                <span style={{
-                  display: 'inline-block',
-                  marginTop: '4px',
-                  padding: '2px 8px',
-                  borderRadius: '10px',
-                  fontSize: '0.65rem',
-                  fontWeight: 700,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em',
-                  ...(isPremium
-                    ? { background: 'linear-gradient(135deg, #f59e0b, #ec4899)', color: '#fff' }
-                    : { background: 'rgba(100, 116, 139, 0.3)', color: '#94a3b8' }
-                  ),
-                }}>
-                  {isPremium ? 'Premium' : 'Free'}
-                </span>
               </div>
               <button onClick={onClose} style={{
                 position: 'absolute', top: '16px', right: '16px',
@@ -1660,12 +1638,6 @@
                         fontSize: '0.65rem', fontWeight: 600,
                         background: 'rgba(245, 158, 11, 0.2)', color: '#f59e0b',
                       }}>{item.badge}</span>
-                    )}
-                    {item.tierIndicator && (
-                      <span style={{
-                        fontSize: '0.8rem', fontWeight: 600,
-                        color: isPremium ? '#f59e0b' : '#94a3b8',
-                      }}>{isPremium ? 'Premium' : 'Free'}</span>
                     )}
                   </button>
                 );
@@ -2409,23 +2381,6 @@
             <SettingsRow
               label="Loot Box Creator"
               rightContent={<span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{APP_VERSION}</span>}
-            />
-            <SettingsRow
-              label="Current Tier"
-              rightContent={
-                <span style={{
-                  padding: '0.2rem 0.6rem',
-                  borderRadius: '6px',
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                  background: userSettings.tier === 'paid' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(59, 130, 246, 0.2)',
-                  color: userSettings.tier === 'paid' ? '#fbbf24' : '#60a5fa',
-                  border: `1px solid ${userSettings.tier === 'paid' ? 'rgba(245, 158, 11, 0.4)' : 'rgba(59, 130, 246, 0.4)'}`,
-                }}>
-                  {userSettings.tier === 'paid' ? 'Premium' : 'Free'}
-                </span>
-              }
-              isLast
             />
           </Card>
 
@@ -3486,22 +3441,7 @@
 
       // Check if user can use this specific box
       const canUserUseBox = (image) => {
-        // Default boxes (hardcoded OR from Firebase) - always free
-        if (image.source === BOX_SOURCES.DEFAULT || image.source === 'default') return true;
-
-        // Premium boxes - free for premium users only
-        if (image.source === BOX_SOURCES.PREMIUM || image.source === 'premium') {
-          return userSettings.tier === 'paid';
-        }
-
-        // User's own uploads
-        if (image.source === BOX_SOURCES.USER_UPLOADED &&
-            userSettings.uploadedBoxes?.includes(image.id)) return true;
-
-        // Purchased boxes
-        if (userSettings.ownedBoxes?.includes(image.id)) return true;
-
-        return false;
+        return true;
       };
 
       const handlePurchase = async (box) => {
@@ -3589,10 +3529,7 @@
 
       const tabs = [
         { id: 'defaults', label: 'Defaults', count: boxCatalog?.defaults.length || 0 },
-        { id: 'premium', label: 'Premium', count: boxCatalog?.premium.length || 0, premium: true },
         { id: 'seasonal', label: 'Seasonal', count: boxCatalog?.seasonal.length || 0 },
-        { id: 'store', label: 'Store', count: boxCatalog?.store.length || 0 },
-        { id: 'uploads', label: 'My Uploads', count: boxCatalog?.userUploaded.length || 0, premium: true },
       ];
 
       const activeBoxes = getActiveBoxes();
@@ -3618,7 +3555,6 @@
           }}>
             {tabs.map(tab => {
               const isActive = activeTab === tab.id;
-              const isLocked = tab.premium && userSettings.tier !== 'paid';
 
               return (
                 <button
@@ -3634,48 +3570,17 @@
                       : 'rgba(15, 22, 36, 0.6)',
                     border: `1px solid ${isActive ? '#3b82f6' : 'rgba(59, 130, 246, 0.2)'}`,
                     borderRadius: '8px',
-                    cursor: isLocked ? 'not-allowed' : 'pointer',
-                    opacity: isLocked ? 0.5 : 1,
+                    cursor: 'pointer',
                     fontFamily: 'inherit',
                     transition: 'all 0.2s ease',
                   }}
-                  onClick={() => !isLocked && setActiveTab(tab.id)}
-                  disabled={isLocked}
+                  onClick={() => setActiveTab(tab.id)}
                 >
                   {tab.label} {tab.count > 0 && `(${tab.count})`}
-                  {isLocked && ' 🔒'}
                 </button>
               );
             })}
           </div>
-
-          {/* Upload Button for Premium Users */}
-          {activeTab === 'uploads' && userSettings.tier === 'paid' && (
-            <div style={{ marginBottom: '1rem' }}>
-              <label style={{
-                display: 'inline-block',
-                padding: '0.75rem 1.5rem',
-                fontSize: '0.875rem',
-                fontWeight: 600,
-                color: '#ffffff',
-                background: uploading
-                  ? 'rgba(59, 130, 246, 0.5)'
-                  : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                borderRadius: '8px',
-                cursor: uploading ? 'not-allowed' : 'pointer',
-                transition: 'all 0.2s ease',
-              }}>
-                {uploading ? 'Uploading...' : '+ Upload Custom Box'}
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileUpload}
-                  disabled={uploading}
-                  style={{ display: 'none' }}
-                />
-              </label>
-            </div>
-          )}
 
           {/* Loading State */}
           {loading && (
@@ -3775,17 +3680,6 @@
                           objectFit: 'contain',
                         }}
                       />
-                      {!canUse && (
-                        <div style={{
-                          position: 'absolute',
-                          top: '50%',
-                          left: '50%',
-                          transform: 'translate(-50%, -50%)',
-                          fontSize: '2rem',
-                        }}>
-                          🔒
-                        </div>
-                      )}
                     </div>
 
                     {/* Image name */}
@@ -3823,56 +3717,6 @@
                       </div>
                     )}
 
-                    {isStore && !canUse && image.price !== null && (
-                      <div style={{
-                        position: 'absolute',
-                        top: '0.5rem',
-                        right: '0.5rem',
-                        padding: '0.25rem 0.5rem',
-                        background: 'linear-gradient(135deg, #f59e0b 0%, #3b82f6 100%)',
-                        borderRadius: '6px',
-                        fontSize: '0.625rem',
-                        fontWeight: 700,
-                        color: '#ffffff',
-                        textTransform: 'uppercase',
-                      }}>
-                        ${image.price}
-                      </div>
-                    )}
-
-                    {isUserUpload && (
-                      <div style={{
-                        position: 'absolute',
-                        top: '0.5rem',
-                        right: '0.5rem',
-                        padding: '0.25rem 0.5rem',
-                        background: 'rgba(16, 185, 129, 0.9)',
-                        borderRadius: '6px',
-                        fontSize: '0.625rem',
-                        fontWeight: 700,
-                        color: '#ffffff',
-                        textTransform: 'uppercase',
-                      }}>
-                        Your Upload
-                      </div>
-                    )}
-
-                    {canUse && !isUserUpload && image.source !== BOX_SOURCES.DEFAULT && (
-                      <div style={{
-                        position: 'absolute',
-                        top: '0.5rem',
-                        left: '0.5rem',
-                        padding: '0.25rem 0.5rem',
-                        background: 'rgba(16, 185, 129, 0.9)',
-                        borderRadius: '6px',
-                        fontSize: '0.625rem',
-                        fontWeight: 700,
-                        color: '#ffffff',
-                        textTransform: 'uppercase',
-                      }}>
-                        Owned
-                      </div>
-                    )}
                   </div>
                 );
               })}
@@ -3880,18 +3724,6 @@
             </div>
           )}
 
-          {/* Purchase Modal */}
-          {showPurchaseModal && (
-            <ConfirmDialog
-              show={true}
-              title={`Purchase ${showPurchaseModal.name}?`}
-              message={`Unlock this ${showPurchaseModal.source === BOX_SOURCES.SEASONAL ? 'seasonal ' : ''}box skin${showPurchaseModal.price !== null ? ` for $${showPurchaseModal.price}` : ''}. You'll own it forever and can use it on unlimited loot boxes!`}
-              onConfirm={() => handlePurchase(showPurchaseModal)}
-              onCancel={() => setShowPurchaseModal(null)}
-              confirmText={`Purchase${showPurchaseModal.price !== null ? ` $${showPurchaseModal.price}` : ''}`}
-              cancelText="Cancel"
-            />
-          )}
         </div>
       );
     };
@@ -3970,10 +3802,6 @@
           return;
         }
 
-        if (boxType === 'local' && !editingBox && !canCreateLocal) {
-          error('Free users can only create 5 local boxes!');
-          return;
-        }
 
         const boxData = {
           id: editingBox ? editingBox.id : Date.now().toString(),
@@ -4149,13 +3977,10 @@
                       borderRadius: '12px',
                       color: boxType === 'shared' ? '#ffffff' : '#94a3b8',
                       fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-                      opacity: isPaidUser ? 1 : 0.6,
                     }}
                     onClick={() => setBoxType('shared')}
-                    disabled={!isPaidUser}
                   >
                     Shared
-                    {!isPaidUser && <div style={{ fontSize: '0.75rem', marginTop: '0.25rem', opacity: 0.8 }}>(Premium only)</div>}
                   </button>
                 </div>
               </div>
@@ -5347,11 +5172,6 @@
       const handleConfirmImport = () => {
         if (!pendingTemplate) return;
 
-        if (!canCreateLocalBox()) {
-          error("You've reached the free tier limit of 5 local boxes. Delete a box or upgrade to Premium to import this template.");
-          setPendingTemplate(null);
-          return;
-        }
 
         importBoxFromTemplate(pendingTemplate);
         setPendingTemplate(null);
@@ -5592,10 +5412,6 @@
       const handleDuplicateBox = (box) => {
         if (box.isVisitor) {
           info('You can only duplicate boxes you created');
-          return;
-        }
-        if (!canCreateLocalBox()) {
-          error('Free users can only have 5 local boxes. Delete one first or upgrade to Premium!');
           return;
         }
         const duplicatedBox = {
