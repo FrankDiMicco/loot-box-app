@@ -600,7 +600,7 @@
 
     // ========== STORAGE ==========
     
-    const APP_VERSION = 'V2107';
+    const APP_VERSION = 'V2115';
 
     const STORAGE_KEYS = {
       BOXES: 'lootBoxes',
@@ -5892,23 +5892,27 @@
                 onClick={handleCreateBox}
                 style={{
                   width: '100%',
-                  padding: isMobile ? '1rem 1.5rem' : '0.75rem 1.5rem',
-                  fontSize: isMobile ? '1.1rem' : '1rem',
+                  padding: '0.75rem 1.25rem',
+                  fontSize: isMobile ? '0.95rem' : '1rem',
                   fontWeight: 700,
                   fontFamily: 'inherit',
                   color: '#ffffff',
-                  background: 'linear-gradient(135deg, #f59e0b 0%, #ef4444 50%, #ec4899 100%)',
-                  border: 'none',
+                  background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 50%, #3b82f6 100%)',
+                  border: '1px solid rgba(59, 130, 246, 0.4)',
                   borderRadius: '14px',
                   cursor: 'pointer',
-                  marginBottom: '1.5rem',
-                  boxShadow: '0 4px 20px rgba(245, 158, 11, 0.4), 0 0 40px rgba(245, 158, 11, 0.1)',
+                  transition: 'all 0.2s ease',
+                  boxShadow: '0 4px 16px rgba(30, 64, 175, 0.35)',
                   letterSpacing: '0.02em',
-                  transition: 'all 0.25s ease',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  minHeight: isMobile ? '56px' : '48px',
+                  marginBottom: isMobile ? '1rem' : '1.5rem',
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                  e.currentTarget.style.boxShadow = '0 6px 20px rgba(30, 64, 175, 0.5)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 16px rgba(30, 64, 175, 0.35)';
                 }}
               >
                 + Create New Loot Box
