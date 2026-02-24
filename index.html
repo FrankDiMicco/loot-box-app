@@ -610,7 +610,7 @@
 
     // ========== STORAGE ==========
     
-    const APP_VERSION = 'V2220';
+    const APP_VERSION = 'V1737';
 
     const STORAGE_KEYS = {
       BOXES: 'lootBoxes',
@@ -2096,7 +2096,7 @@
                 {cancelText}
               </Button>
               <Button variant="secondary" onClick={onConfirm} fullWidth style={{
-                background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                background: 'linear-gradient(135deg, #0f1a2e 0%, #0f1a2e 100%)', border: '2px solid #3b6fd4', color: '#ffffff',
               }}>
                 {confirmText}
               </Button>
@@ -3399,7 +3399,7 @@
     const getColorName = (hex) => {
       const names = {
         '#ef4444': 'Red',
-        '#f97316': 'Orange',
+        '#38bdf8': 'Cyan',
         '#f59e0b': 'Amber',
         '#eab308': 'Yellow',
         '#84cc16': 'Lime',
@@ -3478,7 +3478,7 @@
       };
 
       const predefinedColors = [
-        '#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16',
+        '#ef4444', '#38bdf8', '#f59e0b', '#eab308', '#84cc16',
         '#22c55e', '#10b981', '#06b6d4', '#3b82f6', '#1e40af',
         '#6366f1', '#8b5cf6', '#a855f7', '#ec4899', '#f43f5e',
         '#78716c', '#a8a29e', '#92400e', '#b45309', '#854d0e',
@@ -3495,7 +3495,7 @@
             <div>
               <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', fontWeight: 500, color: '#cbd5e1', marginBottom: '0.5rem' }}>
                 Item Name
-                <span style={{ fontSize: '0.65rem', color: '#f97316', fontWeight: 600 }}>REQUIRED</span>
+                <span style={{ fontSize: '0.65rem', color: '#38bdf8', fontWeight: 600 }}>REQUIRED</span>
               </label>
               <Input
                 placeholder="e.g., Legendary Sword"
@@ -3510,7 +3510,7 @@
               <div>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', fontWeight: 500, color: '#cbd5e1', marginBottom: '0.5rem' }}>
                   Percentage
-                  <span style={{ fontSize: '0.65rem', color: '#f97316', fontWeight: 600 }}>REQUIRED</span>
+                  <span style={{ fontSize: '0.65rem', color: '#38bdf8', fontWeight: 600 }}>REQUIRED</span>
                 </label>
                 <Input
                   type="number"
@@ -4269,7 +4269,7 @@
               <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 Name Your Box
               </span>
-              <span style={{ fontSize: '0.7rem', fontWeight: 600, color: '#f97316', marginLeft: '0.25rem' }}>REQUIRED</span>
+              <span style={{ fontSize: '0.7rem', fontWeight: 600, color: '#38bdf8', marginLeft: '0.25rem' }}>REQUIRED</span>
             </div>
             <input
               type="text"
@@ -4406,7 +4406,7 @@
               <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 Add Items
               </span>
-              <span style={{ fontSize: '0.7rem', fontWeight: 600, color: '#f97316', marginLeft: '0.25rem' }}>REQUIRED</span>
+              <span style={{ fontSize: '0.7rem', fontWeight: 600, color: '#38bdf8', marginLeft: '0.25rem' }}>REQUIRED</span>
             </div>
 
 
@@ -4654,7 +4654,7 @@
             background: 'rgba(251, 191, 36, 0.6)',
             animation: 'screenFlash 1s ease-out forwards',
           });
-          setParticles(makeParticles(30, ['#fbbf24', '#f97316', '#fef08a'], [6, 10], 160));
+          setParticles(makeParticles(30, ['#fbbf24', '#38bdf8', '#fef08a'], [6, 10], 160));
           setTimeout(() => setShakeClass('shakeScreenHard 0.8s ease-out 0.1s'), 900);
           setTimeout(() => setShowChildren(true), 300);
           totalDuration = 1500;
