@@ -256,6 +256,50 @@
       }
     }
 
+    @keyframes shakeScreen {
+      0%, 100% { transform: translate(0, 0) rotate(0deg); }
+      10% { transform: translate(-4px, -2px) rotate(-0.5deg); }
+      20% { transform: translate(4px, 2px) rotate(0.5deg); }
+      30% { transform: translate(-6px, 2px) rotate(-0.5deg); }
+      40% { transform: translate(6px, -2px) rotate(0.5deg); }
+      50% { transform: translate(-4px, 4px) rotate(0deg); }
+      60% { transform: translate(4px, -4px) rotate(0.5deg); }
+      70% { transform: translate(-2px, 2px) rotate(-0.5deg); }
+      80% { transform: translate(2px, -2px) rotate(0deg); }
+      90% { transform: translate(-2px, 0px) rotate(0.5deg); }
+    }
+
+    @keyframes shakeScreenHard {
+      0%, 100% { transform: translate(0, 0); }
+      10% { transform: translate(-10px, -5px); }
+      20% { transform: translate(10px, 5px); }
+      30% { transform: translate(-12px, 5px); }
+      40% { transform: translate(12px, -5px); }
+      50% { transform: translate(-8px, 8px); }
+      60% { transform: translate(8px, -8px); }
+      70% { transform: translate(-5px, 5px); }
+      80% { transform: translate(5px, -5px); }
+      90% { transform: translate(-3px, 0px); }
+    }
+
+    @keyframes screenFlash {
+      0%   { opacity: 0; }
+      20%  { opacity: 1; }
+      100% { opacity: 0; }
+    }
+
+    @keyframes mythicDarkness {
+      0%   { opacity: 0; }
+      15%  { opacity: 1; }
+      70%  { opacity: 1; }
+      100% { opacity: 0; }
+    }
+
+    @keyframes rainParticle {
+      0%   { transform: translateY(-20px); opacity: 1; }
+      100% { transform: translateY(100vh); opacity: 0; }
+    }
+
     /* Mobile optimizations */
     @media (max-width: 768px) {
       body {
@@ -427,7 +471,16 @@
     };
 
     // ========== UTILITIES ==========
-    
+
+    // Derive rarity tier from item odds percentage (drives reveal animation only)
+    function getRarityTier(oddsPercent) {
+      if (oddsPercent >= 50) return 'common';
+      if (oddsPercent >= 20) return 'rare';
+      if (oddsPercent >= 5)  return 'epic';
+      if (oddsPercent >= 1)  return 'legendary';
+      return 'mythic';
+    }
+
     // Calculate dynamic odds
     const calculateDynamicOdds = (items, pullHistory) => {
       const remainingItems = items.map(item => {
@@ -536,7 +589,7 @@
 
     // ========== STORAGE ==========
     
-    const APP_VERSION = 'V1541';
+    const APP_VERSION = 'V1546';
 
     const STORAGE_KEYS = {
       BOXES: 'lootBoxes',
@@ -4186,11 +4239,187 @@
       return luminance > 0.7;
     };
 
+    // ========== REVEAL ANIMATION COMPONENT ==========
+    const RevealAnimation = ({ tier, onComplete, children }) => {
+      const [showChildren, setShowChildren] = React.useState(false);
+      const [particles, setParticles] = React.useState([]);
+      const [flashStyle, setFlashStyle] = React.useState(null);
+      const [darkOverlay, setDarkOverlay] = React.useState(false);
+      const [shakeClass, setShakeClass] = React.useState('');
+      const contentRef = React.useRef(null);
+
+      React.useEffect(() => {
+        const randomRange = (min, max) => Math.random() * (max - min) + min;
+
+        const makeParticles = (count, colors, sizeRange, txRange, delay = 0) => {
+          const p = [];
+          for (let i = 0; i < count; i++) {
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            const size = Math.floor(randomRange(sizeRange[0], sizeRange[1]));
+            const tx = Math.floor(randomRange(-txRange, txRange));
+            const ty = Math.floor(randomRange(-txRange, txRange));
+            p.push({ color, size, tx, ty, delay, id: `${delay}-${i}` });
+          }
+          return p;
+        };
+
+        let totalDuration = 600;
+
+        if (tier === 'common') {
+          setShowChildren(true);
+          setFlashStyle({
+            background: 'rgba(255, 255, 255, 0.3)',
+            animation: 'screenFlash 0.4s ease-out forwards',
+          });
+          setParticles(makeParticles(6, ['#93c5fd'], [4, 5], 80));
+          totalDuration = 600;
+        } else if (tier === 'rare') {
+          setShowChildren(true);
+          setShakeClass('shakeScreen 0.5s ease-out');
+          setFlashStyle({
+            background: 'rgba(59, 130, 246, 0.4)',
+            animation: 'screenFlash 0.6s ease-out forwards',
+          });
+          setParticles(makeParticles(12, ['#60a5fa', '#a78bfa'], [5, 6], 80));
+          totalDuration = 800;
+        } else if (tier === 'epic') {
+          setShowChildren(true);
+          setShakeClass('shakeScreen 0.7s ease-out');
+          setFlashStyle({
+            background: 'rgba(139, 92, 246, 0.5)',
+            animation: 'screenFlash 0.8s ease-out forwards',
+          });
+          const wave1 = makeParticles(20, ['#a78bfa', '#fbbf24', '#f0abfc'], [5, 8], 120);
+          const wave2 = makeParticles(10, ['#a78bfa', '#fbbf24', '#f0abfc'], [5, 8], 120, 0.2);
+          setParticles([...wave1, ...wave2]);
+          totalDuration = 1200;
+        } else if (tier === 'legendary') {
+          setShakeClass('shakeScreenHard 0.8s ease-out');
+          setFlashStyle({
+            background: 'rgba(251, 191, 36, 0.6)',
+            animation: 'screenFlash 1s ease-out forwards',
+          });
+          setParticles(makeParticles(30, ['#fbbf24', '#f97316', '#fef08a'], [6, 10], 160));
+          setTimeout(() => setShakeClass('shakeScreenHard 0.8s ease-out 0.1s'), 900);
+          setTimeout(() => setShowChildren(true), 300);
+          totalDuration = 1500;
+        } else if (tier === 'mythic') {
+          setDarkOverlay(true);
+          setParticles([]);
+          setTimeout(() => {
+            setShakeClass('shakeScreenHard 1s ease-out');
+          }, 600);
+          // Rainbow rain particles
+          const rainColors = ['#fbbf24', '#f0abfc', '#60a5fa', '#34d399', '#f87171'];
+          const rain = [];
+          for (let i = 0; i < 40; i++) {
+            rain.push({
+              type: 'rain',
+              color: rainColors[i % rainColors.length],
+              size: Math.floor(randomRange(4, 8)),
+              left: `${randomRange(0, 100)}%`,
+              duration: randomRange(1, 2),
+              delay: randomRange(0, 1.5),
+              id: `rain-${i}`,
+            });
+          }
+          setParticles(rain);
+          // Central burst at peak
+          setTimeout(() => {
+            const burst = makeParticles(50, rainColors, [5, 9], 160);
+            setParticles(prev => [...prev, ...burst]);
+          }, 800);
+          setTimeout(() => setShowChildren(true), 600);
+          totalDuration = 2500;
+        }
+
+        const timer = setTimeout(() => {
+          if (onComplete) onComplete();
+        }, totalDuration);
+
+        return () => clearTimeout(timer);
+      }, [tier]);
+
+      return React.createElement(React.Fragment, null,
+        // Shake wrapper for main content
+        shakeClass ? React.createElement('style', null,
+          `[data-reveal-shake] { animation: ${shakeClass}; }`
+        ) : null,
+
+        // Dark overlay for mythic
+        darkOverlay ? React.createElement('div', {
+          style: {
+            position: 'fixed', inset: 0, zIndex: 9998,
+            background: 'rgba(0, 0, 0, 0.85)',
+            animation: 'mythicDarkness 2.5s ease-in-out forwards',
+            pointerEvents: 'none',
+          }
+        }) : null,
+
+        // Flash overlay
+        flashStyle ? React.createElement('div', {
+          style: {
+            position: 'fixed', inset: 0, zIndex: 9999,
+            pointerEvents: 'none',
+            ...flashStyle,
+          }
+        }) : null,
+
+        // Particle overlay
+        particles.length > 0 ? React.createElement('div', {
+          style: {
+            position: 'fixed', inset: 0, zIndex: 9999,
+            pointerEvents: 'none',
+            overflow: 'hidden',
+          }
+        }, particles.map(p =>
+          p.type === 'rain'
+            ? React.createElement('div', {
+                key: p.id,
+                style: {
+                  position: 'absolute',
+                  top: '-10px',
+                  left: p.left,
+                  width: `${p.size}px`,
+                  height: `${p.size}px`,
+                  borderRadius: '50%',
+                  backgroundColor: p.color,
+                  boxShadow: `0 0 6px 2px ${p.color}99`,
+                  animation: `rainParticle ${p.duration}s ${p.delay}s infinite linear`,
+                  pointerEvents: 'none',
+                }
+              })
+            : React.createElement('div', {
+                key: p.id,
+                style: {
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  width: `${p.size}px`,
+                  height: `${p.size}px`,
+                  borderRadius: '50%',
+                  backgroundColor: p.color,
+                  boxShadow: `0 0 6px 2px ${p.color}99`,
+                  '--tx': `${p.tx}px`,
+                  '--ty': `${p.ty}px`,
+                  animation: `particleBurst 0.8s ${p.delay}s ease-out forwards`,
+                  pointerEvents: 'none',
+                }
+              })
+        )) : null,
+
+        // Children (the item reveal)
+        showChildren ? children : null,
+      );
+    };
+
     const BoxOpener = ({ box, onBack, onBoxUpdate, success, error, info }) => {
       const [pullHistory, setPullHistory] = useState(box.pullHistory || []);
       const [currentPull, setCurrentPull] = useState(null);
       const [showResult, setShowResult] = useState(false);
       const [openingPhase, setOpeningPhase] = useState('idle');
+      const [revealTier, setRevealTier] = useState(null);
+      const [revealAnimDone, setRevealAnimDone] = useState(false);
       const particleContainerRef = React.useRef(null);
       const [userName, setUserName] = useState(() => {
         if (box.type === 'shared' && box.shareCode) {
@@ -4314,6 +4543,8 @@
             // Phase 3: Reveal (1600ms+)
             setOpeningPhase('reveal');
             setCurrentPull(pull);
+            setRevealTier(getRarityTier(selectedItem.percentage));
+            setRevealAnimDone(false);
             setShowResult(true);
 
             // Spawn particles
@@ -4408,7 +4639,7 @@
       }
 
       return (
-        <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+        <div data-reveal-shake="" style={{ maxWidth: '1000px', margin: '0 auto' }}>
           {/* Header */}
           <div style={{ marginBottom: '1rem' }}>
             {/* Back button - left aligned, compact */}
@@ -4617,12 +4848,15 @@
 
             {/* Result card - visible during reveal and done phases */}
             {(openingPhase === 'reveal' || openingPhase === 'done') && showResult && currentPull && (
+              <RevealAnimation tier={revealTier} onComplete={() => setRevealAnimDone(true)}>
               <div
                 onClick={() => {
                   if (canPull && !isExpired) {
                     setOpeningPhase('idle');
                     setShowResult(false);
                     setCurrentPull(null);
+                    setRevealTier(null);
+                    setRevealAnimDone(false);
                     if (particleContainerRef.current) particleContainerRef.current.innerHTML = '';
                   }
                 }}
@@ -4684,6 +4918,7 @@
                   </div>
                 )}
               </div>
+              </RevealAnimation>
             )}
 
           </Card>
