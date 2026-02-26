@@ -608,9 +608,99 @@
       return hoursRemaining > 0 && hoursRemaining <= 24;
     };
 
+    // ========== PULL RECHARGE UTILITIES ==========
+
+    // Returns milliseconds per recharge period
+    const getRechargeIntervalMs = (period) => {
+      switch (period) {
+        case 'hour': return 60 * 60 * 1000;
+        case 'day': return 24 * 60 * 60 * 1000;
+        case 'week': return 7 * 24 * 60 * 60 * 1000;
+        case 'month': return 30 * 24 * 60 * 60 * 1000;
+        default: return 24 * 60 * 60 * 1000;
+      }
+    };
+
+    // Calculate current available recharge opens for a box+user
+    const getRechargeOpensAvailable = (box, userPullTimestamps) => {
+      if (!box.pullRechargeEnabled) return Infinity;
+
+      const intervalMs = getRechargeIntervalMs(box.pullRechargePeriod);
+      const now = Date.now();
+
+      const lastPullTime = userPullTimestamps.length > 0
+        ? Math.max(...userPullTimestamps)
+        : (box.createdAt || now);
+
+      const elapsed = now - lastPullTime;
+      const periodsElapsed = Math.floor(elapsed / intervalMs);
+
+      const currentPeriodStart = now - (elapsed % intervalMs);
+      const pullsInCurrentPeriod = userPullTimestamps.filter(
+        t => t >= currentPeriodStart
+      ).length;
+
+      const bankedFromPrevious = Math.min(
+        periodsElapsed * box.pullRechargeAmount,
+        box.pullRechargeMax
+      );
+      const availableThisPeriod = Math.max(
+        0,
+        box.pullRechargeAmount - pullsInCurrentPeriod
+      );
+
+      return Math.min(
+        availableThisPeriod + bankedFromPrevious,
+        box.pullRechargeMax
+      );
+    };
+
+    // Calculate time until next recharge open becomes available
+    const getTimeUntilNextRecharge = (box, userPullTimestamps) => {
+      if (!box.pullRechargeEnabled) return 0;
+
+      const intervalMs = getRechargeIntervalMs(box.pullRechargePeriod);
+      const now = Date.now();
+
+      const lastPullTime = userPullTimestamps.length > 0
+        ? Math.max(...userPullTimestamps)
+        : (box.createdAt || now);
+
+      const elapsed = now - lastPullTime;
+      const timeInCurrentPeriod = elapsed % intervalMs;
+      const timeUntilNext = intervalMs - timeInCurrentPeriod;
+
+      return timeUntilNext;
+    };
+
+    // Format remaining time as human-readable string
+    const formatRechargeTimeRemaining = (ms) => {
+      if (ms <= 0) return 'Now';
+      const hours = Math.floor(ms / (1000 * 60 * 60));
+      const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((ms % (1000 * 60)) / 1000);
+
+      if (hours > 24) {
+        const days = Math.floor(hours / 24);
+        const remainHours = hours % 24;
+        return `${days}d ${remainHours}h`;
+      }
+      if (hours > 0) return `${hours}h ${minutes}m`;
+      if (minutes > 0) return `${minutes}m ${seconds}s`;
+      return `${seconds}s`;
+    };
+
+    // Get user's pull timestamps for recharge calculations
+    const getUserPullTimestamps = (box) => {
+      const myDeviceId = getDeviceId();
+      return (box.pullHistory || [])
+        .filter(p => p.deviceId === myDeviceId)
+        .map(p => p.timestamp);
+    };
+
     // ========== STORAGE ==========
     
-    const APP_VERSION = 'V1818';
+    const APP_VERSION = 'V226';
 
     const STORAGE_KEYS = {
       BOXES: 'lootBoxes',
@@ -1184,6 +1274,10 @@
           description: options.description || '',
           category: options.category || 'General',
           curated: options.curated || false,
+          pullRechargeEnabled: box.pullRechargeEnabled || false,
+          pullRechargeAmount: box.pullRechargeAmount || 1,
+          pullRechargePeriod: box.pullRechargePeriod || 'day',
+          pullRechargeMax: box.pullRechargeMax || 3,
         };
         await db.collection('boxTemplates').doc(shareCode).set(templateData);
         return shareCode;
@@ -1236,6 +1330,10 @@
           name: templateData.createdBy,
           shareCode: templateData.shareCode,
         },
+        pullRechargeEnabled: templateData.pullRechargeEnabled || false,
+        pullRechargeAmount: templateData.pullRechargeAmount || 1,
+        pullRechargePeriod: templateData.pullRechargePeriod || 'day',
+        pullRechargeMax: templateData.pullRechargeMax || 3,
       };
       saveBox(newBox);
       return newBox;
@@ -2897,6 +2995,21 @@
 
       const isExpired = box.expiresAt ? Date.now() > box.expiresAt : false;
 
+      // Pull recharge for card display
+      const rechargeInfo = (() => {
+        if (!box.pullRechargeEnabled) return null;
+        const ts = getUserPullTimestamps(box);
+        const available = getRechargeOpensAvailable(box, ts);
+        const periodLabel = box.pullRechargePeriod === 'hour' ? 'hr' : box.pullRechargePeriod === 'day' ? 'day' : box.pullRechargePeriod === 'week' ? 'wk' : 'mo';
+        return { available, max: box.pullRechargeMax, periodLabel, amount: box.pullRechargeAmount };
+      })();
+
+      const rechargeColor = (() => {
+        if (!rechargeInfo) return '#94a3b8';
+        if (rechargeInfo.available <= 0) return '#f59e0b';
+        return '#10b981';
+      })();
+
       // Tooltip renderer
       const renderTooltip = (text) => (
         React.createElement('div', {
@@ -3000,13 +3113,14 @@
         <>
           <div
             style={{
-              background: 'rgba(26, 31, 53, 0.6)',
-              border: '1px solid rgba(59, 130, 246, 0.2)',
-              borderRadius: '12px',
+              background: 'linear-gradient(135deg, rgba(26, 31, 53, 0.8) 0%, rgba(15, 10, 40, 0.95) 100%)',
+              border: '1px solid rgba(99, 102, 241, 0.45)',
+              borderRadius: '14px',
               overflow: 'hidden',
               transition: 'all 0.25s ease',
               cursor: 'default',
               position: 'relative',
+              boxShadow: '0 0 18px rgba(99, 102, 241, 0.15), 0 4px 20px rgba(0, 0, 0, 0.3)',
             }}
           >
 
@@ -3334,6 +3448,27 @@
                     </div>
                   )}
 
+                  {/* 7. Recharge (conditional) */}
+                  {box.pullRechargeEnabled && rechargeInfo && (
+                    <div onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleIconTap(e, 'recharge'); }} style={{
+                      position: 'relative', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', padding: '2px 0',
+                      opacity: rechargeInfo.available <= 0 ? 0.7 : 1,
+                    }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={rechargeColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <polyline points="12 6 12 12 16 14" />
+                      </svg>
+                      <span style={{ fontSize: '0.65rem', fontWeight: 600, color: rechargeColor }}>
+                        {rechargeInfo.available}/{rechargeInfo.max}
+                      </span>
+                      {activeTooltip === 'recharge' && renderTooltip(
+                        rechargeInfo.available <= 0
+                          ? `Recharging... ${rechargeInfo.amount} open${rechargeInfo.amount > 1 ? 's' : ''}/${rechargeInfo.periodLabel}`
+                          : `${rechargeInfo.available} recharge open${rechargeInfo.available !== 1 ? 's' : ''} available (${rechargeInfo.amount}/${rechargeInfo.periodLabel})`
+                      )}
+                    </div>
+                  )}
+
                 </div>
                 {/* End info grid */}
               </div>
@@ -3366,6 +3501,7 @@
                       objectFit: 'contain',
                       filter: 'drop-shadow(0 4px 16px rgba(0, 0, 0, 0.5))',
                       transition: 'transform 0.2s ease',
+                      transform: 'translateX(-12px)',
                     }}
                   />
                 ) : (
@@ -4128,10 +4264,22 @@
       const [boxImageId, setBoxImageId] = useState(editingBox ? editingBox.boxImageId || 'chest' : 'chest');
       const [imageSelected, setImageSelected] = useState(editingBox ? true : false);
       const [showAdvanced, setShowAdvanced] = useState(
-        editingBox ? !!(editingBox.maxPulls || editingBox.hideContents || editingBox.hideOdds || editingBox.expiresAt) : false
+        editingBox ? !!(editingBox.maxPulls || editingBox.hideContents || editingBox.hideOdds || editingBox.expiresAt || editingBox.pullRechargeEnabled) : false
       );
       const [expirationEnabled, setExpirationEnabled] = useState(
         editingBox ? !!editingBox.expiresAt : false
+      );
+      const [pullRechargeEnabled, setPullRechargeEnabled] = useState(
+        editingBox ? editingBox.pullRechargeEnabled || false : false
+      );
+      const [pullRechargeAmount, setPullRechargeAmount] = useState(
+        editingBox && editingBox.pullRechargeAmount ? editingBox.pullRechargeAmount.toString() : '1'
+      );
+      const [pullRechargePeriod, setPullRechargePeriod] = useState(
+        editingBox ? editingBox.pullRechargePeriod || 'day' : 'day'
+      );
+      const [pullRechargeMax, setPullRechargeMax] = useState(
+        editingBox && editingBox.pullRechargeMax ? editingBox.pullRechargeMax.toString() : '3'
       );
 
       const userSettings = getUserSettings();
@@ -4190,6 +4338,10 @@
           hideOdds: hideOdds,
           expiresAt: expiresAt ? new Date(expiresAt).getTime() : null,
           allowParticipantSharing: boxType === 'shared' ? allowParticipantSharing : false,
+          pullRechargeEnabled: pullRechargeEnabled,
+          pullRechargeAmount: parseInt(pullRechargeAmount) || 1,
+          pullRechargePeriod: pullRechargePeriod,
+          pullRechargeMax: parseInt(pullRechargeMax) || 3,
         };
 
         // If shared box, save to Firestore
@@ -4214,6 +4366,10 @@
               hideOdds: boxData.hideOdds,
               expiresAt: boxData.expiresAt,
               allowParticipantSharing: boxData.allowParticipantSharing,
+              pullRechargeEnabled: boxData.pullRechargeEnabled,
+              pullRechargeAmount: boxData.pullRechargeAmount,
+              pullRechargePeriod: boxData.pullRechargePeriod,
+              pullRechargeMax: boxData.pullRechargeMax,
             };
             saveBox(localRef);
           } catch (err) {
@@ -4565,6 +4721,86 @@
                     </div>
                   )}
                 </div>
+
+                {/* Pull Recharge toggle */}
+                <div style={{
+                  padding: '0.6rem 0.75rem', background: 'rgba(30, 64, 175, 0.15)',
+                  border: '1px solid rgba(59, 130, 246, 0.2)', borderRadius: '8px',
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <div style={{ color: '#e2e8f0', fontWeight: 600, fontSize: '0.9rem' }}>Pull Recharge</div>
+                      <div style={{ color: '#94a3b8', fontSize: '0.75rem', marginTop: '0.15rem' }}>Limit opens that regenerate over time</div>
+                    </div>
+                    <label style={{ position: 'relative', display: 'inline-block', width: '44px', height: '24px', cursor: 'pointer', flexShrink: 0 }}>
+                      <input type="checkbox" checked={pullRechargeEnabled} onChange={(e) => setPullRechargeEnabled(e.target.checked)} style={{ opacity: 0, width: 0, height: 0 }} />
+                      <span style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: pullRechargeEnabled ? 'linear-gradient(135deg, #4169e1, #1e40af)' : 'rgba(100, 116, 139, 0.4)', borderRadius: '12px', transition: 'all 0.3s ease' }}>
+                        <span style={{ position: 'absolute', height: '18px', width: '18px', left: pullRechargeEnabled ? '22px' : '3px', bottom: '3px', background: '#fff', borderRadius: '50%', transition: 'all 0.3s ease' }} />
+                      </span>
+                    </label>
+                  </div>
+                  {pullRechargeEnabled && (
+                    <div style={{ marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      <div style={{ display: 'flex', gap: '0.75rem' }}>
+                        <div style={{ flex: 1 }}>
+                          <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 500, color: '#cbd5e1', marginBottom: '0.25rem' }}>Opens granted</label>
+                          <input
+                            type="number"
+                            min="1"
+                            max="99"
+                            value={pullRechargeAmount}
+                            onChange={(e) => setPullRechargeAmount(e.target.value)}
+                            style={{
+                              width: '100%', padding: '0.5rem 0.75rem', background: 'rgba(15, 22, 36, 0.6)',
+                              border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: '8px',
+                              color: '#e2e8f0', fontSize: '0.875rem', fontFamily: 'inherit', outline: 'none',
+                            }}
+                          />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 500, color: '#cbd5e1', marginBottom: '0.25rem' }}>Every</label>
+                          <select
+                            value={pullRechargePeriod}
+                            onChange={(e) => setPullRechargePeriod(e.target.value)}
+                            style={{
+                              width: '100%', padding: '0.5rem 0.75rem', background: 'rgba(15, 22, 36, 0.6)',
+                              border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: '8px',
+                              color: '#e2e8f0', fontSize: '0.875rem', fontFamily: 'inherit', outline: 'none',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            <option value="hour">Hour</option>
+                            <option value="day">Day</option>
+                            <option value="week">Week</option>
+                            <option value="month">Month</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div style={{ maxWidth: '150px' }}>
+                        <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 500, color: '#cbd5e1', marginBottom: '0.25rem' }}>Max saved opens</label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="99"
+                          value={pullRechargeMax}
+                          onChange={(e) => setPullRechargeMax(e.target.value)}
+                          style={{
+                            width: '100%', padding: '0.5rem 0.75rem', background: 'rgba(15, 22, 36, 0.6)',
+                            border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: '8px',
+                            color: '#e2e8f0', fontSize: '0.875rem', fontFamily: 'inherit', outline: 'none',
+                          }}
+                        />
+                        <div style={{ fontSize: '0.65rem', color: '#64748b', marginTop: '0.15rem' }}>Maximum opens a user can bank up</div>
+                      </div>
+                      <div style={{
+                        fontSize: '0.75rem', color: '#94a3b8', fontStyle: 'italic',
+                        padding: '0.4rem 0.6rem', background: 'rgba(59, 130, 246, 0.08)', borderRadius: '6px',
+                      }}>
+                        Users get {pullRechargeAmount || 1} open{(parseInt(pullRechargeAmount) || 1) !== 1 ? 's' : ''} every {pullRechargePeriod}, up to {pullRechargeMax || 3} saved
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -4854,17 +5090,53 @@
       ).length;
       const remainingUserPulls = box.maxPullsPerUser ? box.maxPullsPerUser - userPullCount : null;
 
+      // Pull recharge state
+      const myPullTimestamps = React.useMemo(() => getUserPullTimestamps({ pullHistory }), [pullHistory]);
+      const [rechargeAvailable, setRechargeAvailable] = useState(() =>
+        box.pullRechargeEnabled ? getRechargeOpensAvailable(box, getUserPullTimestamps({ pullHistory: box.pullHistory || [] })) : Infinity
+      );
+      const [rechargeTimeLeft, setRechargeTimeLeft] = useState(() =>
+        box.pullRechargeEnabled ? getTimeUntilNextRecharge(box, getUserPullTimestamps({ pullHistory: box.pullHistory || [] })) : 0
+      );
+
+      // Update recharge state on interval
+      useEffect(() => {
+        if (!box.pullRechargeEnabled) return;
+        const update = () => {
+          const ts = getUserPullTimestamps({ pullHistory });
+          setRechargeAvailable(getRechargeOpensAvailable(box, ts));
+          setRechargeTimeLeft(getTimeUntilNextRecharge(box, ts));
+        };
+        update();
+        const interval = setInterval(update, 1000);
+        return () => clearInterval(interval);
+      }, [box.pullRechargeEnabled, box.pullRechargeAmount, box.pullRechargePeriod, box.pullRechargeMax, pullHistory]);
+
+      const rechargeDepleted = box.pullRechargeEnabled && rechargeAvailable <= 0;
+
       // Can pull only if ALL limits allow it
       const totalLimitOk = !box.maxPulls || pullHistory.length < box.maxPulls;
       const userLimitOk = !box.maxPullsPerUser || userPullCount < box.maxPullsPerUser;
+      const rechargeLimitOk = !box.pullRechargeEnabled || rechargeAvailable > 0;
       const isExpired = box.expiresAt ? Date.now() > box.expiresAt : false;
-      const canPull = totalLimitOk && userLimitOk && !isExpired;
+      const canPull = totalLimitOk && userLimitOk && rechargeLimitOk && !isExpired;
 
       // Calculate current odds with dynamic adjustment
       const currentOdds = calculateDynamicOdds(box.items, pullHistory);
 
       const handleBoxTap = () => {
         if (!canPull || openingPhase !== 'idle' || isExpired || currentOdds.length === 0) return;
+
+        // Recharge check
+        if (box.pullRechargeEnabled) {
+          const ts = getUserPullTimestamps({ pullHistory });
+          const available = getRechargeOpensAvailable(box, ts);
+          if (available <= 0) {
+            const timeLeft = getTimeUntilNextRecharge(box, ts);
+            info(`Next open available in ${formatRechargeTimeRemaining(timeLeft)}`);
+            return;
+          }
+        }
 
         // Unlock audio on this user gesture (critical for iOS)
         _warmUpAudio();
@@ -5096,6 +5368,39 @@
                 </div>
               )}
 
+              {box.pullRechargeEnabled && (
+                <div style={{
+                  padding: '0.5rem 1rem',
+                  background: rechargeAvailable > 0 ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)',
+                  border: `1px solid ${rechargeAvailable > 0 ? '#10b981' : '#f59e0b'}`,
+                  borderRadius: '8px',
+                  fontSize: '0.875rem',
+                  fontWeight: 600,
+                  color: rechargeAvailable > 0 ? '#6ee7b7' : '#fcd34d',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                }}
+                  title={`Recharge opens: ${rechargeAvailable} of ${box.pullRechargeMax} available.${rechargeDepleted ? ' Next open in ' + formatRechargeTimeRemaining(rechargeTimeLeft) + '.' : ''}`}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <polyline points="12 6 12 12 16 14" />
+                  </svg>
+                  {rechargeAvailable}/{box.pullRechargeMax}
+                </div>
+              )}
+
+              {rechargeDepleted && (
+                <div style={{
+                  fontSize: '0.8rem',
+                  color: '#f59e0b',
+                  fontWeight: 500,
+                }}>
+                  Next open in {formatRechargeTimeRemaining(rechargeTimeLeft)}
+                </div>
+              )}
+
             </div>
           </div>
 
@@ -5170,6 +5475,8 @@
                     borderRadius: '16px',
                     zIndex: 2,
                     position: 'relative',
+                    opacity: rechargeDepleted ? 0.6 : 1,
+                    transition: 'opacity 0.3s ease',
                   }}
                 >
                   <img
@@ -5203,12 +5510,14 @@
                 {openingPhase === 'idle' && (isExpired || !canPull) && (
                   <>
                     <div style={{ fontSize: '1.25rem', color: '#fca5a5', marginBottom: '0.5rem' }}>
-                      {isExpired ? 'This box has expired' : 'No opens remaining'}
+                      {isExpired ? 'This box has expired' : rechargeDepleted ? `Next open in ${formatRechargeTimeRemaining(rechargeTimeLeft)}` : 'No opens remaining'}
                     </div>
                     <div style={{ fontSize: '0.875rem', color: '#64748b' }}>
                       {isExpired
                         ? 'You can still view the open history below'
-                        : 'Check the open history to see what was opened'}
+                        : rechargeDepleted
+                          ? `${rechargeAvailable}/${box.pullRechargeMax} recharge opens available`
+                          : 'Check the open history to see what was opened'}
                     </div>
                   </>
                 )}
