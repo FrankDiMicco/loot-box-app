@@ -6542,21 +6542,11 @@
       }, [drawerOpen]);
 
       const handleDrawerNavigate = (key) => {
-        if (key === 'toggleTier') {
-          const settings = getUserSettings();
-          const newTier = settings.tier === 'paid' ? 'free' : 'paid';
-          saveUserSettings({ ...settings, tier: newTier });
-          setUserSettings({ ...settings, tier: newTier });
-          loadData();
-          info(`Switched to ${newTier === 'paid' ? 'Premium' : 'Free'} tier`);
-          return;
-        }
         setDrawerOpen(false);
         switch (key) {
           case 'myBoxes': setMode('home'); break;
           case 'templates': setMode('discover'); break;
           case 'stats': setMode('stats'); break;
-          case 'account': info('Account system coming soon!'); break;
           case 'settings': setMode('settings'); break;
           case 'shareApp': {
             const appUrl = `${window.location.origin}${window.location.pathname}`;
