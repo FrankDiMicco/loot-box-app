@@ -5750,7 +5750,11 @@
             {(openingPhase === 'idle' || openingPhase === 'wiggle' || openingPhase === 'shaking') && (
               <div style={{ textAlign: 'center' }}>
                 <div
+                  tabIndex={openingPhase === 'idle' && canPull && !isExpired ? 0 : -1}
+                  role="button"
+                  aria-label="Open loot box"
                   onClick={openingPhase === 'idle' && canPull && !isExpired ? handleBoxTap : undefined}
+                  onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && openingPhase === 'idle' && canPull && !isExpired) { e.preventDefault(); handleBoxTap(); } }}
                   style={{
                     width: '200px',
                     height: '200px',
