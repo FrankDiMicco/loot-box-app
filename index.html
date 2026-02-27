@@ -20,7 +20,10 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-  
+
+  <!-- QR Code Generator -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
   <style>
     /* Global Styles */
     * {
@@ -840,6 +843,16 @@
       const counts = getLastSeenPullCounts();
       counts[shareCode] = count;
       localStorage.setItem('lootBoxLastSeenPulls', JSON.stringify(counts));
+    };
+
+    const hasSeenWelcome = () => {
+      try { return localStorage.getItem('lootBoxHasSeenWelcome') === 'true'; }
+      catch { return false; }
+    };
+
+    const markWelcomeSeen = () => {
+      try { localStorage.setItem('lootBoxHasSeenWelcome', 'true'); }
+      catch {}
     };
 
     const deleteBox = (boxId) => {
@@ -4546,7 +4559,7 @@
           maxPulls: maxPulls ? parseInt(maxPulls) : null,
           maxPullsPerUser: maxPullsPerUser ? parseInt(maxPullsPerUser) : null,
           type: boxType,
-          shareCode: editingBox ? editingBox.shareCode : generateShareCode(),
+          shareCode: (editingBox && editingBox.shareCode) ? editingBox.shareCode : generateShareCode(),
           pullHistory: editingBox ? editingBox.pullHistory : [],
           createdAt: editingBox ? editingBox.createdAt : Date.now(),
           boxImageId: boxImageId,
@@ -5275,6 +5288,8 @@
       const [pullHistory, setPullHistory] = useState(box.pullHistory || []);
       const [currentPull, setCurrentPull] = useState(null);
       const [showResult, setShowResult] = useState(false);
+      const [showQRCode, setShowQRCode] = useState(false);
+      const qrRef = React.useRef(null);
       const [openingPhase, setOpeningPhase] = useState('idle');
       const [revealTier, setRevealTier] = useState(null);
       const [revealAnimDone, setRevealAnimDone] = useState(false);
@@ -5372,6 +5387,21 @@
 
       const rechargeDepleted = box.pullRechargeEnabled && rechargeAvailable <= 0;
       const allCyclesUsed = box.pullRechargeUnlimited === false && rechargeCyclesRemaining === 0;
+
+      // Generate QR code when modal opens
+      useEffect(() => {
+        if (showQRCode && qrRef.current && typeof QRCode !== 'undefined') {
+          qrRef.current.innerHTML = '';
+          new QRCode(qrRef.current, {
+            text: `${window.location.origin}${window.location.pathname}#/box/${box.shareCode}`,
+            width: 200,
+            height: 200,
+            colorDark: '#0f172a',
+            colorLight: '#ffffff',
+            correctLevel: QRCode.CorrectLevel.M,
+          });
+        }
+      }, [showQRCode]);
 
       // Can pull only if ALL limits allow it
       const totalLimitOk = !box.maxPulls || pullHistory.length < box.maxPulls;
@@ -6002,6 +6032,134 @@
             </button>
           )}
 
+          {box.shareCode && (
+            <button
+              onClick={() => setShowQRCode(true)}
+              style={{
+                width: '100%',
+                padding: '0.75rem 1.25rem',
+                marginBottom: '1rem',
+                fontSize: '0.85rem',
+                fontWeight: 600,
+                fontFamily: 'inherit',
+                color: '#94a3b8',
+                background: 'transparent',
+                border: '1px solid rgba(148, 163, 184, 0.25)',
+                borderRadius: '12px',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem',
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = 'rgba(15, 23, 42, 0.5)';
+                e.currentTarget.style.borderColor = 'rgba(148, 163, 184, 0.4)';
+                e.currentTarget.style.color = '#e2e8f0';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = 'transparent';
+                e.currentTarget.style.borderColor = 'rgba(148, 163, 184, 0.25)';
+                e.currentTarget.style.color = '#94a3b8';
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="2" width="8" height="8" rx="1" />
+                <rect x="14" y="2" width="8" height="8" rx="1" />
+                <rect x="2" y="14" width="8" height="8" rx="1" />
+                <rect x="14" y="14" width="4" height="4" rx="0.5" />
+                <line x1="22" y1="14" x2="22" y2="18" />
+                <line x1="18" y1="22" x2="22" y2="22" />
+              </svg>
+              Show QR Code
+            </button>
+          )}
+
+          {/* QR Code Modal */}
+          {showQRCode && (
+            <>
+              <div
+                onClick={() => setShowQRCode(false)}
+                style={{
+                  position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                  background: 'rgba(0, 0, 0, 0.7)',
+                  backdropFilter: 'blur(8px)',
+                  WebkitBackdropFilter: 'blur(8px)',
+                  zIndex: 9998,
+                  animation: 'fadeIn 0.2s ease',
+                }}
+              />
+              <div style={{
+                position: 'fixed',
+                top: '50%', left: '50%',
+                transform: 'translate(-50%, -50%)',
+                zIndex: 9999,
+                background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 27, 75, 0.95) 100%)',
+                border: '1px solid rgba(99, 102, 241, 0.3)',
+                borderRadius: '20px',
+                padding: '2rem',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '1.25rem',
+                boxShadow: '0 0 40px rgba(99, 102, 241, 0.2), 0 8px 32px rgba(0, 0, 0, 0.5)',
+                animation: 'slideUp 0.3s ease',
+                maxWidth: '320px',
+                width: '90%',
+              }}>
+                <h3 style={{
+                  margin: 0, fontSize: '1.1rem', fontWeight: 700,
+                  color: '#e2e8f0', textAlign: 'center',
+                }}>
+                  {box.name}
+                </h3>
+                <div
+                  ref={qrRef}
+                  style={{
+                    background: '#ffffff',
+                    borderRadius: '12px',
+                    padding: '16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                />
+                <div style={{
+                  fontSize: '0.75rem', color: '#64748b', textAlign: 'center',
+                }}>
+                  Scan to open this loot box
+                </div>
+                <button
+                  onClick={() => setShowQRCode(false)}
+                  style={{
+                    width: '100%',
+                    padding: '0.7rem',
+                    fontSize: '0.9rem',
+                    fontWeight: 600,
+                    fontFamily: 'inherit',
+                    color: '#94a3b8',
+                    background: 'rgba(15, 23, 42, 0.6)',
+                    border: '1px solid rgba(148, 163, 184, 0.2)',
+                    borderRadius: '10px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.background = 'rgba(15, 23, 42, 0.8)';
+                    e.currentTarget.style.color = '#e2e8f0';
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.background = 'rgba(15, 23, 42, 0.6)';
+                    e.currentTarget.style.color = '#94a3b8';
+                  }}
+                >
+                  Close
+                </button>
+              </div>
+            </>
+          )}
+
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : (box.hideOdds ? '1fr' : '1fr 1fr'), gap: isMobile ? '1rem' : '1.5rem' }}>
             {/* Current Odds - only show if not hidden */}
             {!box.hideOdds && (
@@ -6278,6 +6436,7 @@
       const [pendingTemplate, setPendingTemplate] = useState(null);
       const [drawerOpen, setDrawerOpen] = useState(false);
       const [showAboutModal, setShowAboutModal] = useState(false);
+      const [showWelcome, setShowWelcome] = useState(() => !hasSeenWelcome());
       const { showToast, toastElement, success, error, info } = useToast();
 
       // Tick to keep expiration badges fresh (1s when under 1min, else 30s)
@@ -6593,6 +6752,7 @@
         loadData();
         setMode('home');
         setEditingBox(null);
+        if (showWelcome) { markWelcomeSeen(); setShowWelcome(false); }
         success(editingBox ? 'Box updated successfully!' : `${box.name} created successfully!`);
       };
 
@@ -6771,6 +6931,100 @@
               </div>
 
               {activeFilter === 'All' && boxes.length === 0 ? (
+                showWelcome ? (
+                  <div style={{
+                    display: 'flex', flexDirection: 'column', alignItems: 'center',
+                    padding: '2.5rem 1.5rem 3rem',
+                  }}>
+                    <div style={{
+                      position: 'relative', width: '220px', height: '220px', margin: '0 auto',
+                      marginBottom: '1.5rem',
+                      animation: 'emptyStateFloat 3s ease-in-out infinite',
+                    }}>
+                      <div style={{
+                        position: 'absolute', width: '280px', height: '280px', borderRadius: '50%',
+                        background: 'radial-gradient(circle, rgba(59, 130, 246, 0.35) 0%, rgba(99, 102, 241, 0.15) 50%, transparent 75%)',
+                        filter: 'blur(28px)',
+                        top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+                        zIndex: 0, pointerEvents: 'none',
+                      }} />
+                      <img
+                        src="assets/images/ui/empty-state-chest.png"
+                        alt=""
+                        style={{
+                          width: '200px', height: '200px', objectFit: 'contain',
+                          position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+                          filter: 'drop-shadow(0 8px 24px rgba(59, 130, 246, 0.3))',
+                          zIndex: 1,
+                        }}
+                      />
+                      {[
+                        { top: '70%', left: '15%', color: '#60a5fa', size: 5, delay: '0s',   duration: '3.5s' },
+                        { top: '60%', left: '80%', color: '#a78bfa', size: 4, delay: '1.2s', duration: '4s'   },
+                        { top: '40%', left: '10%', color: '#fbbf24', size: 6, delay: '2s',   duration: '3s'   },
+                        { top: '75%', left: '55%', color: '#f0abfc', size: 4, delay: '0.6s', duration: '4.5s' },
+                        { top: '50%', left: '88%', color: '#60a5fa', size: 5, delay: '3s',   duration: '3.8s' },
+                        { top: '80%', left: '35%', color: '#a78bfa', size: 4, delay: '1.8s', duration: '5s'   },
+                      ].map((p, i) => (
+                        <div key={i} style={{
+                          position: 'absolute', top: p.top, left: p.left,
+                          width: `${p.size}px`, height: `${p.size}px`, borderRadius: '50%',
+                          backgroundColor: p.color,
+                          boxShadow: `0 0 6px 2px ${p.color}99`,
+                          animation: `floatParticle ${p.duration} ${p.delay} infinite ease-in-out`,
+                          pointerEvents: 'none', zIndex: 2,
+                        }} />
+                      ))}
+                    </div>
+                    <h2 style={{
+                      fontSize: '1.4rem', fontWeight: 800, color: '#e2e8f0',
+                      margin: '0 0 0.5rem 0', textAlign: 'center',
+                    }}>
+                      Welcome to Loot Box Creator!
+                    </h2>
+                    <p style={{
+                      fontSize: '0.9rem', color: '#94a3b8', textAlign: 'center',
+                      maxWidth: '300px', lineHeight: '1.6', margin: '0 0 1.5rem 0',
+                    }}>
+                      Build custom loot boxes and share them with friends.
+                    </p>
+                    <button
+                      onClick={() => { markWelcomeSeen(); setShowWelcome(false); handleCreateBox(); }}
+                      style={{
+                        width: '100%',
+                        maxWidth: '320px',
+                        padding: '0.875rem 1.25rem',
+                        fontSize: '0.95rem',
+                        fontWeight: 700,
+                        fontFamily: 'inherit',
+                        color: '#e2e8f0',
+                        background: 'rgba(15, 23, 42, 0.7)',
+                        backdropFilter: 'blur(12px)',
+                        WebkitBackdropFilter: 'blur(12px)',
+                        border: '1px solid rgba(99, 102, 241, 0.45)',
+                        borderRadius: '16px',
+                        cursor: 'pointer',
+                        letterSpacing: '0.03em',
+                        position: 'relative',
+                        overflow: 'hidden',
+                        animation: 'borderPulse 3s ease-in-out infinite',
+                        transition: 'all 0.2s ease',
+                      }}
+                      onMouseEnter={e => {
+                        e.currentTarget.style.background = 'rgba(30, 27, 75, 0.75)';
+                        e.currentTarget.style.borderColor = 'rgba(139, 92, 246, 0.7)';
+                        e.currentTarget.style.color = '#ffffff';
+                      }}
+                      onMouseLeave={e => {
+                        e.currentTarget.style.background = 'rgba(15, 23, 42, 0.7)';
+                        e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.45)';
+                        e.currentTarget.style.color = '#e2e8f0';
+                      }}
+                    >
+                      Create Your First Box
+                    </button>
+                  </div>
+                ) : (
                 <div style={{
                   display: 'flex', flexDirection: 'column', alignItems: 'center',
                   padding: '3rem 1.5rem 3rem',
@@ -6822,6 +7076,7 @@
                     Tap <span style={{ color: '#3b82f6', fontWeight: 600 }}>Create New Loot Box</span> above to build your first box
                   </div>
                 </div>
+                )
               ) : filteredBoxes.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '4rem 2rem', color: '#64748b' }}>
                   {activeFilter === 'Faves' ? (
