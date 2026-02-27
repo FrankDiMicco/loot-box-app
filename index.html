@@ -628,39 +628,73 @@
       const intervalMs = getRechargeIntervalMs(box.pullRechargePeriod);
       const now = Date.now();
 
-      const lastPullTime = userPullTimestamps.length > 0
-        ? Math.max(...userPullTimestamps)
-        : (box.createdAt || now);
+      // If unlimited (default for backward compat), use existing logic
+      if (box.pullRechargeUnlimited !== false) {
+        const lastPullTime = userPullTimestamps.length > 0
+          ? Math.max(...userPullTimestamps)
+          : (box.createdAt || now);
 
-      const elapsed = now - lastPullTime;
-      const periodsElapsed = Math.floor(elapsed / intervalMs);
+        const elapsed = now - lastPullTime;
+        const periodsElapsed = Math.floor(elapsed / intervalMs);
 
-      const currentPeriodStart = now - (elapsed % intervalMs);
-      const pullsInCurrentPeriod = userPullTimestamps.filter(
-        t => t >= currentPeriodStart
-      ).length;
+        const currentPeriodStart = now - (elapsed % intervalMs);
+        const pullsInCurrentPeriod = userPullTimestamps.filter(
+          t => t >= currentPeriodStart
+        ).length;
 
-      const bankedFromPrevious = Math.min(
-        periodsElapsed * box.pullRechargeAmount,
+        const bankedFromPrevious = Math.min(
+          periodsElapsed * box.pullRechargeAmount,
+          box.pullRechargeMax
+        );
+        const availableThisPeriod = Math.max(
+          0,
+          box.pullRechargeAmount - pullsInCurrentPeriod
+        );
+
+        return Math.min(
+          availableThisPeriod + bankedFromPrevious,
+          box.pullRechargeMax
+        );
+      }
+
+      // Limited cycles logic
+      const maxCycles = box.pullRechargeCycles || 5;
+      const totalPeriodsSinceCreation = Math.floor(
+        (now - (box.createdAt || now)) / intervalMs
+      );
+      const cyclesElapsed = Math.min(totalPeriodsSinceCreation, maxCycles);
+
+      // Grand total opens ever possible = (cyclesElapsed + 1) * amount
+      // The +1 accounts for the initial period before any recharge cycle fires
+      const grandTotalPossible = (cyclesElapsed + 1) * box.pullRechargeAmount;
+      const totalPulls = userPullTimestamps.length;
+
+      const remaining = Math.min(
+        Math.max(0, grandTotalPossible - totalPulls),
         box.pullRechargeMax
       );
-      const availableThisPeriod = Math.max(
-        0,
-        box.pullRechargeAmount - pullsInCurrentPeriod
-      );
 
-      return Math.min(
-        availableThisPeriod + bankedFromPrevious,
-        box.pullRechargeMax
-      );
+      return remaining;
     };
 
     // Calculate time until next recharge open becomes available
+    // Returns -1 when cycles are exhausted (no more recharges)
     const getTimeUntilNextRecharge = (box, userPullTimestamps) => {
       if (!box.pullRechargeEnabled) return 0;
 
       const intervalMs = getRechargeIntervalMs(box.pullRechargePeriod);
       const now = Date.now();
+
+      // If NOT unlimited, check if all cycles consumed
+      if (box.pullRechargeUnlimited === false) {
+        const maxCycles = box.pullRechargeCycles || 5;
+        const totalPeriodsSinceCreation = Math.floor(
+          (now - (box.createdAt || now)) / intervalMs
+        );
+        if (totalPeriodsSinceCreation >= maxCycles) {
+          return -1; // No more recharges
+        }
+      }
 
       const lastPullTime = userPullTimestamps.length > 0
         ? Math.max(...userPullTimestamps)
@@ -698,9 +732,20 @@
         .map(p => p.timestamp);
     };
 
+    // Get remaining recharge cycles for a box (returns null if unlimited)
+    const getRechargeCyclesRemaining = (box) => {
+      if (!box.pullRechargeEnabled || box.pullRechargeUnlimited !== false) return null;
+      const maxCycles = box.pullRechargeCycles || 5;
+      const intervalMs = getRechargeIntervalMs(box.pullRechargePeriod);
+      const totalPeriodsSinceCreation = Math.floor(
+        (Date.now() - (box.createdAt || Date.now())) / intervalMs
+      );
+      return Math.max(0, maxCycles - totalPeriodsSinceCreation);
+    };
+
     // ========== STORAGE ==========
     
-    const APP_VERSION = 'V226';
+    const APP_VERSION = 'V808';
 
     const STORAGE_KEYS = {
       BOXES: 'lootBoxes',
@@ -1278,6 +1323,8 @@
           pullRechargeAmount: box.pullRechargeAmount || 1,
           pullRechargePeriod: box.pullRechargePeriod || 'day',
           pullRechargeMax: box.pullRechargeMax || 3,
+          pullRechargeUnlimited: box.pullRechargeUnlimited !== false,
+          pullRechargeCycles: box.pullRechargeCycles || 5,
         };
         await db.collection('boxTemplates').doc(shareCode).set(templateData);
         return shareCode;
@@ -3001,11 +3048,14 @@
         const ts = getUserPullTimestamps(box);
         const available = getRechargeOpensAvailable(box, ts);
         const periodLabel = box.pullRechargePeriod === 'hour' ? 'hr' : box.pullRechargePeriod === 'day' ? 'day' : box.pullRechargePeriod === 'week' ? 'wk' : 'mo';
-        return { available, max: box.pullRechargeMax, periodLabel, amount: box.pullRechargeAmount };
+        const cyclesRemaining = getRechargeCyclesRemaining(box);
+        const allCyclesUsed = cyclesRemaining === 0;
+        return { available, max: box.pullRechargeMax, periodLabel, amount: box.pullRechargeAmount, cyclesRemaining, allCyclesUsed };
       })();
 
       const rechargeColor = (() => {
         if (!rechargeInfo) return '#94a3b8';
+        if (rechargeInfo.allCyclesUsed && rechargeInfo.available <= 0) return '#ef4444';
         if (rechargeInfo.available <= 0) return '#f59e0b';
         return '#10b981';
       })();
@@ -3459,12 +3509,22 @@
                         <polyline points="12 6 12 12 16 14" />
                       </svg>
                       <span style={{ fontSize: '0.65rem', fontWeight: 600, color: rechargeColor }}>
-                        {rechargeInfo.available}/{rechargeInfo.max}
+                        {rechargeInfo.allCyclesUsed && rechargeInfo.available <= 0
+                          ? 'Done'
+                          : `${rechargeInfo.available}/${rechargeInfo.max}`
+                        }
+                        {rechargeInfo.cyclesRemaining !== null && !rechargeInfo.allCyclesUsed && (
+                          ` (${rechargeInfo.cyclesRemaining} left)`
+                        )}
                       </span>
                       {activeTooltip === 'recharge' && renderTooltip(
-                        rechargeInfo.available <= 0
-                          ? `Recharging... ${rechargeInfo.amount} open${rechargeInfo.amount > 1 ? 's' : ''}/${rechargeInfo.periodLabel}`
-                          : `${rechargeInfo.available} recharge open${rechargeInfo.available !== 1 ? 's' : ''} available (${rechargeInfo.amount}/${rechargeInfo.periodLabel})`
+                        rechargeInfo.allCyclesUsed && rechargeInfo.available <= 0
+                          ? 'Recharge done'
+                          : rechargeInfo.cyclesRemaining !== null
+                            ? `${rechargeInfo.available} recharge open${rechargeInfo.available !== 1 ? 's' : ''} available (${rechargeInfo.amount}/${rechargeInfo.periodLabel}, ${rechargeInfo.cyclesRemaining} refill${rechargeInfo.cyclesRemaining !== 1 ? 's' : ''} left)`
+                            : rechargeInfo.available <= 0
+                              ? `Recharging... ${rechargeInfo.amount} open${rechargeInfo.amount > 1 ? 's' : ''}/${rechargeInfo.periodLabel}`
+                              : `${rechargeInfo.available} recharge open${rechargeInfo.available !== 1 ? 's' : ''} available (${rechargeInfo.amount}/${rechargeInfo.periodLabel})`
                       )}
                     </div>
                   )}
@@ -4281,6 +4341,12 @@
       const [pullRechargeMax, setPullRechargeMax] = useState(
         editingBox && editingBox.pullRechargeMax ? editingBox.pullRechargeMax.toString() : '3'
       );
+      const [pullRechargeUnlimited, setPullRechargeUnlimited] = useState(
+        editingBox ? (editingBox.pullRechargeUnlimited !== false) : true
+      );
+      const [pullRechargeCycles, setPullRechargeCycles] = useState(
+        editingBox && editingBox.pullRechargeCycles ? editingBox.pullRechargeCycles.toString() : '5'
+      );
 
       const userSettings = getUserSettings();
       const isPaidUser = userSettings.tier === 'paid';
@@ -4342,6 +4408,8 @@
           pullRechargeAmount: parseInt(pullRechargeAmount) || 1,
           pullRechargePeriod: pullRechargePeriod,
           pullRechargeMax: parseInt(pullRechargeMax) || 3,
+          pullRechargeUnlimited: pullRechargeUnlimited,
+          pullRechargeCycles: parseInt(pullRechargeCycles) || 5,
         };
 
         // If shared box, save to Firestore
@@ -4722,14 +4790,14 @@
                   )}
                 </div>
 
-                {/* Pull Recharge toggle */}
+                {/* Rechargeable Opens toggle */}
                 <div style={{
                   padding: '0.6rem 0.75rem', background: 'rgba(30, 64, 175, 0.15)',
                   border: '1px solid rgba(59, 130, 246, 0.2)', borderRadius: '8px',
                 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
-                      <div style={{ color: '#e2e8f0', fontWeight: 600, fontSize: '0.9rem' }}>Pull Recharge</div>
+                      <div style={{ color: '#e2e8f0', fontWeight: 600, fontSize: '0.9rem' }}>Rechargeable Opens</div>
                       <div style={{ color: '#94a3b8', fontSize: '0.75rem', marginTop: '0.15rem' }}>Limit opens that regenerate over time</div>
                     </div>
                     <label style={{ position: 'relative', display: 'inline-block', width: '44px', height: '24px', cursor: 'pointer', flexShrink: 0 }}>
@@ -4792,11 +4860,45 @@
                         />
                         <div style={{ fontSize: '0.65rem', color: '#64748b', marginTop: '0.15rem' }}>Maximum opens a user can bank up</div>
                       </div>
+
+                      {/* Unlimited refills toggle */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.4rem 0' }}>
+                        <div>
+                          <div style={{ color: '#cbd5e1', fontWeight: 500, fontSize: '0.8rem' }}>Unlimited Recharges</div>
+                          <div style={{ color: '#64748b', fontSize: '0.65rem', marginTop: '0.1rem' }}>Opens recharge forever</div>
+                        </div>
+                        <label style={{ position: 'relative', display: 'inline-block', width: '40px', height: '22px', cursor: 'pointer', flexShrink: 0 }}>
+                          <input type="checkbox" checked={pullRechargeUnlimited} onChange={(e) => setPullRechargeUnlimited(e.target.checked)} style={{ opacity: 0, width: 0, height: 0 }} />
+                          <span style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: pullRechargeUnlimited ? 'linear-gradient(135deg, #4169e1, #1e40af)' : 'rgba(100, 116, 139, 0.4)', borderRadius: '11px', transition: 'all 0.3s ease' }}>
+                            <span style={{ position: 'absolute', height: '16px', width: '16px', left: pullRechargeUnlimited ? '20px' : '3px', bottom: '3px', background: '#fff', borderRadius: '50%', transition: 'all 0.3s ease' }} />
+                          </span>
+                        </label>
+                      </div>
+
+                      {/* Number of refills (only when unlimited is OFF) */}
+                      {!pullRechargeUnlimited && (
+                        <div style={{ maxWidth: '150px' }}>
+                          <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 500, color: '#cbd5e1', marginBottom: '0.25rem' }}>Number of Recharges</label>
+                          <input
+                            type="number"
+                            min="1"
+                            max="999"
+                            value={pullRechargeCycles}
+                            onChange={(e) => setPullRechargeCycles(e.target.value)}
+                            style={{
+                              width: '100%', padding: '0.5rem 0.75rem', background: 'rgba(15, 22, 36, 0.6)',
+                              border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: '8px',
+                              color: '#e2e8f0', fontSize: '0.875rem', fontFamily: 'inherit', outline: 'none',
+                            }}
+                          />
+                        </div>
+                      )}
+
                       <div style={{
                         fontSize: '0.75rem', color: '#94a3b8', fontStyle: 'italic',
                         padding: '0.4rem 0.6rem', background: 'rgba(59, 130, 246, 0.08)', borderRadius: '6px',
                       }}>
-                        Users get {pullRechargeAmount || 1} open{(parseInt(pullRechargeAmount) || 1) !== 1 ? 's' : ''} every {pullRechargePeriod}, up to {pullRechargeMax || 3} saved
+                        Users get {pullRechargeAmount || 1} open{(parseInt(pullRechargeAmount) || 1) !== 1 ? 's' : ''} every {pullRechargePeriod}, up to {pullRechargeMax || 3} saved{!pullRechargeUnlimited ? `, refills ${pullRechargeCycles || 5} times` : ''}
                       </div>
                     </div>
                   )}
@@ -5099,6 +5201,10 @@
         box.pullRechargeEnabled ? getTimeUntilNextRecharge(box, getUserPullTimestamps({ pullHistory: box.pullHistory || [] })) : 0
       );
 
+      const [rechargeCyclesRemaining, setRechargeCyclesRemaining] = useState(() =>
+        getRechargeCyclesRemaining(box)
+      );
+
       // Update recharge state on interval
       useEffect(() => {
         if (!box.pullRechargeEnabled) return;
@@ -5106,13 +5212,15 @@
           const ts = getUserPullTimestamps({ pullHistory });
           setRechargeAvailable(getRechargeOpensAvailable(box, ts));
           setRechargeTimeLeft(getTimeUntilNextRecharge(box, ts));
+          setRechargeCyclesRemaining(getRechargeCyclesRemaining(box));
         };
         update();
         const interval = setInterval(update, 1000);
         return () => clearInterval(interval);
-      }, [box.pullRechargeEnabled, box.pullRechargeAmount, box.pullRechargePeriod, box.pullRechargeMax, pullHistory]);
+      }, [box.pullRechargeEnabled, box.pullRechargeAmount, box.pullRechargePeriod, box.pullRechargeMax, box.pullRechargeUnlimited, box.pullRechargeCycles, pullHistory]);
 
       const rechargeDepleted = box.pullRechargeEnabled && rechargeAvailable <= 0;
+      const allCyclesUsed = box.pullRechargeUnlimited === false && rechargeCyclesRemaining === 0;
 
       // Can pull only if ALL limits allow it
       const totalLimitOk = !box.maxPulls || pullHistory.length < box.maxPulls;
@@ -5371,17 +5479,23 @@
               {box.pullRechargeEnabled && (
                 <div style={{
                   padding: '0.5rem 1rem',
-                  background: rechargeAvailable > 0 ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)',
-                  border: `1px solid ${rechargeAvailable > 0 ? '#10b981' : '#f59e0b'}`,
+                  background: allCyclesUsed && rechargeAvailable <= 0 ? 'rgba(239, 68, 68, 0.2)' : rechargeAvailable > 0 ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)',
+                  border: `1px solid ${allCyclesUsed && rechargeAvailable <= 0 ? '#ef4444' : rechargeAvailable > 0 ? '#10b981' : '#f59e0b'}`,
                   borderRadius: '8px',
                   fontSize: '0.875rem',
                   fontWeight: 600,
-                  color: rechargeAvailable > 0 ? '#6ee7b7' : '#fcd34d',
+                  color: allCyclesUsed && rechargeAvailable <= 0 ? '#fca5a5' : rechargeAvailable > 0 ? '#6ee7b7' : '#fcd34d',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '0.4rem',
                 }}
-                  title={`Recharge opens: ${rechargeAvailable} of ${box.pullRechargeMax} available.${rechargeDepleted ? ' Next open in ' + formatRechargeTimeRemaining(rechargeTimeLeft) + '.' : ''}`}
+                  title={
+                    allCyclesUsed && rechargeAvailable <= 0
+                      ? 'All refills used'
+                      : rechargeCyclesRemaining !== null
+                        ? `Recharge opens: ${rechargeAvailable} of ${box.pullRechargeMax} available. ${rechargeCyclesRemaining} refill${rechargeCyclesRemaining !== 1 ? 's' : ''} left.`
+                        : `Recharge opens: ${rechargeAvailable} of ${box.pullRechargeMax} available.${rechargeDepleted ? ' Next open in ' + formatRechargeTimeRemaining(rechargeTimeLeft) + '.' : ''}`
+                  }
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="12" cy="12" r="10" />
@@ -5391,13 +5505,41 @@
                 </div>
               )}
 
-              {rechargeDepleted && (
+              {/* Cycle counter (only when NOT unlimited) */}
+              {box.pullRechargeEnabled && rechargeCyclesRemaining !== null && (
                 <div style={{
-                  fontSize: '0.8rem',
-                  color: '#f59e0b',
+                  fontSize: '0.75rem',
+                  color: rechargeCyclesRemaining <= 0 ? '#ef4444' : '#94a3b8',
                   fontWeight: 500,
                 }}>
-                  Next open in {formatRechargeTimeRemaining(rechargeTimeLeft)}
+                  {rechargeCyclesRemaining <= 0 ? 'No refills left' : `${rechargeCyclesRemaining} refill${rechargeCyclesRemaining !== 1 ? 's' : ''} left`}
+                </div>
+              )}
+
+              {/* Countdown or depleted message */}
+              {rechargeDepleted && allCyclesUsed && (
+                <div style={{
+                  fontSize: '0.8rem',
+                  color: '#ef4444',
+                  fontWeight: 500,
+                }}>
+                  All refills used
+                </div>
+              )}
+              {rechargeDepleted && !allCyclesUsed && (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.15rem' }}>
+                  <div style={{
+                    fontSize: '0.8rem',
+                    color: '#f59e0b',
+                    fontWeight: 500,
+                  }}>
+                    Next open in {formatRechargeTimeRemaining(rechargeTimeLeft)}
+                  </div>
+                  {rechargeCyclesRemaining !== null && (
+                    <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
+                      {rechargeCyclesRemaining} refill{rechargeCyclesRemaining !== 1 ? 's' : ''} left
+                    </div>
+                  )}
                 </div>
               )}
 
