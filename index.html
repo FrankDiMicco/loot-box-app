@@ -5743,13 +5743,12 @@
                           : canPull && !isExpired
                             ? 'boxIdle 3s ease-in-out infinite'
                             : 'none',
-                    transition: 'transform 0.2s ease',
+                    transition: 'transform 0.2s ease, opacity 0.3s ease',
                     filter: 'drop-shadow(0 0 25px rgba(59, 130, 246, 0.6))',
                     borderRadius: '16px',
                     zIndex: 2,
                     position: 'relative',
                     opacity: rechargeDepleted ? 0.6 : 1,
-                    transition: 'opacity 0.3s ease',
                   }}
                 >
                   <img
@@ -6188,8 +6187,60 @@
       );
     };
 
+    // ========== ERROR BOUNDARY ==========
+
+    class ErrorBoundary extends React.Component {
+      constructor(props) {
+        super(props);
+        this.state = { hasError: false };
+      }
+      static getDerivedStateFromError() {
+        return { hasError: true };
+      }
+      componentDidCatch(error, errorInfo) {
+        console.error('App crashed:', error, errorInfo);
+      }
+      render() {
+        if (this.state.hasError) {
+          return React.createElement('div', {
+            style: {
+              minHeight: '100vh',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)',
+              color: '#e2e8f0',
+              fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+              padding: '2rem',
+              textAlign: 'center',
+            }
+          },
+            React.createElement('div', { style: { fontSize: '2.5rem', marginBottom: '1rem' } }, '\uD83D\uDCE6'),
+            React.createElement('h1', { style: { fontSize: '1.3rem', fontWeight: 700, marginBottom: '0.5rem' } }, 'Something went wrong'),
+            React.createElement('p', { style: { color: '#94a3b8', fontSize: '0.9rem', marginBottom: '1.5rem' } }, 'Please refresh the page.'),
+            React.createElement('button', {
+              onClick: () => window.location.reload(),
+              style: {
+                padding: '0.75rem 2rem',
+                fontSize: '0.95rem',
+                fontWeight: 600,
+                color: '#e2e8f0',
+                background: 'rgba(15, 23, 42, 0.7)',
+                border: '1px solid rgba(99, 102, 241, 0.45)',
+                borderRadius: '12px',
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+              }
+            }, 'Refresh')
+          );
+        }
+        return this.props.children;
+      }
+    }
+
     // ========== MAIN APP ==========
-    
+
     const App = () => {
       const isMobile = useIsMobile();
       const [mode, setMode] = useState('home'); // home, create, edit, open
@@ -6949,7 +7000,7 @@
     };
 
     // Render
-    ReactDOM.render(<App />, document.getElementById('root'));
+    ReactDOM.render(<ErrorBoundary><App /></ErrorBoundary>, document.getElementById('root'));
   </script>
 </body>
 </html>
