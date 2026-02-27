@@ -5920,6 +5920,64 @@
             </button>
           )}
 
+          {showResult && openingPhase === 'done' && currentPull && box.shareCode && (
+            <button
+              onClick={async () => {
+                const url = `${window.location.origin}${window.location.pathname}#/box/${box.shareCode}`;
+                const text = `I just pulled ${currentPull.itemName} (${currentPull.percentage}% odds) from ${box.name}!\nTry your luck: ${url}`;
+                if (navigator.share) {
+                  try {
+                    await navigator.share({ title: box.name, text });
+                  } catch (err) {
+                    if (err.name !== 'AbortError') console.error('Share failed:', err);
+                  }
+                } else {
+                  try {
+                    await navigator.clipboard.writeText(text);
+                    success('Result copied to clipboard!');
+                  } catch (err) {
+                    prompt('Copy this:', text);
+                  }
+                }
+              }}
+              style={{
+                width: '100%',
+                padding: '0.75rem 1.25rem',
+                marginBottom: '1rem',
+                fontSize: '0.85rem',
+                fontWeight: 600,
+                fontFamily: 'inherit',
+                color: '#94a3b8',
+                background: 'transparent',
+                border: '1px solid rgba(148, 163, 184, 0.25)',
+                borderRadius: '12px',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem',
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = 'rgba(15, 23, 42, 0.5)';
+                e.currentTarget.style.borderColor = 'rgba(148, 163, 184, 0.4)';
+                e.currentTarget.style.color = '#e2e8f0';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = 'transparent';
+                e.currentTarget.style.borderColor = 'rgba(148, 163, 184, 0.25)';
+                e.currentTarget.style.color = '#94a3b8';
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" />
+                <polyline points="16 6 12 2 8 6" />
+                <line x1="12" y1="2" x2="12" y2="15" />
+              </svg>
+              Share Result
+            </button>
+          )}
+
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : (box.hideOdds ? '1fr' : '1fr 1fr'), gap: isMobile ? '1rem' : '1.5rem' }}>
             {/* Current Odds - only show if not hidden */}
             {!box.hideOdds && (
@@ -6172,6 +6230,11 @@
           clearInterval(checker);
         };
       }, []);
+
+      // Scroll to top on mode change
+      useEffect(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }, [mode]);
 
       const loadTemplate = async (shareCode) => {
         const templateData = await fetchBoxTemplate(shareCode);
