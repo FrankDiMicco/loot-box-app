@@ -1698,6 +1698,22 @@
 
     // SideDrawer
     const SideDrawer = ({ isOpen, onClose, userSettings, onNavigate }) => {
+      const firstMenuItemRef = React.useRef(null);
+      const prevOpenRef = React.useRef(false);
+
+      useEffect(() => {
+        if (isOpen && !prevOpenRef.current) {
+          // Drawer just opened — focus first menu item
+          setTimeout(() => {
+            if (firstMenuItemRef.current) firstMenuItemRef.current.focus();
+          }, 100);
+        } else if (!isOpen && prevOpenRef.current) {
+          // Drawer just closed — return focus to hamburger
+          if (hamburgerRef.current) hamburgerRef.current.focus();
+        }
+        prevOpenRef.current = isOpen;
+      }, [isOpen]);
+
       const menuItems = [
         { key: 'myBoxes', label: 'My Boxes', icon: (
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -1811,8 +1827,9 @@
                 if (item === 'divider') {
                   return <div key={`div-${i}`} style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '8px 20px' }} />;
                 }
+                const isFirstItem = i === 0;
                 return (
-                  <button key={item.key} onClick={() => onNavigate(item.key)} style={{
+                  <button key={item.key} ref={isFirstItem ? firstMenuItemRef : undefined} onClick={() => onNavigate(item.key)} style={{
                     display: 'flex', alignItems: 'center', gap: '14px',
                     width: '100%', padding: '14px 20px',
                     background: 'none', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.05)',
@@ -2034,6 +2051,8 @@
     };
 
     // Header
+    const hamburgerRef = React.createRef();
+
     const Header = ({ onMenuClick }) => {
       const isMobile = useIsMobile();
       return (
@@ -2047,7 +2066,7 @@
         }}>
 
           {/* Hamburger */}
-          <button onClick={onMenuClick} style={{
+          <button ref={hamburgerRef} onClick={onMenuClick} style={{
             width: '40px', height: '40px',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             background: 'rgba(15, 23, 42, 0.6)',
@@ -2392,7 +2411,7 @@
               </svg>
             </button>
             <div>
-              <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800, color: '#e2e8f0' }}>Discover</h2>
+              <h2 tabIndex={-1} className="screen-heading" style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800, color: '#e2e8f0', outline: 'none' }}>Discover</h2>
               <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '1px' }}>
                 Ready-made boxes to inspire you
               </div>
@@ -2699,7 +2718,7 @@
                 <polyline points="15 18 9 12 15 6" />
               </svg>
             </button>
-            <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800, color: '#e2e8f0' }}>Stats</h2>
+            <h2 tabIndex={-1} className="screen-heading" style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800, color: '#e2e8f0', outline: 'none' }}>Stats</h2>
           </div>
 
           {/* Stats Grid */}
@@ -2920,7 +2939,7 @@
                 <path d="M19 12H5" /><polyline points="12 19 5 12 12 5" />
               </svg>
             </button>
-            <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#e2e8f0', margin: 0 }}>Settings</h2>
+            <h2 tabIndex={-1} className="screen-heading" style={{ fontSize: '1.5rem', fontWeight: 700, color: '#e2e8f0', margin: 0, outline: 'none' }}>Settings</h2>
           </div>
 
           {/* Profile Section */}
@@ -4614,12 +4633,13 @@
               </svg>
             </button>
             {/* Title - centered */}
-            <h2 style={{
+            <h2 tabIndex={-1} className="screen-heading" style={{
               fontSize: '1.75rem',
               fontWeight: 800,
               color: '#e2e8f0',
               margin: 0,
               textAlign: 'center',
+              outline: 'none',
             }}>
               {editingBox ? 'Edit Loot Box' : 'Create Loot Box'}
             </h2>
@@ -5526,12 +5546,13 @@
             <Button variant="ghost" onClick={onBack} style={{ marginBottom: '0.5rem' }}>← Back</Button>
 
             {/* Box name - full width, centered */}
-            <h2 style={{
+            <h2 tabIndex={-1} className="screen-heading" style={{
               fontSize: '1.75rem',
               fontWeight: 700,
               color: '#e2e8f0',
               margin: '0 0 0.25rem 0',
               textAlign: 'center',
+              outline: 'none',
             }}>
               {box.name}
             </h2>
@@ -6282,9 +6303,13 @@
         };
       }, []);
 
-      // Scroll to top on mode change
+      // Scroll to top and focus heading on mode change
       useEffect(() => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
+        setTimeout(() => {
+          const heading = document.querySelector('.screen-heading');
+          if (heading) heading.focus();
+        }, 100);
       }, [mode]);
 
       const loadTemplate = async (shareCode) => {
