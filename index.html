@@ -247,6 +247,17 @@
       }
     }
 
+    @keyframes badgePulse {
+      0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+      50% {
+        transform: scale(1.15);
+        opacity: 0.8;
+      }
+    }
+
     @keyframes glow {
       0%, 100% {
         box-shadow: 0 0 25px rgba(59, 130, 246, 0.5);
@@ -818,6 +829,17 @@
         seen.push(boxId);
         localStorage.setItem('lootBoxSeenBoxes', JSON.stringify(seen));
       }
+    };
+
+    const getLastSeenPullCounts = () => {
+      try { return JSON.parse(localStorage.getItem('lootBoxLastSeenPulls')) || {}; }
+      catch { return {}; }
+    };
+
+    const markPullsSeen = (shareCode, count) => {
+      const counts = getLastSeenPullCounts();
+      counts[shareCode] = count;
+      localStorage.setItem('lootBoxLastSeenPulls', JSON.stringify(counts));
     };
 
     const deleteBox = (boxId) => {
@@ -1681,12 +1703,6 @@
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
             <rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" />
-          </svg>
-        )},
-        { key: 'marketplace', label: 'Marketplace', badge: 'Soon', icon: (
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
-            <line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 01-8 0" />
           </svg>
         )},
         { key: 'templates', label: 'Discover', icon: (
@@ -2592,6 +2608,44 @@
       // Unique items discovered
       const uniqueItemNames = new Set(allPulls.map(p => p.itemName)).size;
 
+      // Luck Score: average of (100 - percentage) for all pulls
+      const luckScore = allPulls.length > 0
+        ? Math.round(allPulls.reduce((sum, p) => sum + (100 - (p.percentage || 0)), 0) / allPulls.length)
+        : 0;
+      const luckColor = luckScore >= 70 ? '#10b981' : luckScore >= 40 ? '#f59e0b' : '#ef4444';
+
+      // Favorite Box: box with the most total opens
+      const favoriteBox = (() => {
+        let best = null;
+        let bestCount = 0;
+        boxes.forEach(b => {
+          const count = (b.pullHistory || []).length;
+          if (count > bestCount) { best = b; bestCount = count; }
+        });
+        return best ? { name: best.name, count: bestCount } : null;
+      })();
+
+      // Recent Activity: last 5 pulls across all boxes with box name
+      const recentActivity = boxes.flatMap(b =>
+        (b.pullHistory || []).map(p => ({ ...p, boxName: b.name }))
+      ).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0)).slice(0, 5);
+
+      // Relative time formatter
+      const formatRelativeTime = (timestamp) => {
+        if (!timestamp) return '';
+        const diff = Date.now() - timestamp;
+        const seconds = Math.floor(diff / 1000);
+        const minutes = Math.floor(seconds / 60);
+        const hours = Math.floor(minutes / 60);
+        const days = Math.floor(hours / 24);
+        if (seconds < 60) return 'Just now';
+        if (minutes < 60) return `${minutes}m ago`;
+        if (hours < 24) return `${hours}h ago`;
+        if (days === 1) return 'Yesterday';
+        if (days < 7) return `${days}d ago`;
+        return new Date(timestamp).toLocaleDateString();
+      };
+
 
       const statCardStyle = {
         background: 'rgba(15, 23, 42, 0.6)',
@@ -2666,6 +2720,21 @@
               <span style={statLabelStyle}>Items Discovered</span>
               <span style={{ ...statValueStyle, color: '#10b981' }}>{uniqueItemNames}</span>
             </div>
+            {totalOpens > 0 && (
+              <div style={statCardStyle}>
+                <span style={statLabelStyle}>Luck Score</span>
+                <span style={{ ...statValueStyle, color: luckColor }}>{luckScore}<span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#64748b' }}>/100</span></span>
+              </div>
+            )}
+            {favoriteBox && (
+              <div style={statCardStyle}>
+                <span style={statLabelStyle}>Favorite Box</span>
+                <div style={{ color: '#e2e8f0', fontWeight: 700, fontSize: '0.95rem', lineHeight: 1.2 }}>
+                  {favoriteBox.name}
+                </div>
+                <span style={{ fontSize: '0.7rem', color: '#64748b' }}>{favoriteBox.count} opens</span>
+              </div>
+            )}
           </div>
 
           {/* Notable Pulls */}
@@ -2711,11 +2780,48 @@
             </>
           )}
 
+          {/* Recent Activity */}
+          {recentActivity.length > 0 && (
+            <>
+              <div style={sectionHeaderStyle}>Recent Activity</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                {recentActivity.map((pull, i) => (
+                  <div key={i} style={{
+                    ...statCardStyle,
+                    flexDirection: 'row', alignItems: 'center', gap: '0.75rem',
+                    padding: '0.7rem 1rem',
+                  }}>
+                    <div style={{
+                      width: '8px', height: '8px', borderRadius: '50%', flexShrink: 0,
+                      background: (pull.percentage || 50) <= 10 ? '#f59e0b' : (pull.percentage || 50) <= 30 ? '#3b82f6' : '#64748b',
+                    }} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ color: '#e2e8f0', fontWeight: 600, fontSize: '0.85rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {pull.itemName}
+                      </div>
+                      <div style={{ color: '#64748b', fontSize: '0.7rem' }}>
+                        from {pull.boxName}
+                      </div>
+                    </div>
+                    <span style={{ color: '#475569', fontSize: '0.7rem', flexShrink: 0 }}>
+                      {formatRelativeTime(pull.timestamp)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
 
           {/* Empty State */}
           {totalOpens === 0 && (
-            <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b', fontSize: '0.9rem' }}>
-              Open some boxes to start tracking your stats!
+            <div style={{ textAlign: 'center', padding: '3rem 2rem', color: '#64748b' }}>
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ margin: '0 auto 1rem' }}>
+                <rect x="2" y="7" width="20" height="14" rx="2" />
+                <path d="M16 7V5a4 4 0 00-8 0v2" />
+                <circle cx="12" cy="14" r="1.5" />
+              </svg>
+              <div style={{ fontSize: '1rem', fontWeight: 600, color: '#94a3b8', marginBottom: '0.5rem' }}>No opens yet!</div>
+              <div style={{ fontSize: '0.85rem' }}>Create a box and start opening to see your stats come to life.</div>
             </div>
           )}
         </div>
@@ -2932,6 +3038,14 @@
       const [activeTooltip, setActiveTooltip] = useState(null);
       const [showOverflowMenu, setShowOverflowMenu] = useState(false);
       const boxFavId = box.shareCode || box.id;
+
+      // Check for new pulls on shared boxes since last viewed
+      const hasNewPulls = (() => {
+        if (!box.shareCode || !box.type || box.type !== 'shared') return false;
+        const lastSeen = getLastSeenPullCounts()[box.shareCode];
+        if (lastSeen === undefined) return false; // Never viewed = no dot (isNew badge handles that)
+        return pullHistory.length > lastSeen;
+      })();
 
       const handleIconTap = (e, iconId) => {
         e.stopPropagation();
@@ -3174,6 +3288,22 @@
             }}
           >
 
+            {/* New pulls notification dot for shared boxes */}
+            {hasNewPulls && (
+              <div style={{
+                position: 'absolute',
+                top: '6px',
+                left: '6px',
+                width: '10px',
+                height: '10px',
+                borderRadius: '50%',
+                background: '#3b82f6',
+                boxShadow: '0 0 6px rgba(59, 130, 246, 0.6)',
+                zIndex: 4,
+                animation: 'badgePulse 2s ease-in-out infinite',
+              }} />
+            )}
+
             {/* Action buttons - HORIZONTAL row, absolute top right */}
             <div
               data-no-open="true"
@@ -3351,6 +3481,7 @@
                       fontSize: '0.55rem', fontWeight: 700, color: '#ffffff',
                       textTransform: 'uppercase', letterSpacing: '0.03em',
                       background: 'rgba(16, 185, 129, 0.9)',
+                      animation: 'badgePulse 2s ease-in-out infinite',
                     }}>NEW</span>
                   )}
                   {box.type === 'shared' && !box.isVisitor && (
@@ -5743,6 +5874,52 @@
 
           </Card>
 
+          {showResult && canPull && !isExpired && openingPhase === 'done' && (
+            <button
+              onClick={() => {
+                setOpeningPhase('idle');
+                setShowResult(false);
+                setCurrentPull(null);
+                setRevealTier(null);
+                setRevealAnimDone(false);
+                if (particleContainerRef.current) particleContainerRef.current.innerHTML = '';
+                setTimeout(() => handleBoxTap(), 50);
+              }}
+              style={{
+                width: '100%',
+                padding: '0.875rem 1.25rem',
+                marginBottom: '1rem',
+                fontSize: '0.95rem',
+                fontWeight: 700,
+                fontFamily: 'inherit',
+                color: '#e2e8f0',
+                background: 'rgba(15, 23, 42, 0.7)',
+                backdropFilter: 'blur(12px)',
+                WebkitBackdropFilter: 'blur(12px)',
+                border: '1px solid rgba(99, 102, 241, 0.45)',
+                borderRadius: '16px',
+                cursor: 'pointer',
+                letterSpacing: '0.03em',
+                position: 'relative',
+                overflow: 'hidden',
+                animation: 'borderPulse 3s ease-in-out infinite',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = 'rgba(30, 27, 75, 0.75)';
+                e.currentTarget.style.borderColor = 'rgba(139, 92, 246, 0.7)';
+                e.currentTarget.style.color = '#ffffff';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = 'rgba(15, 23, 42, 0.7)';
+                e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.45)';
+                e.currentTarget.style.color = '#e2e8f0';
+              }}
+            >
+              Open Again
+            </button>
+          )}
+
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : (box.hideOdds ? '1fr' : '1fr 1fr'), gap: isMobile ? '1rem' : '1.5rem' }}>
             {/* Current Odds - only show if not hidden */}
             {!box.hideOdds && (
@@ -6234,7 +6411,6 @@
         setDrawerOpen(false);
         switch (key) {
           case 'myBoxes': setMode('home'); break;
-          case 'marketplace': info('Marketplace coming soon!'); break;
           case 'templates': setMode('discover'); break;
           case 'stats': setMode('stats'); break;
           case 'account': info('Account system coming soon!'); break;
@@ -6294,9 +6470,13 @@
 
       const handleOpenBox = async (box) => {
         markBoxAsSeen(box.id);
+        if (box.shareCode) {
+          markPullsSeen(box.shareCode, (box.pullHistory || []).length);
+        }
         if (box.type === 'shared' && box.shareCode) {
           const freshBox = await fetchSharedBox(box.shareCode);
           if (freshBox) {
+            markPullsSeen(box.shareCode, (freshBox.pullHistory || []).length);
             setOpeningBox(freshBox);
             setMode('open');
           } else {
@@ -6451,11 +6631,7 @@
                   }} />
 
                   {/* Button text */}
-                  <span style={{ position: 'relative', zIndex: 3, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.8 }}>
-                      <line x1="12" y1="5" x2="12" y2="19" />
-                      <line x1="5" y1="12" x2="19" y2="12" />
-                    </svg>
+                  <span style={{ position: 'relative', zIndex: 3, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     Create New Loot Box
                   </span>
                 </button>
@@ -6510,7 +6686,7 @@
                     fontSize: '0.9rem', color: '#94a3b8', textAlign: 'center',
                     maxWidth: '280px', lineHeight: '1.5',
                   }}>
-                    Tap <span style={{ color: '#3b82f6', fontWeight: 600 }}>+ Create New Loot Box</span> above to build your first box
+                    Tap <span style={{ color: '#3b82f6', fontWeight: 600 }}>Create New Loot Box</span> above to build your first box
                   </div>
                 </div>
               ) : filteredBoxes.length === 0 ? (
