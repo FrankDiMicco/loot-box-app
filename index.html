@@ -3485,13 +3485,30 @@
                   zIndex: 2,
                 }}
               >
+                {/* Box name */}
+                <div
+                  title={name}
+                  style={{
+                    fontSize: '1.05rem',
+                    fontWeight: 700,
+                    color: '#e2e8f0',
+                    marginBottom: '0.35rem',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    paddingRight: '4px',
+                  }}>
+                  {name}
+                </div>
+
                 {/* Status badges */}
                 <div style={{
                   display: 'flex',
                   flexDirection: 'row',
                   gap: '0.35rem',
                   flexWrap: 'wrap',
-                  marginBottom: '0.35rem',
+                  marginBottom: '0.6rem',
+                  alignItems: 'center',
                 }}>
                   {hasNewPulls && (
                     <div style={{
@@ -3543,20 +3560,6 @@
                   )}
                 </div>
 
-                {/* Box name */}
-                <div style={{
-                  fontSize: '1.05rem',
-                  fontWeight: 700,
-                  color: '#e2e8f0',
-                  marginBottom: '0.6rem',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                  paddingRight: '4px',
-                }}>
-                  {name}
-                </div>
-
                 {/* Info icons - 2 COLUMN GRID */}
                 <div style={{
                   display: 'grid',
@@ -3564,6 +3567,7 @@
                   gap: '6px 10px',
                   justifyContent: 'start',
                   marginTop: 'auto',
+                  marginBottom: 'auto',
                 }}>
 
                   {/* 1. Items */}
@@ -4678,6 +4682,7 @@
               type="text"
               value={boxName}
               onChange={(e) => setBoxName(e.target.value)}
+              maxLength={40}
               placeholder="What's your box called?"
               style={{
                 width: '100%', padding: '16px 20px', fontSize: '1.2rem', fontFamily: 'inherit', fontWeight: 600,
