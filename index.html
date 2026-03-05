@@ -428,18 +428,10 @@
     const BOX_SOURCES = {
       DEFAULT: 'default',      // Hardcoded, always available
       SEASONAL: 'seasonal',    // Time-limited from Firebase
-      STORE: 'store',         // Purchasable from Firebase
-      PREMIUM: 'premium',     // Premium-only boxes from Firebase
-      USER_UPLOADED: 'user',  // User-created, uploaded to Firebase (premium)
       LOCAL: 'local',         // User-created locally (current system)
     };
 
     // ========== BOX IMAGE CATALOG ==========
-
-    // MONETIZATION MODEL:
-    // - Free Users: Get 3 default box skins for free, can purchase additional skins individually
-    // - Premium Users: Unlimited local boxes, can upload custom boxes, still purchase skins individually
-    // - All Users: Can purchase seasonal/store box skins at set prices (e.g., $0.99, $1.99, $2.99)
 
     // Default boxes - always available and free for all users
     const DEFAULT_BOX_IMAGES = [
@@ -448,7 +440,6 @@
         name: 'Classic Chest',
         file: 'chest.png',
         source: BOX_SOURCES.DEFAULT,
-        price: null,
         seasonalInfo: null,
         imageUrl: './assets/images/boxes/free/chest.png'
       },
@@ -457,7 +448,6 @@
         name: 'Skull Chest',
         file: 'skull_bone.png',
         source: BOX_SOURCES.DEFAULT,
-        price: null,
         seasonalInfo: null,
         imageUrl: './assets/images/boxes/free/skull_bone.png'
       },
@@ -466,7 +456,6 @@
         name: 'Metal Chest',
         file: 'metal.png',
         source: BOX_SOURCES.DEFAULT,
-        price: null,
         seasonalInfo: null,
         imageUrl: './assets/images/boxes/free/metal.png'
       },
@@ -480,11 +469,6 @@
     // Get all images as flat array (legacy compatibility)
     const getAllBoxImages = () => {
       return DEFAULT_BOX_IMAGES;
-    };
-
-    // Check if user can use an image (alias for userOwnsBox)
-    const canUseBoxImage = (imageId, userSettings) => {
-      return userOwnsBox(imageId, userSettings);
     };
 
     // Get image URL (supports both local and Firebase URLs)
@@ -876,29 +860,21 @@
       try {
         const data = localStorage.getItem(STORAGE_KEYS.USER_SETTINGS);
         return data ? JSON.parse(data) : {
-          tier: 'free',
           localBoxCount: 0,
           displayName: '',
           soundEnabled: true,
           hapticEnabled: true,
           theme: 'dark',
           uid: null,  // Firebase user ID
-          ownedBoxes: [],  // Store and seasonal purchases
-          uploadedBoxes: [],  // User's uploaded boxes
-          purchasedBoxImages: [], // Legacy - kept for compatibility
         };
       } catch (error) {
         return {
-          tier: 'free',
           localBoxCount: 0,
           displayName: '',
           soundEnabled: true,
           hapticEnabled: true,
           theme: 'dark',
           uid: null,
-          ownedBoxes: [],
-          uploadedBoxes: [],
-          purchasedBoxImages: [],
         };
       }
     };
@@ -959,16 +935,6 @@
       } catch {}
     };
 
-    const canCreateLocalBox = () => {
-      const settings = getUserSettings();
-      if (settings.tier === 'paid') return true;
-      
-      const MAX_FREE_BOXES = 5;
-      const boxes = getAllBoxes();
-      const currentCount = boxes.filter(box => box.type === 'local').length;
-      return currentCount < MAX_FREE_BOXES;
-    };
-
     // ========== FIREBASE BOX CATALOG SERVICE ==========
 
     // Fetch default boxes from Firebase
@@ -988,25 +954,6 @@
           .filter(box => box.active !== false);  // Include boxes where active is true, undefined, or missing
       } catch (error) {
         console.error('Error fetching default boxes:', error);
-        return [];
-      }
-    };
-
-    // Fetch premium boxes from Firebase
-    const fetchPremiumBoxes = async () => {
-      if (!firebaseEnabled || !db) return [];
-      try {
-        const snapshot = await db.collection('boxCatalog')
-          .where('source', '==', BOX_SOURCES.PREMIUM)
-          .get();
-        return snapshot.docs
-          .map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          }))
-          .filter(box => box.active !== false);
-      } catch (error) {
-        console.error('Error fetching premium boxes:', error);
         return [];
       }
     };
@@ -1038,124 +985,23 @@
       }
     };
 
-    // Fetch store boxes from Firebase
-    const fetchStoreBoxes = async () => {
-      if (!firebaseEnabled || !db) return [];
-
-      try {
-        const snapshot = await db.collection('boxCatalog')
-          .where('source', '==', BOX_SOURCES.STORE)
-          .get();
-
-        return snapshot.docs
-          .map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          }))
-          .filter(box => box.active !== false);
-      } catch (error) {
-        console.error('Error fetching store boxes:', error);
-        return [];
-      }
-    };
-
-    // Fetch user's uploaded boxes from Firebase
-    const fetchUserUploadedBoxes = async (userId) => {
-      if (!firebaseEnabled || !db || !userId) return [];
-
-      try {
-        const snapshot = await db.collection('boxCatalog')
-          .where('source', '==', BOX_SOURCES.USER_UPLOADED)
-          .where('userId', '==', userId)
-          .get();
-
-        return snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-      } catch (error) {
-        console.error('Error fetching user uploaded boxes:', error);
-        return [];
-      }
-    };
-
-    // Upload user's custom box image to Firebase
-    const uploadUserBox = async (imageFile, metadata, userId) => {
-      if (!firebaseEnabled || !storage || !db) {
-        throw new Error('Firebase not available');
-      }
-
-      if (!userId) {
-        throw new Error('User not authenticated');
-      }
-
-      try {
-        // Upload image to Firebase Storage
-        const storageRef = storage.ref();
-        const fileName = `user-boxes/${userId}/${Date.now()}_${imageFile.name}`;
-        const imageRef = storageRef.child(fileName);
-
-        const uploadTask = await imageRef.put(imageFile);
-        const downloadURL = await uploadTask.ref.getDownloadURL();
-
-        // Create Firestore document
-        const boxData = {
-          name: metadata.name || 'Custom Box',
-          source: BOX_SOURCES.USER_UPLOADED,
-          userId: userId,
-          imageUrl: downloadURL,
-          price: null,
-          seasonalInfo: null,
-          createdAt: Date.now(),
-          active: true
-        };
-
-        const docRef = await db.collection('boxCatalog').add(boxData);
-
-        return {
-          id: docRef.id,
-          ...boxData
-        };
-      } catch (error) {
-        console.error('Error uploading box:', error);
-        throw error;
-      }
-    };
-
     // Get all available box images (unified loader)
-    const getAllAvailableBoxImages = async (userSettings) => {
+    const getAllAvailableBoxImages = async () => {
       let defaults = [];
       let seasonal = [];
-      let store = [];
-      let premium = [];
-      let userUploaded = [];
 
       if (firebaseEnabled) {
-        // Fetch all sources from Firebase in parallel
         const results = await Promise.all([
           fetchDefaultBoxes(),
           fetchSeasonalBoxes(),
-          fetchStoreBoxes(),
-          userSettings.tier === 'paid'
-            ? fetchPremiumBoxes()
-            : Promise.resolve([]),
-          userSettings.tier === 'paid' && userSettings.uid
-            ? fetchUserUploadedBoxes(userSettings.uid)
-            : Promise.resolve([])
         ]);
 
         defaults = results[0];
         seasonal = results[1];
-        store = results[2];
-        premium = results[3];
-        userUploaded = results[4];
 
         console.log('[BoxCatalog] Loaded from Firebase:', {
           defaults: defaults.length,
           seasonal: seasonal.length,
-          store: store.length,
-          premium: premium.length,
-          userUploaded: userUploaded.length,
         });
       }
 
@@ -1168,58 +1014,8 @@
       return {
         defaults,
         seasonal,
-        store,
-        premium,
-        userUploaded,
-        all: [...defaults, ...seasonal, ...store, ...premium, ...userUploaded]
+        all: [...defaults, ...seasonal]
       };
-    };
-
-    // Purchase a box from the store
-    const purchaseBox = async (boxId, userId) => {
-      if (!firebaseEnabled || !db) {
-        throw new Error('Firebase not available');
-      }
-
-      try {
-        // Record purchase in Firestore
-        await db.collection('purchases').add({
-          boxId: boxId,
-          userId: userId,
-          purchasedAt: Date.now(),
-          type: 'box'
-        });
-
-        // Update user's owned boxes
-        const userRef = db.collection('users').doc(userId);
-        await userRef.update({
-          ownedBoxes: firebase.firestore.FieldValue.arrayUnion(boxId)
-        });
-
-        return true;
-      } catch (error) {
-        console.error('Error purchasing box:', error);
-        throw error;
-      }
-    };
-
-    // Check if user owns a box
-    const userOwnsBox = (boxId, userSettings) => {
-      // Hardcoded default boxes are always available
-      const hardcodedDefault = DEFAULT_BOX_IMAGES.find(b => b.id === boxId);
-      if (hardcodedDefault) return true;
-
-      // User's own uploaded boxes
-      if (userSettings.uploadedBoxes && userSettings.uploadedBoxes.includes(boxId)) return true;
-
-      // Individually purchased boxes
-      if (userSettings.ownedBoxes && userSettings.ownedBoxes.includes(boxId)) return true;
-
-      // NOTE: Firebase default boxes and premium boxes are handled
-      // by canUserUseBox in the ImagePicker component, not here.
-      // This function is for ownership checks only.
-
-      return false;
     };
 
     // ========== FIRESTORE FUNCTIONS FOR SHARED BOXES ==========
@@ -1770,7 +1566,6 @@
       ];
 
       const displayName = userSettings?.displayName || 'Loot Box User';
-      const isPremium = userSettings?.tier === 'paid';
 
       return (
         <>
@@ -4129,8 +3924,6 @@
       const [activeTab, setActiveTab] = useState('defaults');
       const [boxCatalog, setBoxCatalog] = useState(null);
       const [loading, setLoading] = useState(true);
-      const [showPurchaseModal, setShowPurchaseModal] = useState(null);
-      const [uploading, setUploading] = useState(false);
       const isMobile = useIsMobile();
       const selectedRef = useRef(null);
 
@@ -4141,7 +3934,7 @@
       const loadBoxCatalog = async () => {
         setLoading(true);
         try {
-          const catalog = await getAllAvailableBoxImages(userSettings);
+          const catalog = await getAllAvailableBoxImages();
           setBoxCatalog(catalog);
         } catch (error) {
           console.error('Error loading box catalog:', error);
@@ -4151,96 +3944,20 @@
       };
 
       const handleImageClick = (image) => {
-        const canUse = canUserUseBox(image);
-
-        if (canUse) {
-          // Store the full URL for Firebase boxes, ID for hardcoded
-          const imageRef = image.imageUrl && image.imageUrl.startsWith('http')
-            ? image.imageUrl
-            : image.id;
-          onSelectImage(imageRef);
-          // Auto-scroll selected image into view on mobile
-          if (isMobile) {
-            setTimeout(() => {
-              selectedRef.current?.scrollIntoView({
-                behavior: 'smooth',
-                block: 'nearest',
-                inline: 'center',
-              });
-            }, 50);
-          }
-        } else {
-          // Show purchase modal for locked boxes (works for free and premium users)
-          setShowPurchaseModal(image);
-        }
-      };
-
-      // Check if user can use this specific box
-      const canUserUseBox = (image) => {
-        return true;
-      };
-
-      const handlePurchase = async (box) => {
-        if (!firebaseEnabled) {
-          error('Purchase feature requires Firebase configuration');
-          setShowPurchaseModal(null);
-          return;
-        }
-
-        if (!userSettings.uid) {
-          error('Please sign in to purchase boxes');
-          setShowPurchaseModal(null);
-          return;
-        }
-
-        try {
-          // TODO: Integrate with actual payment provider (Stripe, etc.)
-          // For now, this is a placeholder that would trigger payment flow
-          await purchaseBox(box.id, userSettings.uid);
-
-          // Update local settings with new owned box
-          const updatedSettings = {
-            ...userSettings,
-            ownedBoxes: [...(userSettings.ownedBoxes || []), box.id]
-          };
-          localStorage.setItem(STORAGE_KEYS.USER_SETTINGS, JSON.stringify(updatedSettings));
-
-          success(`Successfully purchased ${box.name}!`);
-          await loadBoxCatalog(); // Refresh catalog
-          setShowPurchaseModal(null);
-        } catch (err) {
-          error(`Purchase failed: ${err.message}`);
-        }
-      };
-
-      const handleFileUpload = async (event) => {
-        const file = event.target.files?.[0];
-        if (!file) return;
-
-        if (userSettings.tier !== 'paid') {
-          error('Custom box uploads are a premium feature!');
-          return;
-        }
-
-        if (!firebaseEnabled) {
-          error('Upload feature requires Firebase configuration');
-          return;
-        }
-
-        if (!userSettings.uid) {
-          error('Please sign in to upload custom boxes');
-          return;
-        }
-
-        setUploading(true);
-        try {
-          const uploadedBox = await uploadUserBox(file, { name: file.name }, userSettings.uid);
-          success(`Successfully uploaded ${uploadedBox.name}!`);
-          await loadBoxCatalog(); // Refresh catalog
-        } catch (err) {
-          error(`Upload failed: ${err.message}`);
-        } finally {
-          setUploading(false);
+        // Store the full URL for Firebase boxes, ID for hardcoded
+        const imageRef = image.imageUrl && image.imageUrl.startsWith('http')
+          ? image.imageUrl
+          : image.id;
+        onSelectImage(imageRef);
+        // Auto-scroll selected image into view on mobile
+        if (isMobile) {
+          setTimeout(() => {
+            selectedRef.current?.scrollIntoView({
+              behavior: 'smooth',
+              block: 'nearest',
+              inline: 'center',
+            });
+          }, 50);
         }
       };
 
@@ -4252,12 +3969,6 @@
             return boxCatalog.defaults;
           case 'seasonal':
             return boxCatalog.seasonal;
-          case 'store':
-            return boxCatalog.store;
-          case 'premium':
-            return boxCatalog.premium;
-          case 'uploads':
-            return boxCatalog.userUploaded;
           default:
             return [];
         }
@@ -4359,18 +4070,13 @@
                   color: '#64748b',
                   width: '100%',
                 }}>
-                  {activeTab === 'uploads'
-                    ? 'No uploaded boxes yet. Upload your first custom box!'
-                    : 'No boxes available in this category'}
+                  No boxes available in this category
                 </div>
               )}
 
               {activeBoxes.map(image => {
-                const canUse = canUserUseBox(image);
                 const isSelected = selectedImageId === image.id || selectedImageId === image.imageUrl;
                 const isSeasonal = image.source === BOX_SOURCES.SEASONAL;
-                const isStore = image.source === BOX_SOURCES.STORE;
-                const isUserUpload = image.source === BOX_SOURCES.USER_UPLOADED;
 
                 return (
                   <div
@@ -4403,7 +4109,7 @@
                       background: 'linear-gradient(135deg, rgba(30, 64, 175, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%)',
                       borderRadius: '8px',
                       marginBottom: '0.5rem',
-                      opacity: canUse ? 1 : 0.5,
+                      opacity: 1,
                       overflow: 'hidden',
                       position: 'relative',
                     }}>
@@ -4517,8 +4223,6 @@
       );
 
       const userSettings = getUserSettings();
-      const isPaidUser = userSettings.tier === 'paid';
-      const canCreateLocal = editingBox || canCreateLocalBox(); // Allow if editing existing box
 
       const handleAddItem = (item) => {
         triggerHaptic('light');
@@ -4747,7 +4451,6 @@
                     onClick={() => setBoxType('local')}
                   >
                     Local
-                    {!canCreateLocal && <div style={{ fontSize: '0.75rem', marginTop: '0.25rem', opacity: 0.8 }}>(Limit reached)</div>}
                   </button>
                   <button
                     style={{
