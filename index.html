@@ -563,20 +563,18 @@
     };
 
     const getDeviceId = () => {
-      const STORAGE_KEY = 'lootBoxDeviceId';
-      try {
-        let deviceId = localStorage.getItem(STORAGE_KEY);
-        if (!deviceId) {
-          deviceId = 'device_' + Date.now().toString(36) + '_' +
-            Math.random().toString(36).substring(2, 10);
-          localStorage.setItem(STORAGE_KEY, deviceId);
-        }
-        return deviceId;
-      } catch {
+      let deviceId = AppStorage.get(STORAGE_KEYS.DEVICE_ID);
+      if (!deviceId) {
+        deviceId = 'device_' + Date.now().toString(36) + '_' +
+          Math.random().toString(36).substring(2, 10);
+        AppStorage.set(STORAGE_KEYS.DEVICE_ID, deviceId);
+      }
+      if (!deviceId) {
         // Fallback for private browsing -- generate per-session ID
         return 'session_' + Date.now().toString(36) + '_' +
           Math.random().toString(36).substring(2, 10);
       }
+      return deviceId;
     };
 
     // Format expiration countdown
@@ -749,15 +747,45 @@
       BOXES: 'lootBoxes',
       USER_SETTINGS: 'userSettings',
       FAVORITES: 'lootBoxFavorites',
+      DEVICE_ID: 'lootBoxDeviceId',
+      USER_NAMES: 'lootBoxUserNames',
+      LAST_NAME: 'lootBoxLastName',
+      SEEN_BOXES: 'lootBoxSeenBoxes',
+      LAST_SEEN_PULLS: 'lootBoxLastSeenPulls',
+      HAS_SEEN_WELCOME: 'lootBoxHasSeenWelcome',
+    };
+
+    const AppStorage = {
+      get: (key) => {
+        try { return localStorage.getItem(key); }
+        catch { return null; }
+      },
+      set: (key, value) => {
+        try { localStorage.setItem(key, value); }
+        catch {}
+      },
+      remove: (key) => {
+        try { localStorage.removeItem(key); }
+        catch {}
+      },
+      getJSON: (key, fallback = null) => {
+        try {
+          const data = localStorage.getItem(key);
+          return data ? JSON.parse(data) : fallback;
+        } catch { return fallback; }
+      },
+      setJSON: (key, value) => {
+        try { localStorage.setItem(key, JSON.stringify(value)); }
+        catch {}
+      },
+      keys: () => {
+        try { return Object.keys(localStorage); }
+        catch { return []; }
+      },
     };
 
     const getFavorites = () => {
-      try {
-        const data = localStorage.getItem(STORAGE_KEYS.FAVORITES);
-        return data ? JSON.parse(data) : [];
-      } catch (e) {
-        return [];
-      }
+      return AppStorage.getJSON(STORAGE_KEYS.FAVORITES, []);
     };
 
     const toggleFavorite = (boxId) => {
@@ -768,7 +796,7 @@
       } else {
         favs.push(boxId);
       }
-      localStorage.setItem(STORAGE_KEYS.FAVORITES, JSON.stringify(favs));
+      AppStorage.setJSON(STORAGE_KEYS.FAVORITES, favs);
       return favs;
     };
 
@@ -777,78 +805,50 @@
     };
 
     const getAllBoxes = () => {
-      try {
-        const data = localStorage.getItem(STORAGE_KEYS.BOXES);
-        return data ? JSON.parse(data) : [];
-      } catch (error) {
-        console.error('Error reading boxes:', error);
-        return [];
-      }
+      return AppStorage.getJSON(STORAGE_KEYS.BOXES, []);
     };
 
     const saveBox = (box) => {
-      try {
-        const boxes = getAllBoxes();
-        const existingIndex = boxes.findIndex(b => b.id === box.id);
-        
-        if (existingIndex >= 0) {
-          boxes[existingIndex] = box;
-        } else {
-          boxes.push(box);
-        }
-        
-        localStorage.setItem(STORAGE_KEYS.BOXES, JSON.stringify(boxes));
-        return true;
-      } catch (error) {
-        console.error('Error saving box:', error);
-        return false;
+      const boxes = getAllBoxes();
+      const existingIndex = boxes.findIndex(b => b.id === box.id);
+
+      if (existingIndex >= 0) {
+        boxes[existingIndex] = box;
+      } else {
+        boxes.push(box);
       }
+
+      AppStorage.setJSON(STORAGE_KEYS.BOXES, boxes);
+      return true;
     };
 
-    const getSeenBoxes = () => {
-      try { return JSON.parse(localStorage.getItem('lootBoxSeenBoxes')) || []; }
-      catch { return []; }
-    };
+    const getSeenBoxes = () => AppStorage.getJSON(STORAGE_KEYS.SEEN_BOXES, []);
 
     const markBoxAsSeen = (boxId) => {
       const seen = getSeenBoxes();
       if (!seen.includes(boxId)) {
         seen.push(boxId);
-        localStorage.setItem('lootBoxSeenBoxes', JSON.stringify(seen));
+        AppStorage.setJSON(STORAGE_KEYS.SEEN_BOXES, seen);
       }
     };
 
-    const getLastSeenPullCounts = () => {
-      try { return JSON.parse(localStorage.getItem('lootBoxLastSeenPulls')) || {}; }
-      catch { return {}; }
-    };
+    const getLastSeenPullCounts = () => AppStorage.getJSON(STORAGE_KEYS.LAST_SEEN_PULLS, {});
 
     const markPullsSeen = (shareCode, count) => {
       const counts = getLastSeenPullCounts();
       counts[shareCode] = count;
-      localStorage.setItem('lootBoxLastSeenPulls', JSON.stringify(counts));
+      AppStorage.setJSON(STORAGE_KEYS.LAST_SEEN_PULLS, counts);
     };
 
-    const hasSeenWelcome = () => {
-      try { return localStorage.getItem('lootBoxHasSeenWelcome') === 'true'; }
-      catch { return false; }
-    };
+    const hasSeenWelcome = () => AppStorage.get(STORAGE_KEYS.HAS_SEEN_WELCOME) === 'true';
 
-    const markWelcomeSeen = () => {
-      try { localStorage.setItem('lootBoxHasSeenWelcome', 'true'); }
-      catch {}
-    };
+    const markWelcomeSeen = () => AppStorage.set(STORAGE_KEYS.HAS_SEEN_WELCOME, 'true');
 
     const deleteBox = (boxId) => {
-      try {
-        const boxes = getAllBoxes();
-        const filtered = boxes.filter(box => box.id !== boxId);
-        localStorage.setItem(STORAGE_KEYS.BOXES, JSON.stringify(filtered));
-        return true;
-      } catch (error) {
-        console.error('Error deleting box:', error);
-        return false;
-      }
+      const boxes = getAllBoxes();
+      const filtered = boxes.filter(box => box.id !== boxId);
+      AppStorage.setJSON(STORAGE_KEYS.BOXES, filtered);
+      return true;
     };
 
     const getBoxById = (boxId) => {
@@ -857,82 +857,51 @@
     };
 
     const getUserSettings = () => {
-      try {
-        const data = localStorage.getItem(STORAGE_KEYS.USER_SETTINGS);
-        return data ? JSON.parse(data) : {
-          localBoxCount: 0,
-          displayName: '',
-          soundEnabled: true,
-          hapticEnabled: true,
-          theme: 'dark',
-          uid: null,  // Firebase user ID
-        };
-      } catch (error) {
-        return {
-          localBoxCount: 0,
-          displayName: '',
-          soundEnabled: true,
-          hapticEnabled: true,
-          theme: 'dark',
-          uid: null,
-        };
-      }
+      return AppStorage.getJSON(STORAGE_KEYS.USER_SETTINGS, null) || {
+        localBoxCount: 0,
+        displayName: '',
+        soundEnabled: true,
+        hapticEnabled: true,
+        theme: 'dark',
+        uid: null,
+      };
     };
 
     const saveUserSettings = (settings) => {
-      try {
-        localStorage.setItem(STORAGE_KEYS.USER_SETTINGS, JSON.stringify(settings));
-        return true;
-      } catch (error) {
-        console.error('Error saving user settings:', error);
-        return false;
-      }
+      AppStorage.setJSON(STORAGE_KEYS.USER_SETTINGS, settings);
+      return true;
     };
 
     // Get display name for a specific box
     const getBoxUserName = (shareCode) => {
-      try {
-        const names = JSON.parse(localStorage.getItem('lootBoxUserNames') || '{}');
-        return names[shareCode] || '';
-      } catch { return ''; }
+      const names = AppStorage.getJSON(STORAGE_KEYS.USER_NAMES, {});
+      return names[shareCode] || '';
     };
 
     // Save display name for a specific box
     const setBoxUserName = (shareCode, name) => {
-      try {
-        const names = JSON.parse(localStorage.getItem('lootBoxUserNames') || '{}');
-        names[shareCode] = name;
-        localStorage.setItem('lootBoxUserNames', JSON.stringify(names));
-      } catch {}
+      const names = AppStorage.getJSON(STORAGE_KEYS.USER_NAMES, {});
+      names[shareCode] = name;
+      AppStorage.setJSON(STORAGE_KEYS.USER_NAMES, names);
     };
 
     // Get the most recently used name (for pre-filling)
-    const getLastUsedName = () => {
-      try {
-        return localStorage.getItem('lootBoxLastName') || '';
-      } catch { return ''; }
-    };
+    const getLastUsedName = () => AppStorage.get(STORAGE_KEYS.LAST_NAME) || '';
 
     // Save the most recently used name
-    const setLastUsedName = (name) => {
-      try {
-        localStorage.setItem('lootBoxLastName', name);
-      } catch {}
-    };
+    const setLastUsedName = (name) => AppStorage.set(STORAGE_KEYS.LAST_NAME, name);
 
     // One-time migration of old global name
     const migrateOldName = () => {
-      try {
-        const oldName = localStorage.getItem('lootBoxUserName');
-        if (oldName && !localStorage.getItem('lootBoxLastName')) {
-          localStorage.setItem('lootBoxLastName', oldName);
-          const settings = getUserSettings();
-          if (!settings.displayName) {
-            saveUserSettings({ ...settings, displayName: oldName });
-          }
-          localStorage.removeItem('lootBoxUserName');
+      const oldName = AppStorage.get('lootBoxUserName');
+      if (oldName && !AppStorage.get(STORAGE_KEYS.LAST_NAME)) {
+        AppStorage.set(STORAGE_KEYS.LAST_NAME, oldName);
+        const settings = getUserSettings();
+        if (!settings.displayName) {
+          saveUserSettings({ ...settings, displayName: oldName });
         }
-      } catch {}
+        AppStorage.remove('lootBoxUserName');
+      }
     };
 
     // ========== FIREBASE BOX CATALOG SERVICE ==========
@@ -2673,7 +2642,7 @@
           const updated = { ...userSettings, displayName: displayName.trim() };
           onSettingsChange(updated);
           if (displayName.trim() !== (userSettings.displayName || '')) {
-            localStorage.setItem('lootBoxLastName', displayName.trim());
+            AppStorage.set(STORAGE_KEYS.LAST_NAME, displayName.trim());
           }
         }
         onBack();
@@ -2701,7 +2670,7 @@
         const updated = { ...userSettings, displayName: displayName.trim() };
         onSettingsChange(updated);
         if (displayName.trim() !== (userSettings.displayName || '')) {
-          localStorage.setItem('lootBoxLastName', displayName.trim());
+          AppStorage.set(STORAGE_KEYS.LAST_NAME, displayName.trim());
         }
         success('Settings saved');
         setHasUnsavedChanges(false);
@@ -2709,13 +2678,13 @@
 
       const handleClearAllData = () => {
         // Clear all lootBox* keys
-        Object.keys(localStorage).forEach(key => {
-          if (key.startsWith('lootBox')) localStorage.removeItem(key);
+        AppStorage.keys().forEach(key => {
+          if (key.startsWith('lootBox')) AppStorage.remove(key);
         });
-        localStorage.removeItem(STORAGE_KEYS.BOXES);
-        localStorage.removeItem(STORAGE_KEYS.USER_SETTINGS);
-        localStorage.removeItem(STORAGE_KEYS.FAVORITES);
-        localStorage.removeItem('lootBoxSeenBoxes');
+        AppStorage.remove(STORAGE_KEYS.BOXES);
+        AppStorage.remove(STORAGE_KEYS.USER_SETTINGS);
+        AppStorage.remove(STORAGE_KEYS.FAVORITES);
+        AppStorage.remove(STORAGE_KEYS.SEEN_BOXES);
 
         const defaults = getUserSettings();
         onSettingsChange(defaults);
