@@ -2,7 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta property="og:title" content="Loot Box Creator">
+  <meta property="og:description" content="Create and open custom loot boxes">
+  <meta property="og:type" content="website">
   <title>Loot Box Creator</title>
   
   <!-- React -->
@@ -65,6 +71,10 @@
       overflow-x: hidden;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
+      padding-left: env(safe-area-inset-left);
+      padding-right: env(safe-area-inset-right);
     }
 
     /* Custom Scrollbar */
@@ -415,7 +425,6 @@
         storage = firebase.storage();
         auth = firebase.auth();
         firebaseEnabled = true;
-        console.log('Firebase initialized successfully');
       } else {
         console.warn('Firebase not configured - using local-only mode');
       }
@@ -441,7 +450,7 @@
         file: 'chest.png',
         source: BOX_SOURCES.DEFAULT,
         seasonalInfo: null,
-        imageUrl: './assets/images/boxes/free/chest.png'
+        imageUrl: 'assets/images/boxes/free/chest.png'
       },
       {
         id: 'skull_bone',
@@ -449,7 +458,7 @@
         file: 'skull_bone.png',
         source: BOX_SOURCES.DEFAULT,
         seasonalInfo: null,
-        imageUrl: './assets/images/boxes/free/skull_bone.png'
+        imageUrl: 'assets/images/boxes/free/skull_bone.png'
       },
       {
         id: 'metal',
@@ -457,7 +466,7 @@
         file: 'metal.png',
         source: BOX_SOURCES.DEFAULT,
         seasonalInfo: null,
-        imageUrl: './assets/images/boxes/free/metal.png'
+        imageUrl: 'assets/images/boxes/free/metal.png'
       },
     ];
 
@@ -472,6 +481,7 @@
     };
 
     // Get image URL (supports both local and Firebase URLs)
+    // Normalises paths so they work under Capacitor's different base URL.
     const getBoxImageUrl = (imageId, boxCatalog = null) => {
       // If imageId is already a full URL, return it directly
       if (imageId && imageId.startsWith('http')) return imageId;
@@ -479,14 +489,21 @@
       // Try to find in provided catalog first (includes Firebase boxes)
       if (boxCatalog) {
         const box = boxCatalog.all?.find(img => img.id === imageId);
-        if (box) return box.imageUrl;
+        if (box) return normalizeAssetPath(box.imageUrl);
       }
 
       // Fallback to hardcoded default images
       const image = DEFAULT_BOX_IMAGES.find(img => img.id === imageId);
-      if (image) return image.imageUrl;
+      if (image) return normalizeAssetPath(image.imageUrl);
 
       return null;
+    };
+
+    // Strip leading './' from asset paths so they resolve correctly
+    // under both the dev server and Capacitor's file:// base URL.
+    const normalizeAssetPath = (path) => {
+      if (!path || path.startsWith('http')) return path;
+      return path.replace(/^\.\//, '');
     };
 
     // ========== UTILITIES ==========
@@ -741,7 +758,10 @@
 
     // ========== STORAGE ==========
     
-    const APP_VERSION = 'V808';
+    const APP_VERSION = (() => {
+      const now = new Date();
+      return 'V' + now.getHours() + String(now.getMinutes()).padStart(2, '0');
+    })();
 
     const STORAGE_KEYS = {
       BOXES: 'lootBoxes',
@@ -968,10 +988,6 @@
         defaults = results[0];
         seasonal = results[1];
 
-        console.log('[BoxCatalog] Loaded from Firebase:', {
-          defaults: defaults.length,
-          seasonal: seasonal.length,
-        });
       }
 
       // Fall back to hardcoded defaults ONLY if Firebase
@@ -1066,7 +1082,7 @@
     };
 
     // Listen to real-time updates on a shared box
-    const subscribeToSharedBox = (shareCode, callback) => {
+    const subscribeToSharedBox = (shareCode, callback, onError) => {
       if (!firebaseEnabled || !db) return () => {};
       return db.collection('sharedBoxes').doc(shareCode).onSnapshot((doc) => {
         if (doc.exists) {
@@ -1074,8 +1090,9 @@
         } else {
           callback(null);
         }
-      }, (error) => {
-        console.error('Error in shared box listener:', error);
+      }, (err) => {
+        console.error('Error in shared box listener:', err);
+        if (onError) onError(err);
       });
     };
 
@@ -1339,7 +1356,7 @@
 
       const containerStyles = {
         position: 'fixed',
-        bottom: '2rem',
+        bottom: 'calc(2rem + env(safe-area-inset-bottom))',
         left: '50%',
         transform: 'translate(-50%, 0)',
         zIndex: 9999,
@@ -1443,7 +1460,7 @@
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
           background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
           zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          padding: '1rem',
+          padding: 'calc(1rem + env(safe-area-inset-top)) calc(1rem + env(safe-area-inset-right)) calc(1rem + env(safe-area-inset-bottom)) calc(1rem + env(safe-area-inset-left))',
         }} onClick={onClose}>
           <div style={{
             background: 'linear-gradient(180deg, #0f172a 0%, #1e293b 100%)',
@@ -1563,6 +1580,9 @@
             boxShadow: isOpen ? '4px 0 24px rgba(0, 0, 0, 0.5)' : 'none',
             display: 'flex',
             flexDirection: 'column',
+            paddingTop: 'env(safe-area-inset-top)',
+            paddingBottom: 'env(safe-area-inset-bottom)',
+            paddingLeft: 'env(safe-area-inset-left)',
           }}>
             {/* Header */}
             <div style={{
@@ -1951,12 +1971,13 @@
 
           {/* Version */}
           <div style={{
-            fontSize: '0.65rem',
+            fontSize: '0.7rem',
             fontWeight: 600,
             color: '#334155',
             fontFamily: 'inherit',
             flexShrink: 0,
             userSelect: 'none',
+            opacity: 0.5,
           }}>
             {APP_VERSION}
           </div>
@@ -2026,6 +2047,7 @@
           justifyContent: 'center',
           zIndex: 9999,
           animation: 'fadeIn 0.2s ease',
+          padding: 'env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)',
         }}>
           <Card style={{
             maxWidth: '400px',
@@ -2253,8 +2275,8 @@
                 const imageUrl = template.boxImageId
                   ? (template.boxImageId.startsWith('http')
                       ? template.boxImageId
-                      : `./assets/images/boxes/free/${template.boxImageId}.png`)
-                  : './assets/images/boxes/free/chest.png';
+                      : `assets/images/boxes/free/${template.boxImageId}.png`)
+                  : 'assets/images/boxes/free/chest.png';
 
                 return (
                   <div key={template.id} style={cardStyle}>
@@ -5011,6 +5033,8 @@
               return;
             }
             setPullHistory(updatedBox.pullHistory || []);
+          }, () => {
+            error('Connection lost — pull history may be outdated');
           });
           return () => unsubscribe();
         }
@@ -5178,7 +5202,7 @@
             if (box.type === 'shared') {
               addPullToSharedBox(box.shareCode, pull).catch(err => {
                 console.error('Failed to save pull:', err);
-                error('Failed to save open to shared box');
+                error(err.message || 'Failed to save open to shared box');
               });
               markPullsSeen(box.shareCode, pullHistory.length + 1);
             } else {
@@ -5535,7 +5559,7 @@
               <RevealAnimation tier={revealTier} onComplete={() => setRevealAnimDone(true)}>
               <div
                 onClick={() => {
-                  if (canPull && !isExpired) {
+                  if (openingPhase === 'done' && canPull && !isExpired) {
                     setOpeningPhase('idle');
                     setShowResult(false);
                     setCurrentPull(null);
@@ -6876,7 +6900,7 @@
               alignItems: 'center',
               justifyContent: 'center',
               zIndex: 1000,
-              padding: '1rem',
+              padding: 'calc(1rem + env(safe-area-inset-top)) calc(1rem + env(safe-area-inset-right)) calc(1rem + env(safe-area-inset-bottom)) calc(1rem + env(safe-area-inset-left))',
             }}>
               <Card style={{ maxWidth: '450px', width: '100%' }}>
                 <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#e2e8f0', marginBottom: '0.5rem' }}>
