@@ -758,10 +758,7 @@
 
     // ========== STORAGE ==========
     
-    const APP_VERSION = (() => {
-      const now = new Date();
-      return 'V' + now.getHours() + String(now.getMinutes()).padStart(2, '0');
-    })();
+    const APP_VERSION = 'V1.0.0';
 
     const STORAGE_KEYS = {
       BOXES: 'lootBoxes',
@@ -1970,17 +1967,16 @@
           </div>
 
           {/* Version */}
-          <div style={{
+          <span style={{
             fontSize: '0.7rem',
-            fontWeight: 600,
-            color: '#334155',
-            fontFamily: 'inherit',
+            fontWeight: 400,
+            color: 'rgba(148, 163, 184, 0.5)',
+            marginLeft: '0.5rem',
             flexShrink: 0,
             userSelect: 'none',
-            opacity: 0.5,
           }}>
             {APP_VERSION}
-          </div>
+          </span>
 
         </header>
       );
@@ -3075,9 +3071,18 @@
         } else {
           try {
             await navigator.clipboard.writeText(url);
-            success && success('Share link copied!');
-          } catch (err) {
-            prompt('Copy this link:', url);
+            success && success('Link copied to clipboard');
+          } catch {
+            // Final fallback: textarea hack
+            const textarea = document.createElement('textarea');
+            textarea.value = url;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            success && success('Link copied to clipboard');
           }
         }
       };
@@ -4993,6 +4998,7 @@
       const [openingPhase, setOpeningPhase] = useState('idle');
       const [revealTier, setRevealTier] = useState(null);
       const [revealAnimDone, setRevealAnimDone] = useState(false);
+      const isOpeningRef = useRef(false);
       const particleContainerRef = React.useRef(null);
       const [userName, setUserName] = useState(() => {
         if (box.type === 'shared' && box.shareCode) {
@@ -5046,6 +5052,7 @@
           setOpeningPhase('idle');
           setShowResult(false);
           setCurrentPull(null);
+          isOpeningRef.current = false;
         };
       }, []);
 
@@ -5116,6 +5123,7 @@
       const currentOdds = calculateDynamicOdds(box.items, pullHistory);
 
       const handleBoxTap = () => {
+        if (isOpeningRef.current) return;
         if (!canPull || openingPhase !== 'idle' || isExpired || currentOdds.length === 0) return;
 
         // Recharge check
@@ -5137,6 +5145,9 @@
           setNeedsName(true);
           return;
         }
+
+        // Lock immediately via ref (synchronous, prevents batched re-entry)
+        isOpeningRef.current = true;
 
         // Phase 1: Wiggle (0-400ms)
         setOpeningPhase('wiggle');
@@ -5216,6 +5227,7 @@
             // Phase 4: Done (after animations settle)
             setTimeout(() => {
               setOpeningPhase('done');
+              isOpeningRef.current = false;
             }, 800);
           }, 1200);
         }, 400);
@@ -5486,8 +5498,8 @@
                   tabIndex={openingPhase === 'idle' && canPull && !isExpired ? 0 : -1}
                   role="button"
                   aria-label="Open loot box"
-                  onClick={openingPhase === 'idle' && canPull && !isExpired ? handleBoxTap : undefined}
-                  onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && openingPhase === 'idle' && canPull && !isExpired) { e.preventDefault(); handleBoxTap(); } }}
+                  onClick={openingPhase === 'idle' && canPull && !isExpired && !isOpeningRef.current ? handleBoxTap : undefined}
+                  onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && openingPhase === 'idle' && canPull && !isExpired && !isOpeningRef.current) { e.preventDefault(); handleBoxTap(); } }}
                   style={{
                     width: '200px',
                     height: '200px',
@@ -5559,7 +5571,7 @@
               <RevealAnimation tier={revealTier} onComplete={() => setRevealAnimDone(true)}>
               <div
                 onClick={() => {
-                  if (openingPhase === 'done' && canPull && !isExpired) {
+                  if (openingPhase === 'done' && canPull && !isExpired && !isOpeningRef.current) {
                     setOpeningPhase('idle');
                     setShowResult(false);
                     setCurrentPull(null);
@@ -5631,7 +5643,7 @@
 
           </Card>
 
-          {showResult && canPull && !isExpired && openingPhase === 'done' && (
+          {showResult && canPull && !isExpired && openingPhase === 'done' && !isOpeningRef.current && (
             <button
               onClick={() => {
                 setOpeningPhase('idle');
@@ -5692,8 +5704,16 @@
                   try {
                     await navigator.clipboard.writeText(text);
                     success('Result copied to clipboard!');
-                  } catch (err) {
-                    prompt('Copy this:', text);
+                  } catch {
+                    const textarea = document.createElement('textarea');
+                    textarea.value = text;
+                    textarea.style.position = 'fixed';
+                    textarea.style.opacity = '0';
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textarea);
+                    success('Result copied to clipboard!');
                   }
                 }
               }}
@@ -6415,7 +6435,17 @@
             if (navigator.share) {
               navigator.share({ title: 'Loot Box Creator', text: 'Create, customize, and share loot boxes with friends!', url: appUrl }).catch(() => {});
             } else {
-              navigator.clipboard.writeText(appUrl).then(() => success('Link copied!')).catch(() => {});
+              navigator.clipboard.writeText(appUrl).then(() => success('Link copied to clipboard')).catch(() => {
+                const textarea = document.createElement('textarea');
+                textarea.value = appUrl;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                success('Link copied to clipboard');
+              });
             }
             break;
           }
