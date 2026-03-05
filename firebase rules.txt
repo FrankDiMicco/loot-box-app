@@ -186,3 +186,60 @@ match /boxTemplates/{templateId} {
 }
   }
 }
+
+*******************************************************************************
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /sharedBoxes/{boxId} {
+      allow read: if true;
+
+      allow create: if request.resource.data.name is string
+                    && request.resource.data.name.size() > 0
+                    && request.resource.data.name.size() <= 100
+                    && request.resource.data.items is list
+                    && request.resource.data.items.size() > 0
+                    && request.resource.data.items.size() <= 50;
+
+      // Participants can only update pull history fields
+      // Creator (matched by creatorDeviceId) can update anything
+      allow update: if request.resource.data.diff(resource.data).affectedKeys()
+                      .hasOnly(['pullHistory', 'updatedAt', 'lastActivity'])
+                   || resource.data.creatorDeviceId == request.resource.data.creatorDeviceId;
+
+      // Only creator can delete (matched by creatorDeviceId)
+      allow delete: if resource.data.creatorDeviceId == request.auth.uid
+                    || resource.data.creatorDeviceId is string == false
+                    || !('creatorDeviceId' in resource.data);
+    }
+
+    match /boxCatalog/{boxId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /purchases/{purchaseId} {
+      allow read, write: if false;
+    }
+
+    match /users/{userId} {
+      allow read, write: if false;
+    }
+
+    match /boxTemplates/{templateId} {
+      allow read: if true;
+
+      allow create: if request.resource.data.name is string
+                    && request.resource.data.name.size() > 0
+                    && request.resource.data.name.size() <= 100
+                    && request.resource.data.items is list
+                    && request.resource.data.items.size() > 0
+                    && request.resource.data.items.size() <= 50;
+
+      allow update: if false;
+      allow delete: if false;
+    }
+  }
+}
