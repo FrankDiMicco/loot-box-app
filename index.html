@@ -1019,6 +1019,21 @@
       }
     };
 
+    // Update a shared box's settings WITHOUT touching pullHistory.
+    // Used when the creator edits a box: the local pullHistory copy may be
+    // stale, and a full .set() would wipe pulls made since the last sync.
+    const updateSharedBox = async (shareCode, updates) => {
+      if (!firebaseEnabled || !db) {
+        throw new Error('Firebase not available');
+      }
+      const { pullHistory, ...safeUpdates } = updates;
+      await db.collection('sharedBoxes').doc(shareCode).update({
+        ...safeUpdates,
+        updatedAt: Date.now()
+      });
+      return true;
+    };
+
     // Fetch a shared box by share code
     const fetchSharedBox = async (shareCode) => {
       if (!firebaseEnabled || !db) return null;
@@ -1110,7 +1125,7 @@
     const saveBoxTemplate = async (box, options = {}) => {
       if (!firebaseEnabled || !db) return null;
       try {
-        const shareCode = generateShareCode();
+        const shareCode = options.existingCode || generateShareCode();
         const templateData = {
           templateId: shareCode,
           name: box.name,
@@ -2561,7 +2576,7 @@
                     ...statCardStyle,
                     flexDirection: 'row', alignItems: 'center', gap: '0.75rem',
                   }}>
-                    <span style={{ fontSize: '1.4rem' }}></span>
+                    <span style={{ fontSize: '1.4rem' }}>💎</span>
                     <div>
                       <div style={statLabelStyle}>Rarest Pull</div>
                       <div style={{ color: '#e2e8f0', fontWeight: 700, fontSize: '0.95rem' }}>
@@ -2578,7 +2593,7 @@
                     ...statCardStyle,
                     flexDirection: 'row', alignItems: 'center', gap: '0.75rem',
                   }}>
-                    <span style={{ fontSize: '1.4rem' }}></span>
+                    <span style={{ fontSize: '1.4rem' }}>🔁</span>
                     <div>
                       <div style={statLabelStyle}>Most Pulled</div>
                       <div style={{ color: '#e2e8f0', fontWeight: 700, fontSize: '0.95rem' }}>
@@ -2845,7 +2860,7 @@
     };
 
     // BoxCard (simplified for brevity)
-    const BoxCard = ({ box, onClick, onEdit, onDelete, onDuplicate, success, isNew, isFav, onToggleFavorite }) => {
+    const BoxCard = ({ box, onClick, onEdit, onDelete, onDuplicate, success, error, isNew, isFav, onToggleFavorite }) => {
       const isMobile = useIsMobile();
       const { name, items = [], pullHistory = [], maxPulls, maxPullsPerUser, type = 'local' } = box;
       const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -3045,10 +3060,15 @@
 
         let url;
         if (box.type === 'local') {
-          const shareCode = await saveBoxTemplate(box);
+          // Reuse the box's existing template doc so repeated shares
+          // keep the same URL instead of creating orphan documents.
+          const shareCode = await saveBoxTemplate(box, { existingCode: box.templateShareCode });
           if (!shareCode) {
-            success && success('Failed to share box');
+            error && error('Failed to share box');
             return;
+          }
+          if (box.templateShareCode !== shareCode) {
+            saveBox({ ...box, templateShareCode: shareCode });
           }
           url = `${window.location.origin}${window.location.pathname}#/template/${shareCode}`;
         } else {
@@ -3514,6 +3534,7 @@
                   <img
                     src={getBoxImageUrl(box.boxImageId)}
                     alt={box.name}
+                    onError={(e) => { e.target.onerror = null; e.target.src = 'assets/images/boxes/free/chest.png'; }}
                     style={{
                       maxWidth: '100%',
                       maxHeight: '90%',
@@ -4112,6 +4133,7 @@
                       <img
                         src={getBoxImageUrl(image.id, boxCatalog)}
                         alt={image.name}
+                        onError={(e) => { e.target.onerror = null; e.target.src = 'assets/images/boxes/free/chest.png'; }}
                         style={{
                           width: '100%',
                           height: '100%',
@@ -4267,6 +4289,7 @@
           shareCode: (editingBox && editingBox.shareCode) ? editingBox.shareCode : generateShareCode(),
           pullHistory: editingBox ? editingBox.pullHistory : [],
           createdAt: editingBox ? editingBox.createdAt : Date.now(),
+          creatorDeviceId: (editingBox && editingBox.creatorDeviceId) || getDeviceId(),
           boxImageId: boxImageId,
           hideContents: hideContents,
           hideOdds: hideOdds,
@@ -4283,7 +4306,13 @@
         // If shared box, save to Firestore
         if (boxType === 'shared' || (editingBox && editingBox.type === 'shared')) {
           try {
-            await saveSharedBox(boxData);
+            if (editingBox && editingBox.type === 'shared') {
+              // Editing an existing shared box: update settings only,
+              // never overwrite the server's pullHistory with local state
+              await updateSharedBox(boxData.shareCode, boxData);
+            } else {
+              await saveSharedBox(boxData);
+            }
 
             // Save lightweight reference locally for creator
             const localRef = {
@@ -4297,6 +4326,7 @@
               maxPullsPerUser: boxData.maxPullsPerUser,
               pullHistory: [],
               createdAt: boxData.createdAt,
+              creatorDeviceId: boxData.creatorDeviceId,
               boxImageId: boxData.boxImageId,
               hideContents: boxData.hideContents,
               hideOdds: boxData.hideOdds,
@@ -5023,6 +5053,7 @@
       });
       const [needsName, setNeedsName] = useState(false);
       const [isNameChange, setIsNameChange] = useState(false);
+      const prevNameRef = useRef('');
       const [oddsExpanded, setOddsExpanded] = useState(false);
       const [historyExpanded, setHistoryExpanded] = useState(false);
       const isMobile = useIsMobile();
@@ -5142,6 +5173,7 @@
 
         // Check if box is shared and needs user name
         if (box.type === 'shared' && (!userName || userName === 'Guest') && !needsName) {
+          prevNameRef.current = userName;
           setNeedsName(true);
           return;
         }
@@ -5274,7 +5306,11 @@
                   required
                 />
                 <div style={{ display: 'flex', gap: '1rem' }}>
-                  <Button variant="ghost" onClick={onBack} fullWidth>Cancel</Button>
+                  <Button variant="ghost" onClick={() => {
+                    setUserName(prevNameRef.current);
+                    setNeedsName(false);
+                    setIsNameChange(false);
+                  }} fullWidth>Cancel</Button>
                   <Button type="submit" variant="primary" fullWidth>Continue</Button>
                 </div>
               </form>
@@ -5304,7 +5340,7 @@
 
             {box.type === 'shared' && userName && (
               <div
-                onClick={(e) => { e.stopPropagation(); setNeedsName(true); setIsNameChange(true); }}
+                onClick={(e) => { e.stopPropagation(); prevNameRef.current = userName; setNeedsName(true); setIsNameChange(true); }}
                 style={{
                   fontSize: '0.8rem',
                   color: '#a0aec0',
@@ -6034,8 +6070,11 @@
                       overflowY: 'auto',
                     }}>
                       {pullHistory.slice().reverse().map((pull, idx) => {
-                        // Current user can see their own pulls, but hideContents hides items pulled by others
-                        const isCurrentUserPull = pull.userName === (userName || 'You');
+                        // Current user can see their own pulls, but hideContents hides items pulled by others.
+                        // Match by deviceId (stable) rather than display name (collides / changes).
+                        const isCurrentUserPull = pull.deviceId
+                          ? pull.deviceId === currentDeviceId
+                          : pull.userName === (userName || 'You');
                         const shouldHideItemName = box.hideContents && !isCurrentUserPull;
 
                         return (
@@ -6854,6 +6893,7 @@
                       onDelete={handleDeleteBox}
                       onDuplicate={handleDuplicateBox}
                       success={success}
+                      error={error}
                       isNew={!getSeenBoxes().includes(box.id)}
                       isFav={favorites.includes(box.shareCode || box.id)}
                       onToggleFavorite={handleToggleFavorite}

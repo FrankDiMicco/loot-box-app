@@ -1,0 +1,63 @@
+rules_version = '2';
+
+// Canonical Firestore rules for Loot Box Creator.
+// Deploy via Firebase console (Firestore > Rules) or `firebase deploy --only firestore:rules`.
+//
+// LIMITATION: this app has no user auth (device IDs only), so rules can
+// validate data shape but cannot verify WHO sent a request. Anyone who knows
+// a shareCode can technically modify pullHistory or delete a shared box via
+// the SDK. Real enforcement requires Firebase Anonymous Auth and storing the
+// creator's uid on each box.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /sharedBoxes/{boxId} {
+      allow read: if true;
+
+      allow create: if request.resource.data.name is string
+                    && request.resource.data.name.size() > 0
+                    && request.resource.data.name.size() <= 100
+                    && request.resource.data.items is list
+                    && request.resource.data.items.size() > 0
+                    && request.resource.data.items.size() <= 50
+                    && request.resource.data.creatorDeviceId is string
+                    && request.resource.data.creatorDeviceId.size() > 0;
+
+      // Participants may only touch pull history fields.
+      // Fuller edits must preserve the original creatorDeviceId
+      // (or be adding it to a legacy doc that never had one).
+      allow update: if request.resource.data.diff(resource.data).affectedKeys()
+                      .hasOnly(['pullHistory', 'updatedAt', 'lastActivity'])
+                    || !('creatorDeviceId' in resource.data)
+                    || request.resource.data.creatorDeviceId == resource.data.creatorDeviceId;
+
+      // Needed so the creator's client can delete its own box.
+      // Cannot be restricted to the creator without real auth (see above).
+      allow delete: if true;
+    }
+
+    match /boxCatalog/{boxId} {
+      allow read: if true;
+      // WARNING: world-writable because box-admin.html writes from the
+      // browser with no auth. Lock this down (write: if false) once catalog
+      // management moves behind Firebase Auth or the Admin SDK.
+      allow write: if true;
+    }
+
+    match /boxTemplates/{templateId} {
+      allow read: if true;
+
+      // Create and update share validation; update is needed because
+      // re-sharing a local box overwrites its existing template doc.
+      allow create, update: if request.resource.data.name is string
+                    && request.resource.data.name.size() > 0
+                    && request.resource.data.name.size() <= 100
+                    && request.resource.data.items is list
+                    && request.resource.data.items.size() > 0
+                    && request.resource.data.items.size() <= 50;
+
+      allow delete: if false;
+    }
+  }
+}
