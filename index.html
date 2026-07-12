@@ -3699,6 +3699,21 @@
                   fullWidth
                   required
                 />
+                {remainingPercentage > 0 && parseFloat(itemForm.percentage || 0) !== remainingPercentage && (
+                  <button
+                    type="button"
+                    onClick={() => setItemForm({ ...itemForm, percentage: String(Math.round(remainingPercentage * 100) / 100) })}
+                    style={{
+                      marginTop: '0.4rem', padding: '0.25rem 0.6rem',
+                      fontSize: '0.7rem', fontWeight: 600, color: '#60a5fa',
+                      background: 'rgba(59, 130, 246, 0.1)',
+                      border: '1px solid rgba(59, 130, 246, 0.3)',
+                      borderRadius: '6px', cursor: 'pointer', fontFamily: 'inherit',
+                    }}
+                  >
+                    Use remaining {(Math.round(remainingPercentage * 100) / 100)}%
+                  </button>
+                )}
               </div>
 
               <Input
@@ -4260,6 +4275,17 @@
         setEditingItem(null);
       };
 
+      // Redistribute all item percentages equally so they total exactly 100.
+      // Rounding remainder goes to the last item.
+      const handleSplitEvenly = () => {
+        if (items.length === 0) return;
+        const even = Math.floor((100 / items.length) * 100) / 100;
+        const newItems = items.map(item => ({ ...item, percentage: even }));
+        const remainder = Math.round((100 - even * items.length) * 100) / 100;
+        newItems[newItems.length - 1].percentage = Math.round((even + remainder) * 100) / 100;
+        setItems(newItems);
+      };
+
       const handleCreate = async () => {
         triggerHaptic('success');
         if (!boxName.trim()) {
@@ -4278,6 +4304,17 @@
           return;
         }
 
+        if (expirationEnabled && expiresAt && new Date(expiresAt).getTime() <= Date.now()) {
+          error('Expiration date must be in the future');
+          return;
+        }
+
+        const maxPullsNum = maxPulls ? parseInt(maxPulls) : null;
+        const maxPerUserNum = maxPullsPerUser ? parseInt(maxPullsPerUser) : null;
+        if (maxPullsNum && maxPerUserNum && maxPerUserNum > maxPullsNum) {
+          error('Per-person limit cannot be higher than the total opens limit');
+          return;
+        }
 
         const boxData = {
           id: editingBox ? editingBox.id : Date.now().toString(),
@@ -4491,6 +4528,11 @@
                   >
                     Shared
                   </button>
+                </div>
+                <div style={{ fontSize: '0.75rem', color: '#a0aec0', marginTop: '0.5rem', lineHeight: 1.5 }}>
+                  {boxType === 'local'
+                    ? 'Just for you — stored on this device and works offline.'
+                    : 'Friends can join via link or QR code and open it too. Everyone sees pulls live.'}
                 </div>
               </div>
 
@@ -4819,6 +4861,21 @@
               <div style={{ fontSize: '0.875rem', color: validation.valid ? '#6ee7b7' : '#fca5a5', fontWeight: 600 }}>
                 {validation.message} ({validation.total}%)
               </div>
+              {!validation.valid && (
+                <button
+                  type="button"
+                  onClick={handleSplitEvenly}
+                  style={{
+                    marginTop: '0.6rem', padding: '0.45rem 1rem',
+                    fontSize: '0.8rem', fontWeight: 600, color: '#e2e8f0',
+                    background: 'rgba(59, 130, 246, 0.2)',
+                    border: '1px solid rgba(59, 130, 246, 0.4)',
+                    borderRadius: '8px', cursor: 'pointer', fontFamily: 'inherit',
+                  }}
+                >
+                  Split evenly across {items.length} item{items.length === 1 ? '' : 's'}
+                </button>
+              )}
             </div>
           )}
 
@@ -5214,7 +5271,16 @@
             deviceId: getDeviceId(),
           };
 
-          setTimeout(() => {
+          // For shared boxes, commit the pull to Firestore DURING the shake
+          // animation, so the reveal only happens once the server accepts it.
+          // If the transaction rejects (limit hit in a race, box deleted),
+          // the user never sees a win that didn't count.
+          const savePull = box.type === 'shared'
+            ? addPullToSharedBox(box.shareCode, pull)
+            : Promise.resolve();
+          const shakeAnim = new Promise(resolve => setTimeout(resolve, 1200));
+
+          Promise.all([savePull, shakeAnim]).then(() => {
             // Phase 3: Reveal (1600ms+)
             setOpeningPhase('reveal');
             setCurrentPull(pull);
@@ -5241,12 +5307,8 @@
               setHistoryExpanded(true);
             }
 
-            // Save the pull
+            // Record the pull locally (shared pulls were already saved above)
             if (box.type === 'shared') {
-              addPullToSharedBox(box.shareCode, pull).catch(err => {
-                console.error('Failed to save pull:', err);
-                error(err.message || 'Failed to save open to shared box');
-              });
               markPullsSeen(box.shareCode, pullHistory.length + 1);
             } else {
               const newHistory = [...pullHistory, pull];
@@ -5261,7 +5323,16 @@
               setOpeningPhase('done');
               isOpeningRef.current = false;
             }, 800);
-          }, 1200);
+          }).catch(async (err) => {
+            console.error('Failed to save pull:', err);
+            // Let the shake finish so the reset isn't jarring
+            await shakeAnim;
+            setOpeningPhase('idle');
+            setShowResult(false);
+            setCurrentPull(null);
+            isOpeningRef.current = false;
+            error(err.message || 'Could not open the box — please try again');
+          });
         }, 400);
       };
 
