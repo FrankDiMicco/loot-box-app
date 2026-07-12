@@ -395,10 +395,40 @@
       0%, 100% { box-shadow: 0 0 12px rgba(99, 102, 241, 0.3), inset 0 0 12px rgba(99, 102, 241, 0.05); }
       50% { box-shadow: 0 0 24px rgba(99, 102, 241, 0.55), inset 0 0 20px rgba(99, 102, 241, 0.1); }
     }
+
+    /* Boot / loading screen (shown before React mounts and while settings load) */
+    .boot-screen {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+    }
+    .boot-screen img {
+      width: 96px;
+      height: 96px;
+      object-fit: contain;
+      animation: logoGlow 2s ease-in-out infinite, boxIdle 3s ease-in-out infinite;
+    }
+    .boot-title {
+      font-family: 'Cinzel', serif;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: #60a5fa;
+      opacity: 0.85;
+    }
   </style>
 </head>
 <body>
-  <div id="root"></div>
+  <div id="root">
+    <div class="boot-screen">
+      <img src="assets/images/ui/logo-chest.png" alt="">
+      <div class="boot-title">Loot Box Creator</div>
+    </div>
+  </div>
 
   <script type="text/babel" data-type="module">
     const { useState, useEffect, useRef } = React;
@@ -4810,6 +4840,24 @@
       return luminance > 0.7;
     };
 
+    // Pick a readable text color for an item color shown on the result card.
+    // Light colors get dark text; dark colors get lightened toward white so
+    // they stay legible on the dark card background.
+    const getReadableTextColor = (hex) => {
+      if (!hex) return '#e2e8f0';
+      const c = hex.replace('#', '');
+      const r = parseInt(c.substr(0, 2), 16);
+      const g = parseInt(c.substr(2, 2), 16);
+      const b = parseInt(c.substr(4, 2), 16);
+      const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+      if (luminance > 0.7) return '#1e293b';
+      if (luminance < 0.35) {
+        const lift = (v) => Math.round(v + (255 - v) * 0.55);
+        return `rgb(${lift(r)}, ${lift(g)}, ${lift(b)})`;
+      }
+      return hex;
+    };
+
     // ========== REVEAL ANIMATION COMPONENT ==========
     const RevealAnimation = ({ tier, onComplete, children }) => {
       const [showChildren, setShowChildren] = React.useState(false);
@@ -5227,18 +5275,21 @@
             }
 
             // Phase 4: Done (after animations settle)
+            // Clear the lock BEFORE the state update: the update renders
+            // synchronously, and the render must already see the lock open
+            // or the Open Again button stays hidden.
             setTimeout(() => {
-              setOpeningPhase('done');
               isOpeningRef.current = false;
+              setOpeningPhase('done');
             }, 800);
           }).catch(async (err) => {
             console.error('Failed to save pull:', err);
             // Let the shake finish so the reset isn't jarring
             await shakeAnim;
+            isOpeningRef.current = false;
             setOpeningPhase('idle');
             setShowResult(false);
             setCurrentPull(null);
-            isOpeningRef.current = false;
             error(err.message || 'Could not open the box — please try again');
           });
         }, 400);
@@ -5644,7 +5695,7 @@
                 ) : null}
                 <div style={{
                   fontSize: '2rem', fontWeight: 800, marginBottom: '0.5rem',
-                  color: isLightColor(currentPull.color) ? '#1e293b' : currentPull.color,
+                  color: getReadableTextColor(currentPull.color),
                   animation: 'shimmerText 1.5s ease-in-out 0.5s',
                 }}>
                   {currentPull.itemName}
@@ -5716,7 +5767,9 @@
             </button>
           )}
 
-          {showResult && openingPhase === 'done' && currentPull && box.shareCode && (
+          {box.type === 'shared' && box.shareCode && (
+            <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem' }}>
+            {showResult && openingPhase === 'done' && currentPull && (
             <button
               onClick={async () => {
                 const url = `${window.location.origin}${window.location.pathname}#/box/${box.shareCode}`;
@@ -5745,9 +5798,8 @@
                 }
               }}
               style={{
-                width: '100%',
+                flex: 1,
                 padding: '0.75rem 1.25rem',
-                marginBottom: '1rem',
                 fontSize: '0.85rem',
                 fontWeight: 600,
                 fontFamily: 'inherit',
@@ -5780,15 +5832,12 @@
               </svg>
               Share Result
             </button>
-          )}
-
-          {box.shareCode && (
+            )}
             <button
               onClick={() => setShowQRCode(true)}
               style={{
-                width: '100%',
+                flex: 1,
                 padding: '0.75rem 1.25rem',
-                marginBottom: '1rem',
                 fontSize: '0.85rem',
                 fontWeight: 600,
                 fontFamily: 'inherit',
@@ -5822,8 +5871,9 @@
                 <line x1="22" y1="14" x2="22" y2="18" />
                 <line x1="18" y1="22" x2="22" y2="22" />
               </svg>
-              Show QR Code
+              QR Code
             </button>
+            </div>
           )}
 
           {/* QR Code Modal */}
@@ -6562,7 +6612,7 @@
       let filteredBoxes = boxes.filter(box => {
         if (activeFilter === 'Local') return box.type === 'local';
         if (activeFilter === 'Shared') return box.type === 'shared';
-        if (activeFilter === 'New') {
+        if (activeFilter === 'Unopened') {
           // Show boxes that haven't been opened yet
           return !box.pullHistory || box.pullHistory.length === 0;
         }
@@ -6587,7 +6637,12 @@
         });
       }
 
-      if (!userSettings) return <div>Loading...</div>;
+      if (!userSettings) return (
+        <div className="boot-screen">
+          <img src="assets/images/ui/logo-chest.png" alt="" />
+          <div className="boot-title">Loot Box Creator</div>
+        </div>
+      );
 
       return (
         <div style={{ maxWidth: '1200px', margin: '0 auto', padding: isMobile ? '1rem' : '2rem', minHeight: '100vh' }}>
@@ -6597,7 +6652,7 @@
 
           {mode === 'home' && (
             <>
-              <FilterTabs activeFilter={activeFilter} onFilterChange={setActiveFilter} filters={['All', 'Shared', 'New', 'Faves', 'Local']} />
+              <FilterTabs activeFilter={activeFilter} onFilterChange={setActiveFilter} filters={['All', 'Shared', 'Unopened', 'Faves', 'Local']} />
 
               <div
                 style={{
@@ -6860,10 +6915,10 @@
                       <div style={{ fontSize: '1.125rem', marginBottom: '0.5rem' }}>
                         {activeFilter === 'Local' && 'No local boxes yet'}
                         {activeFilter === 'Shared' && 'No shared boxes yet'}
-                        {activeFilter === 'New' && 'No unopened boxes'}
+                        {activeFilter === 'Unopened' && 'No unopened boxes'}
                       </div>
                       <div style={{ fontSize: '0.875rem', color: '#475569' }}>
-                        {activeFilter === 'New' ? 'All your boxes have been opened!' : 'Create your first loot box to get started!'}
+                        {activeFilter === 'Unopened' ? 'All your boxes have been opened!' : 'Create your first loot box to get started!'}
                       </div>
                     </>
                   )}
@@ -6908,6 +6963,7 @@
 
           {mode === 'open' && openingBox && (
             <BoxOpener
+              key={openingBox.shareCode || openingBox.id}
               box={openingBox}
               onBack={handleCloseOpener}
               onBoxUpdate={handleBoxUpdate}
