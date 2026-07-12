@@ -2870,7 +2870,6 @@
       const isMobile = useIsMobile();
       const { name, items = [], pullHistory = [], maxPulls, maxPullsPerUser, type = 'local' } = box;
       const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-      const [activeTooltip, setActiveTooltip] = useState(null);
       const [showOverflowMenu, setShowOverflowMenu] = useState(false);
       const boxFavId = box.shareCode || box.id;
 
@@ -2881,13 +2880,6 @@
         if (lastSeen === undefined) return false; // Never viewed = no dot (isNew badge handles that)
         return pullHistory.length > lastSeen;
       })();
-
-      const handleIconTap = (e, iconId) => {
-        e.stopPropagation();
-        e.nativeEvent.stopImmediatePropagation();
-        setShowOverflowMenu(false);
-        setActiveTooltip(activeTooltip === iconId ? null : iconId);
-      };
 
       // Close overflow menu on outside click
       useEffect(() => {
@@ -2901,22 +2893,6 @@
           document.removeEventListener('click', handleClickOutside);
         };
       }, [showOverflowMenu]);
-
-      useEffect(() => {
-        if (activeTooltip) {
-          const timer = setTimeout(() => setActiveTooltip(null), 3000);
-          return () => clearTimeout(timer);
-        }
-      }, [activeTooltip]);
-
-      // Dismiss tooltip on outside click
-      useEffect(() => {
-        if (activeTooltip) {
-          const dismiss = () => setActiveTooltip(null);
-          document.addEventListener('click', dismiss);
-          return () => document.removeEventListener('click', dismiss);
-        }
-      }, [activeTooltip]);
 
       // Compute opens info
       const opensRemaining = (() => {
@@ -2933,19 +2909,6 @@
         const pct = opensRemaining.remaining / opensRemaining.total;
         if (pct <= 0.5) return '#f59e0b';
         return '#10b981';
-      })();
-
-      const opensDepleted = !opensRemaining.unlimited && opensRemaining.remaining <= 0;
-
-      const opensValueText = (() => {
-        if (opensRemaining.unlimited) return '\u221E';
-        return `${pullHistory.length}/${opensRemaining.total}`;
-      })();
-
-      const opensTooltipText = (() => {
-        if (opensRemaining.unlimited) return 'Unlimited opens available';
-        if (opensRemaining.remaining <= 0) return `${pullHistory.length} out of ${opensRemaining.total} opens used`;
-        return `${pullHistory.length} out of ${opensRemaining.total} opens used`;
       })();
 
       // Expiration color
@@ -2999,7 +2962,8 @@
         const periodLabel = box.pullRechargePeriod === 'hour' ? 'hr' : box.pullRechargePeriod === 'day' ? 'day' : box.pullRechargePeriod === 'week' ? 'wk' : 'mo';
         const cyclesRemaining = getRechargeCyclesRemaining(box);
         const allCyclesUsed = cyclesRemaining === 0;
-        return { available, max: box.pullRechargeMax, periodLabel, amount: box.pullRechargeAmount, cyclesRemaining, allCyclesUsed };
+        const timeUntilNext = getTimeUntilNextRecharge(box, ts);
+        return { available, max: box.pullRechargeMax, periodLabel, amount: box.pullRechargeAmount, cyclesRemaining, allCyclesUsed, timeUntilNext };
       })();
 
       const rechargeColor = (() => {
@@ -3008,48 +2972,6 @@
         if (rechargeInfo.available <= 0) return '#f59e0b';
         return '#10b981';
       })();
-
-      // Tooltip renderer
-      const renderTooltip = (text) => (
-        React.createElement('div', {
-          style: {
-            position: 'absolute',
-            bottom: '100%',
-            left: '0',
-            marginBottom: '6px',
-            background: 'rgba(15, 23, 42, 0.95)',
-            border: '1px solid rgba(65, 105, 225, 0.3)',
-            borderRadius: '8px',
-            padding: '8px 12px',
-            color: '#e2e8f0',
-            fontSize: '0.75rem',
-            fontWeight: 500,
-            lineHeight: '1.4',
-            whiteSpace: 'normal',
-            minWidth: '160px',
-            maxWidth: '240px',
-            width: 'max-content',
-            zIndex: 10,
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.4)',
-            pointerEvents: 'none',
-            opacity: 1,
-          }
-        },
-          React.createElement('div', {
-            style: {
-              position: 'absolute',
-              bottom: '-6px',
-              left: '12px',
-              width: 0,
-              height: 0,
-              borderLeft: '6px solid transparent',
-              borderRight: '6px solid transparent',
-              borderTop: '6px solid rgba(15, 23, 42, 0.95)',
-            }
-          }),
-          text
-        )
-      );
 
       const handleEdit = (e) => {
         e.stopPropagation();
@@ -3128,9 +3050,8 @@
             onClick={() => {
               // Whole card opens the box; if a menu or tooltip is open,
               // the tap just dismisses it instead.
-              if (showOverflowMenu || activeTooltip) {
+              if (showOverflowMenu) {
                 setShowOverflowMenu(false);
-                setActiveTooltip(null);
                 return;
               }
               onClick && onClick();
@@ -3199,7 +3120,6 @@
                   onClick={(e) => {
                     e.stopPropagation();
                     e.nativeEvent.stopImmediatePropagation();
-                    setActiveTooltip(null);
                     setShowOverflowMenu(!showOverflowMenu);
                   }}
                   style={{
@@ -3385,145 +3305,82 @@
                   )}
                 </div>
 
-                {/* Info icons - 2 COLUMN GRID */}
+                {/* Plain-language stats */}
                 <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'auto auto',
-                  gap: '6px 10px',
-                  justifyContent: 'start',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '5px',
                   marginTop: 'auto',
                   marginBottom: 'auto',
+                  minWidth: 0,
+                  fontSize: '0.72rem',
+                  fontWeight: 500,
+                  color: '#a0aec0',
+                  lineHeight: 1.3,
                 }}>
 
-                  {/* 1. Items */}
-                  <div onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleIconTap(e, 'items'); }} style={{
-                    position: 'relative', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', padding: '2px 0',
-                  }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#a0aec0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <polygon points="12 2 2 7 12 12 22 7 12 2" />
-                      <polyline points="2 17 12 22 22 17" />
-                      <polyline points="2 12 12 17 22 12" />
-                    </svg>
-                    <span style={{ fontSize: '0.65rem', fontWeight: 600, color: '#a0aec0' }}>{items.length}</span>
-                    {activeTooltip === 'items' && renderTooltip(`This box has ${items.length} item${items.length === 1 ? '' : 's'} to discover`)}
-                  </div>
-
-                  {/* 2. Opens */}
-                  <div onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleIconTap(e, 'opens'); }} style={{
-                    position: 'relative', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', padding: '2px 0',
-                    opacity: opensDepleted ? 0.5 : 1,
-                  }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={opensIconColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" />
-                      <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-                      <line x1="12" y1="22.08" x2="12" y2="12" />
-                    </svg>
-                    <span style={{ fontSize: '0.65rem', fontWeight: 600, color: opensIconColor }}>{opensValueText}</span>
-                    {activeTooltip === 'opens' && renderTooltip(opensTooltipText)}
-                  </div>
-
-                  {/* 3. Your Opens */}
-                  <div onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleIconTap(e, 'youropens'); }} style={{
-                    position: 'relative', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', padding: '2px 0',
-                    opacity: (maxPullsPerUser > 0 && yourOpensDepleted) ? 0.5 : 1,
-                  }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={maxPullsPerUser > 0 ? yourOpensColor : '#a0aec0'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
-                      <circle cx="12" cy="7" r="4" />
-                    </svg>
-                    <span style={{ fontSize: '0.65rem', fontWeight: 600, color: maxPullsPerUser > 0 ? yourOpensColor : '#a0aec0' }}>
-                      {maxPullsPerUser > 0 ? `${yourOpensRemaining}/${maxPullsPerUser}` : '\u221E'}
+                  {/* Items and opens */}
+                  <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {items.length} item{items.length === 1 ? '' : 's'}
+                    <span style={{ color: '#475569' }}> · </span>
+                    <span style={{ color: opensRemaining.unlimited ? '#a0aec0' : opensIconColor }}>
+                      {opensRemaining.unlimited
+                        ? `${pullHistory.length} open${pullHistory.length === 1 ? '' : 's'}`
+                        : `${pullHistory.length}/${opensRemaining.total} opens`}
                     </span>
-                    {activeTooltip === 'youropens' && renderTooltip(
-                      !maxPullsPerUser || maxPullsPerUser <= 0
-                        ? 'Unlimited opens per person'
-                        : yourOpensDepleted
-                          ? "You've used all your opens"
-                          : `You have ${yourOpensRemaining} open${yourOpensRemaining === 1 ? '' : 's'} remaining`
-                    )}
                   </div>
 
-                  {/* 4. History count */}
-                  <div onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleIconTap(e, 'history'); }} style={{
-                    position: 'relative', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', padding: '2px 0',
-                  }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ec4899" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
-                      <circle cx="12" cy="7" r="4" />
-                    </svg>
-                    <span style={{ fontSize: '0.65rem', fontWeight: 600, color: '#ec4899' }}>{pullHistory.length}</span>
-                    {activeTooltip === 'history' && renderTooltip(`${pullHistory.length} total open${pullHistory.length === 1 ? '' : 's'} so far`)}
-                  </div>
-
-                  {/* 5. Participants (conditional - shared only) */}
+                  {/* Shared boxes: players and your remaining opens */}
                   {box.type === 'shared' && (
-                    <div onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleIconTap(e, 'shared'); }} style={{
-                      position: 'relative', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', padding: '2px 0',
-                    }}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
-                        <circle cx="9" cy="7" r="4" />
-                        <path d="M23 21v-2a4 4 0 00-3-3.87" />
-                        <path d="M16 3.13a4 4 0 010 7.75" />
-                      </svg>
-                      <span style={{ fontSize: '0.65rem', fontWeight: 600, color: '#3b82f6' }}>{uniqueParticipants}</span>
-                      {activeTooltip === 'shared' && renderTooltip(`${uniqueParticipants} ${uniqueParticipants === 1 ? 'person has' : 'people have'} opened this box`)}
+                    <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {uniqueParticipants} player{uniqueParticipants === 1 ? '' : 's'}
+                      {maxPullsPerUser > 0 && (
+                        <>
+                          <span style={{ color: '#475569' }}> · </span>
+                          <span style={{ color: yourOpensColor }}>
+                            {yourOpensDepleted ? 'no opens left for you' : `${yourOpensRemaining} left for you`}
+                          </span>
+                        </>
+                      )}
                     </div>
                   )}
 
-                  {/* 6. Expiration (conditional) */}
+                  {/* Expiration */}
                   {box.expiresAt && (
-                    <div onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleIconTap(e, 'expiration'); }} style={{
-                      position: 'relative', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', padding: '2px 0',
+                    <div style={{
+                      display: 'flex', alignItems: 'center', gap: '4px',
+                      color: expirationIconColor, whiteSpace: 'nowrap',
                     }}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={expirationIconColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{
+                        flexShrink: 0,
                         animation: expirationPulse ? 'pulse 2s ease-in-out infinite' : 'none',
                       }}>
                         <circle cx="12" cy="12" r="10" />
                         <polyline points="12 6 12 12 16 14" />
                       </svg>
-                      <span style={{ fontSize: '0.65rem', fontWeight: 600, color: expirationIconColor }}>
-                        {box.expiresAt - Date.now() <= 0 ? 'Expired' : formatExpirationCountdown(box.expiresAt)}
-                      </span>
-                      {activeTooltip === 'expiration' && renderTooltip(
-                        box.expiresAt - Date.now() <= 0 ? 'This box has expired' : `This box expires in ${formatExpirationCountdown(box.expiresAt)}`
-                      )}
+                      {isExpired ? 'Expired' : `${formatExpirationCountdown(box.expiresAt)} left`}
                     </div>
                   )}
 
-                  {/* 7. Recharge (conditional) */}
-                  {box.pullRechargeEnabled && rechargeInfo && (
-                    <div onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleIconTap(e, 'recharge'); }} style={{
-                      position: 'relative', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', padding: '2px 0',
-                      opacity: rechargeInfo.available <= 0 ? 0.7 : 1,
+                  {/* Recharge */}
+                  {rechargeInfo && (
+                    <div style={{
+                      display: 'flex', alignItems: 'center', gap: '4px',
+                      color: rechargeColor, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                     }}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={rechargeColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="12" cy="12" r="10" />
-                        <polyline points="12 6 12 12 16 14" />
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
                       </svg>
-                      <span style={{ fontSize: '0.65rem', fontWeight: 600, color: rechargeColor }}>
-                        {rechargeInfo.allCyclesUsed && rechargeInfo.available <= 0
-                          ? 'Done'
-                          : `${rechargeInfo.available}/${rechargeInfo.max}`
-                        }
-                        {rechargeInfo.cyclesRemaining !== null && !rechargeInfo.allCyclesUsed && (
-                          ` (${rechargeInfo.cyclesRemaining} left)`
-                        )}
-                      </span>
-                      {activeTooltip === 'recharge' && renderTooltip(
-                        rechargeInfo.allCyclesUsed && rechargeInfo.available <= 0
-                          ? 'Recharge done'
-                          : rechargeInfo.cyclesRemaining !== null
-                            ? `${rechargeInfo.available} recharge open${rechargeInfo.available !== 1 ? 's' : ''} available (${rechargeInfo.amount}/${rechargeInfo.periodLabel}, ${rechargeInfo.cyclesRemaining} refill${rechargeInfo.cyclesRemaining !== 1 ? 's' : ''} left)`
-                            : rechargeInfo.available <= 0
-                              ? `Recharging... ${rechargeInfo.amount} open${rechargeInfo.amount > 1 ? 's' : ''}/${rechargeInfo.periodLabel}`
-                              : `${rechargeInfo.available} recharge open${rechargeInfo.available !== 1 ? 's' : ''} available (${rechargeInfo.amount}/${rechargeInfo.periodLabel})`
-                      )}
+                      {rechargeInfo.allCyclesUsed && rechargeInfo.available <= 0
+                        ? 'No recharges left'
+                        : rechargeInfo.available <= 0
+                          ? `Recharges in ${formatRechargeTimeRemaining(rechargeInfo.timeUntilNext)}`
+                          : `${rechargeInfo.available}/${rechargeInfo.max} recharge open${rechargeInfo.max === 1 ? '' : 's'}`}
                     </div>
                   )}
 
                 </div>
-                {/* End info grid */}
+                {/* End stats */}
               </div>
               {/* End left side */}
 
@@ -3535,7 +3392,7 @@
                   onClick(e);
                 }}
                 style={{
-                  width: '180px',
+                  width: isMobile ? '150px' : '180px',
                   flexShrink: 0,
                   display: 'flex',
                   alignItems: 'flex-end',
