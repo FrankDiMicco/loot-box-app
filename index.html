@@ -5330,6 +5330,9 @@
       }, []);
       const [oddsExpanded, setOddsExpanded] = useState(false);
       const [historyExpanded, setHistoryExpanded] = useState(false);
+      const [collectionExpanded, setCollectionExpanded] = useState(false);
+      const [newDiscovery, setNewDiscovery] = useState(false);
+      const reopenRef = useRef(false);
       const isMobile = useIsMobile();
       const userToggledHistory = useRef(false);
 
@@ -5445,6 +5448,29 @@
       // Calculate current odds with dynamic adjustment
       const currentOdds = calculateDynamicOdds(box.items, pullHistory);
 
+      // Open Again: re-tap once the reset has rendered, so handleBoxTap
+      // sees openingPhase === 'idle' instead of the stale 'done'
+      useEffect(() => {
+        if (openingPhase === 'idle' && reopenRef.current) {
+          reopenRef.current = false;
+          handleBoxTap();
+        }
+      }, [openingPhase]);
+
+      // Discovery log: items THIS user has personally pulled
+      const myDiscovered = React.useMemo(() => {
+        const counts = {};
+        (pullHistory || []).forEach(p => {
+          const mine = p.deviceId
+            ? p.deviceId === currentDeviceId
+            : p.userName === (userName || 'You');
+          if (mine && p.itemId) counts[p.itemId] = (counts[p.itemId] || 0) + 1;
+        });
+        return counts;
+      }, [pullHistory, userName]);
+      const discoveredCount = (box.items || []).filter(i => myDiscovered[i.id]).length;
+      const collectionComplete = (box.items || []).length > 0 && discoveredCount === box.items.length;
+
       const handleBoxTap = () => {
         if (isOpeningRef.current) return;
         if (!canPull || openingPhase !== 'idle' || isExpired || currentOdds.length === 0) return;
@@ -5495,6 +5521,13 @@
             }
           }
 
+          // First time this player has pulled this item? (drives the
+          // New Discovery flourish and the collection log)
+          const isFirstDiscovery = !pullHistory.some(p =>
+            p.itemId === selectedItem.id &&
+            (p.deviceId ? p.deviceId === getDeviceId() : p.userName === (userName || 'You'))
+          );
+
           const pull = {
             itemId: selectedItem.id,
             itemName: selectedItem.name,
@@ -5522,6 +5555,8 @@
             setRevealTier(getRarityTier(selectedItem.percentage));
             setRevealAnimDone(false);
             setShowResult(true);
+            setNewDiscovery(isFirstDiscovery);
+            if (isFirstDiscovery) setCollectionExpanded(true);
 
             // Spawn particles
             if (particleContainerRef.current) {
@@ -6041,6 +6076,7 @@
                     setCurrentPull(null);
                     setRevealTier(null);
                     setRevealAnimDone(false);
+                    setNewDiscovery(false);
                     if (particleContainerRef.current) particleContainerRef.current.innerHTML = '';
                   }
                 }}
@@ -6079,6 +6115,22 @@
                     }}
                   />
                 ) : null}
+                {newDiscovery && (
+                  <div style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '5px',
+                    padding: '3px 10px', borderRadius: '999px',
+                    border: '1px solid rgba(245, 158, 11, 0.5)',
+                    background: 'rgba(245, 158, 11, 0.08)',
+                    color: '#fbbf24', fontSize: '0.7rem', fontWeight: 800,
+                    letterSpacing: '0.06em', textTransform: 'uppercase',
+                    marginBottom: '0.75rem',
+                  }}>
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="#fbbf24" stroke="#fbbf24" strokeWidth="1" strokeLinejoin="round">
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                    </svg>
+                    New Discovery
+                  </div>
+                )}
                 <div style={{
                   fontSize: '2rem', fontWeight: 800, marginBottom: '0.5rem',
                   color: getReadableTextColor(currentPull.color),
@@ -6116,8 +6168,11 @@
                 setCurrentPull(null);
                 setRevealTier(null);
                 setRevealAnimDone(false);
+                setNewDiscovery(false);
                 if (particleContainerRef.current) particleContainerRef.current.innerHTML = '';
-                setTimeout(() => handleBoxTap(), 50);
+                // handleBoxTap can't be called from this (stale) render's
+                // closure — the effect below re-taps once state is idle
+                reopenRef.current = true;
               }}
               style={{
                 width: '100%',
@@ -6345,6 +6400,107 @@
                 </button>
               </div>
             </>
+          )}
+
+          {/* Collection / Discovery Log */}
+          {(box.items || []).length > 0 && (
+            <Card style={{ marginBottom: isMobile ? '1rem' : '1.5rem' }}>
+              <div
+                onClick={() => setCollectionExpanded(!collectionExpanded)}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  cursor: 'pointer',
+                  userSelect: 'none',
+                  WebkitUserSelect: 'none',
+                  minHeight: '44px',
+                  padding: '0.25rem 0',
+                }}
+              >
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#e2e8f0', margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  Collection
+                  <span style={{
+                    fontSize: '0.8rem', fontWeight: 700,
+                    color: collectionComplete ? '#fbbf24' : '#60a5fa',
+                    border: `1px solid ${collectionComplete ? 'rgba(245, 158, 11, 0.5)' : 'rgba(59, 130, 246, 0.35)'}`,
+                    borderRadius: '999px', padding: '2px 10px',
+                  }}>
+                    {discoveredCount}/{box.items.length}{collectionComplete ? ' ✦' : ''}
+                  </span>
+                </h3>
+                <span style={{
+                  fontSize: '1.25rem',
+                  color: '#a0aec0',
+                  transition: 'transform 0.25s ease',
+                  transform: collectionExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                  display: 'inline-block',
+                }}>
+                  ▼
+                </span>
+              </div>
+
+              {collectionExpanded && (
+                <div style={{ marginTop: '0.75rem' }}>
+                  {/* Progress bar */}
+                  <div style={{ height: '6px', borderRadius: '3px', background: 'rgba(51, 65, 85, 0.5)', overflow: 'hidden', marginBottom: '1rem' }}>
+                    <div style={{
+                      width: `${(discoveredCount / box.items.length) * 100}%`,
+                      height: '100%',
+                      borderRadius: '3px',
+                      background: collectionComplete
+                        ? 'linear-gradient(90deg, #f59e0b, #fbbf24)'
+                        : 'linear-gradient(90deg, #1e40af, #3b82f6)',
+                      transition: 'width 0.5s ease',
+                    }} />
+                  </div>
+
+                  {/* Item tiles: discovered vs silhouettes */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(96px, 1fr))', gap: '0.5rem' }}>
+                    {box.items.map(item => {
+                      const count = myDiscovered[item.id] || 0;
+                      const found = count > 0;
+                      return (
+                        <div key={item.id} style={{
+                          padding: '0.6rem 0.5rem',
+                          borderRadius: '10px',
+                          textAlign: 'center',
+                          background: found ? `${item.color}14` : 'rgba(15, 22, 36, 0.5)',
+                          border: found ? `1px solid ${item.color}55` : '1px dashed rgba(100, 116, 139, 0.35)',
+                          minWidth: 0,
+                        }}>
+                          <div style={{
+                            width: '14px', height: '14px', borderRadius: '50%',
+                            background: found ? item.color : 'rgba(100, 116, 139, 0.3)',
+                            boxShadow: found ? `0 0 8px ${item.color}80` : 'none',
+                            margin: '0 auto 6px',
+                          }} />
+                          <div style={{
+                            fontSize: '0.7rem', fontWeight: 600,
+                            color: found ? '#e2e8f0' : '#475569',
+                            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                          }}>
+                            {found ? item.name : '???'}
+                          </div>
+                          <div style={{ fontSize: '0.6rem', color: found ? '#64748b' : '#3f4a5f' }}>
+                            {found ? `×${count}` : 'undiscovered'}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {collectionComplete && (
+                    <div style={{
+                      textAlign: 'center', marginTop: '0.75rem',
+                      fontSize: '0.8rem', fontWeight: 700, color: '#fbbf24',
+                    }}>
+                      Collection complete — you've found everything!
+                    </div>
+                  )}
+                </div>
+              )}
+            </Card>
           )}
 
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : (box.hideOdds ? '1fr' : '1fr 1fr'), gap: isMobile ? '1rem' : '1.5rem' }}>
