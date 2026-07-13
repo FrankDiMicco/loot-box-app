@@ -61,7 +61,30 @@ The item is chosen by `Math.random()` in the browser — a motivated user can
 award themselves anything. A callable Cloud Function (`openBox`) should pick
 the item, enforce all limits (including recharge, which the transaction
 currently does NOT check server-side), and write the pull. Solves recharge
-race across devices too. Requires Blaze (already on it).
+race across devices too. Requires Blaze (already on it). Also the only real
+path to rate limiting (rules can't count requests).
+
+### 7. Cost-abuse safeguards (denial-of-wallet)
+Blaze has no spending ceiling and the Firebase config is public in the page
+source — a bot can bill us directly. Layers, in bang-for-buck order:
+- Budget alerts at $5 / $25 / $100 (Cloud console → Billing → Budgets).
+  IMPORTANT: alerts only EMAIL — they do not stop spending.
+- Hard cap (optional): budget → Pub/Sub → small Cloud Function that detaches
+  billing at a threshold (documented Google pattern). Manual emergency brake:
+  detach billing in the console — app goes down, damage stops.
+- Firebase App Check with reCAPTCHA v3 — biggest single win; blocks scripted
+  abuse of the public config. Console: register app, get reCAPTCHA key;
+  add App Check SDK init to index.html; then turn on ENFORCEMENT for
+  Firestore and Storage (grace period first to avoid locking real users out).
+- Rules hardening in `firestore.rules`: make pullHistory updates append-only
+  (size can only grow by 1) with a hard cap (~2000); enforce doc IDs match
+  `[A-Z0-9]{6}` on create; set `boxCatalog` write to false — NOTE this breaks
+  box-admin.html until it gets auth; manage the catalog via the Firebase
+  console in the interim.
+- Write `storage.rules` (currently unaudited): block client writes, or cap
+  size (<2MB) and restrict content type to images.
+- Shared-box ephemerality (see Monetization direction below) also bounds
+  storage costs permanently.
 
 ---
 
@@ -116,6 +139,45 @@ API (a `normalizeAssetPath` comment suggests Capacitor was already considered).
 - Export/import boxes as JSON backup
 - Analytics dashboard for creators (pull stats per box, charts)
 - Social: favorites exist; leaderboards/achievements do not
+
+### Capacitor / iOS App Store (future direction)
+Wrap the existing app in Capacitor (a `normalizeAssetPath` comment shows this
+was anticipated). Native features are also what passes App Store guideline
+4.2 (thin web wrappers get rejected).
+v1 candidates (straightforward plugins over existing code):
+- Local notifications for recharge timers — no server needed, the countdown
+  math already exists (`getTimeUntilNextRecharge`); the retention feature
+- Real haptics via Core Haptics mapped to the existing tier patterns
+  (`triggerHaptic` uses navigator.vibrate = Android-only today)
+- QR code SCANNING to join boxes (we only generate QR today)
+- Universal Links so box links open in the app
+- Push via APNs (drops the web's Home-Screen-install requirement)
+v2 / wow tier (extra native work beyond base Capacitor):
+- App Clips: tap a shared box link → instant no-install mini app
+- Widgets / Live Activities: recharge countdowns on the home screen
+- Game Center: leaderboards/achievements
+- Keychain/iCloud identity: device ID currently dies with localStorage;
+  pairs with the Anonymous Auth item
+Store notes: digital purchases must use Apple IAP (15% under Small Business
+Program; web version can sell via Stripe with no cut). If paid random boxes
+ever exist, Apple requires published odds — the app already shows odds.
+Privacy policy required for submission.
+
+### Monetization direction (decided July 2026: NO subscriptions)
+Frank hates subscription apps; one-time purchases are acceptable. The
+economics support this: bounded per-user cost is cents over a lifetime.
+- Free-forever core: unlimited LOCAL boxes (they're localStorage — zero
+  backend cost) + a few active shared boxes
+- One-time Pro unlock ($3–5): more/unlimited active shared boxes, all
+  skins, full stats
+- Optional one-time seasonal cosmetic packs (skins/effects/sounds) — the
+  catalog + seasonal system already supports this; recurring revenue
+  without ever charging rent
+- Make shared boxes ephemeral by default (auto-archive after ~90 days
+  inactivity via Firestore TTL) — bounds storage forever and fits the
+  use case (party/event boxes)
+- Do NOT build any of this until the product has traction; costs round
+  to zero at current scale
 
 ---
 
