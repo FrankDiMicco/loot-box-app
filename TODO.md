@@ -109,6 +109,31 @@ source — a bot can bill us directly. Layers, in bang-for-buck order:
 
 ---
 
+## Fun factor (ranked by fun-per-effort; live party feed shipped July 2026)
+
+- **Discovery log** — "You've found 4/10 items" per box, silhouettes for
+  unfound items. Strongest retention hook (collection compulsion); data is
+  already in pullHistory; pairs beautifully with hideContents. Top pick.
+- **Golden opens** — every ~50th open randomly upgrades: chest turns gold
+  mid-shake, odds visibly double, extra FX. Pure animation/sound layer.
+- **Hold-to-charge opening** — press-and-hold instead of tap; chest rattles
+  and glows harder the longer you hold. Doesn't change odds, feels like it.
+- **Reactions** — tap a small reaction on someone's pull in history
+  (store on the pull entry). Group-chat energy, tiny data.
+- **Secret Santa mode** — names on pulls hidden until everyone has pulled,
+  then one big reveal. Fits gift exchanges; expiration + per-person limits
+  already support the use case.
+- **Shareable luck card** — render a pull as an image via canvas (item,
+  odds, box name, chest art) and share the image. Markets the app better
+  than a text link.
+- **Quick-create from a list** — paste "pizza, sushi, tacos" → box with even
+  odds in two taps. Unlocks the decision-wheel crowd.
+- **Advent calendar mode** — recharge system (1/day, limited cycles) is 90%
+  of this; add a fixed-sequence option.
+- **Near-miss theater** — flash the rare item's color for a frame before a
+  common lands. Very effective, ethically spicy — fine for a free
+  friends app, revisit if money ever gets involved.
+
 ## Ideas / nice-to-have
 
 ### Push notifications ("someone opened your box!")
