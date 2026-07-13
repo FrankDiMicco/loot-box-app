@@ -140,6 +140,34 @@ API (a `normalizeAssetPath` comment suggests Capacitor was already considered).
 - Analytics dashboard for creators (pull stats per box, charts)
 - Social: favorites exist; leaderboards/achievements do not
 
+### Item images (decided: no emoji — cheapens the look; no Firebase Storage)
+Two phases, zero/near-zero backend cost:
+
+**Phase 1 — curated item icon pack (do first).** 40–60 icons in a consistent
+style matching the chest art (weapons, potions, gems, gifts, food, tickets,
+money…), shipped as repo assets on GitHub Pages (free). Items store an icon
+id. Same pattern as the box-skin catalog, guarantees the designed look, no
+compression pipeline needed. Add a picker to ItemCreator (items already
+support `imageUrl`; there is just no picker UI).
+
+**Phase 2 — custom user images (candidate Pro feature).** User photos,
+compressed client-side and embedded as base64 data URIs — Firebase Storage
+never involved:
+- Canvas pipeline: crop square → downscale ~128px → WebP/JPEG q≈0.6 →
+  target 4–12KB per image
+- Local boxes: data URIs live in localStorage with the box (~5MB quota =
+  dozens of image-boxes; consider IndexedDB if that ever pinches)
+- Shared boxes: Firestore doc storage cost is pennies, BUT two required
+  design decisions or it blows up:
+  1. PULLS MUST STORE itemId ONLY, not a copied imageUrl — today every pull
+     copies `imageUrl` into pullHistory; with data URIs each open would
+     duplicate the whole image and hit the 1MB doc cap in dozens of pulls.
+     (This refactor is worth doing in Phase 1 anyway.) UI resolves images
+     by looking up the item; mind hideContents when resolving for others.
+  2. Images live in a sibling doc (`sharedBoxes/{code}/meta/images`),
+     fetched once and cached — NOT the main box doc, which realtime
+     listeners re-send in full to every participant on every pull.
+
 ### Capacitor / iOS App Store (future direction)
 Wrap the existing app in Capacitor (a `normalizeAssetPath` comment shows this
 was anticipated). Native features are also what passes App Store guideline
