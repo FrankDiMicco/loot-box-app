@@ -406,6 +406,11 @@
       to { opacity: 1; }
     }
 
+    @keyframes partyDropIn {
+      from { opacity: 0; transform: translate(-50%, -16px); }
+      to { opacity: 1; transform: translate(-50%, 0); }
+    }
+
     /* Boot / loading screen (shown before React mounts and while settings load) */
     .boot-screen {
       min-height: 100vh;
@@ -2037,6 +2042,28 @@
         _routeOut(shimmerGain, 1);
         shimmer.start(chordAt); shimmer.stop(chordAt + 1.6);
       } catch(e) { console.warn('Sound error:', e); }
+    };
+
+    // Soft two-note ping for live party events (someone else pulled)
+    const playPartyPing = () => {
+      if (!soundEnabled) return;
+      try {
+        const ctx = _ensureAudio();
+        const now = ctx.currentTime;
+        [880, 1318.5].forEach((f, i) => {
+          const osc = ctx.createOscillator();
+          osc.type = 'sine';
+          osc.frequency.value = f;
+          const g = ctx.createGain();
+          const t = now + i * 0.07;
+          g.gain.setValueAtTime(0.0001, t);
+          g.gain.exponentialRampToValueAtTime(0.06, t + 0.02);
+          g.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+          osc.connect(g);
+          _routeOut(g, 1);
+          osc.start(t); osc.stop(t + 0.5);
+        });
+      } catch(e) {}
     };
 
     // Haptic feedback utility (uses Vibration API)
@@ -5268,6 +5295,39 @@
       const [needsName, setNeedsName] = useState(false);
       const [isNameChange, setIsNameChange] = useState(false);
       const prevNameRef = useRef('');
+
+      // Live party feed: celebrate other players' pulls as they happen
+      const [partyEvent, setPartyEvent] = useState(null);
+      const partyQueueRef = useRef([]);
+      const partyTimerRef = useRef(null);
+      const knownPullsRef = useRef(null);
+
+      const pullKey = (p) => `${p.deviceId || 'x'}_${p.timestamp || 0}_${p.itemId || ''}`;
+
+      const showNextParty = () => {
+        const next = partyQueueRef.current.shift();
+        if (!next) { partyTimerRef.current = null; return; }
+        setPartyEvent(next);
+        playPartyPing();
+        triggerHaptic('light');
+        partyTimerRef.current = setTimeout(() => {
+          setPartyEvent(null);
+          // brief gap before the next banner in the queue
+          partyTimerRef.current = setTimeout(() => {
+            partyTimerRef.current = null;
+            showNextParty();
+          }, 300);
+        }, 3500);
+      };
+
+      const enqueueParty = (pull) => {
+        partyQueueRef.current.push(pull);
+        if (!partyTimerRef.current) showNextParty();
+      };
+
+      useEffect(() => {
+        return () => { if (partyTimerRef.current) clearTimeout(partyTimerRef.current); };
+      }, []);
       const [oddsExpanded, setOddsExpanded] = useState(false);
       const [historyExpanded, setHistoryExpanded] = useState(false);
       const isMobile = useIsMobile();
@@ -5283,7 +5343,25 @@
               onBack();
               return;
             }
-            setPullHistory(updatedBox.pullHistory || []);
+            const history = updatedBox.pullHistory || [];
+            // Party feed: the first snapshot just seeds the known set
+            // (those pulls are history, not news); after that, celebrate
+            // any new pull made by someone other than this device.
+            if (knownPullsRef.current === null) {
+              knownPullsRef.current = new Set(history.map(pullKey));
+            } else {
+              const myId = getDeviceId();
+              history.forEach(p => {
+                const k = pullKey(p);
+                if (!knownPullsRef.current.has(k)) {
+                  knownPullsRef.current.add(k);
+                  if (p.deviceId && p.deviceId !== myId) {
+                    enqueueParty(p);
+                  }
+                }
+              });
+            }
+            setPullHistory(history);
           }, () => {
             error('Connection lost — pull history may be outdated');
           });
@@ -5569,6 +5647,59 @@
 
       return (
         <div data-reveal-shake="" style={{ maxWidth: '1000px', margin: '0 auto' }}>
+
+          {/* Live party banner: someone else just pulled */}
+          {partyEvent && (() => {
+            const isRarePull = (partyEvent.percentage || 100) < 10;
+            const accent = isRarePull ? '#f59e0b' : (partyEvent.color || '#3b82f6');
+            const hideItem = box.hideContents;
+            return (
+              <div style={{
+                position: 'fixed',
+                top: 'calc(12px + env(safe-area-inset-top))',
+                left: '50%',
+                transform: 'translate(-50%, 0)',
+                zIndex: 9500,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                padding: '10px 16px',
+                background: 'rgba(15, 23, 42, 0.92)',
+                backdropFilter: 'blur(10px)',
+                WebkitBackdropFilter: 'blur(10px)',
+                border: `1px solid ${accent}66`,
+                borderRadius: '14px',
+                boxShadow: `0 0 24px ${accent}44, 0 8px 24px rgba(0, 0, 0, 0.5)`,
+                animation: 'partyDropIn 0.45s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                maxWidth: '92%',
+              }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill={isRarePull ? accent : 'none'} stroke={accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, filter: `drop-shadow(0 0 4px ${accent}88)` }}>
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                </svg>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#e2e8f0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {partyEvent.userName || 'Someone'} pulled{' '}
+                    <span style={{ color: getReadableTextColor(partyEvent.color || '#3b82f6') }}>
+                      {hideItem ? 'a Mystery Item' : partyEvent.itemName}
+                    </span>
+                    {isRarePull && !hideItem && (
+                      <span style={{
+                        marginLeft: '6px', fontSize: '0.6rem', fontWeight: 800, color: '#f59e0b',
+                        border: '1px solid rgba(245, 158, 11, 0.5)', borderRadius: '4px',
+                        padding: '1px 5px', verticalAlign: 'middle', letterSpacing: '0.05em',
+                      }}>RARE</span>
+                    )}
+                  </div>
+                  {!box.hideOdds && !hideItem && (
+                    <div style={{ fontSize: '0.7rem', color: '#64748b' }}>
+                      {partyEvent.percentage}% odds
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
+
           {/* Header */}
           <div style={{ marginBottom: '1rem' }}>
             {/* Back button - left aligned, compact */}
