@@ -1123,6 +1123,18 @@
             }
           }
 
+          // Name collision check: the same display name from a different
+          // device would make the history ambiguous / allow impersonation
+          if (pull.userName && pull.deviceId) {
+            const nameTaken = history.some(p =>
+              p.deviceId && p.deviceId !== pull.deviceId &&
+              (p.userName || '').trim().toLowerCase() === pull.userName.trim().toLowerCase()
+            );
+            if (nameTaken) {
+              throw new Error(`The name "${pull.userName}" is already taken in this box`);
+            }
+          }
+
           // All checks passed - append the pull
           transaction.update(boxRef, {
             pullHistory: [...history, pull],
@@ -5426,6 +5438,12 @@
             setShowResult(false);
             setCurrentPull(null);
             error(err.message || 'Could not open the box — please try again');
+            // Name conflict (raced another player to the same name):
+            // reopen the prompt so they can pick a different one
+            if ((err.message || '').includes('already taken')) {
+              prevNameRef.current = userName;
+              setNeedsName(true);
+            }
           });
         }, 400);
       };
@@ -5435,6 +5453,17 @@
         e.stopPropagation();
         if (userName.trim()) {
           const trimmedName = userName.trim();
+          // Reject a name another player is already using in this box
+          if (box.type === 'shared') {
+            const nameTakenByOther = (pullHistory || []).some(p =>
+              p.deviceId && p.deviceId !== currentDeviceId &&
+              (p.userName || '').trim().toLowerCase() === trimmedName.toLowerCase()
+            );
+            if (nameTakenByOther) {
+              error(`"${trimmedName}" is already taken in this box — pick another name`);
+              return;
+            }
+          }
           // Save name for this specific box
           if (box.shareCode) {
             setBoxUserName(box.shareCode, trimmedName);
