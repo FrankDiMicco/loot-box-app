@@ -1560,9 +1560,26 @@
     };
 
     // SideDrawer
-    const SideDrawer = ({ isOpen, onClose, userSettings, onNavigate }) => {
+    const SideDrawer = ({ isOpen, onClose, userSettings, onNavigate, onDisplayNameChange }) => {
       const firstMenuItemRef = React.useRef(null);
       const prevOpenRef = React.useRef(false);
+      const nameInputRef = React.useRef(null);
+      const [editingName, setEditingName] = useState(false);
+      const [nameValue, setNameValue] = useState('');
+
+      const startNameEdit = () => {
+        setNameValue(userSettings?.displayName || '');
+        setEditingName(true);
+        setTimeout(() => nameInputRef.current && nameInputRef.current.focus(), 50);
+      };
+
+      const commitNameEdit = () => {
+        const trimmed = nameValue.trim();
+        if (trimmed && trimmed !== (userSettings?.displayName || '')) {
+          onDisplayNameChange && onDisplayNameChange(trimmed);
+        }
+        setEditingName(false);
+      };
 
       useEffect(() => {
         if (isOpen && !prevOpenRef.current) {
@@ -1671,9 +1688,46 @@
                 {displayName.charAt(0).toUpperCase()}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 700, color: '#e2e8f0', fontSize: '1rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {displayName}
-                </div>
+                {editingName ? (
+                  <input
+                    ref={nameInputRef}
+                    value={nameValue}
+                    onChange={(e) => setNameValue(e.target.value)}
+                    onBlur={commitNameEdit}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') commitNameEdit();
+                      if (e.key === 'Escape') setEditingName(false);
+                    }}
+                    maxLength={30}
+                    placeholder="Your name"
+                    style={{
+                      width: '100%', padding: '6px 10px', fontSize: '0.95rem', fontWeight: 600,
+                      fontFamily: 'inherit', color: '#e2e8f0',
+                      background: 'rgba(30, 41, 59, 0.8)',
+                      border: '1.5px solid rgba(65, 105, 225, 0.6)',
+                      borderRadius: '8px', outline: 'none',
+                    }}
+                  />
+                ) : (
+                  <div
+                    onClick={startNameEdit}
+                    title="Tap to change your name"
+                    style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}
+                  >
+                    <span style={{ fontWeight: 700, color: '#e2e8f0', fontSize: '1rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {displayName}
+                    </span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                      <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+                      <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+                    </svg>
+                  </div>
+                )}
+                {!userSettings?.displayName && !editingName && (
+                  <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '2px' }}>
+                    Tap to set your name
+                  </div>
+                )}
               </div>
               <button onClick={onClose} style={{
                 position: 'absolute', top: '16px', right: '16px',
@@ -5195,14 +5249,14 @@
           // Check for a name saved specifically for this box
           const boxName = getBoxUserName(box.shareCode);
           if (boxName) return boxName;
-          // Check for a last used name from another box
-          const lastName = getLastUsedName();
-          if (lastName) return lastName;
-          // Check for a real display name (not the default 'Guest')
+          // The user's chosen display name (drawer/Settings) takes priority
           const settings = getUserSettings();
           if (settings.displayName && settings.displayName !== 'Guest') {
             return settings.displayName;
           }
+          // Fall back to the last name used in another box
+          const lastName = getLastUsedName();
+          if (lastName) return lastName;
           // No name found -- will trigger prompt
           return '';
         }
@@ -7283,6 +7337,13 @@
             onClose={() => setDrawerOpen(false)}
             userSettings={userSettings}
             onNavigate={handleDrawerNavigate}
+            onDisplayNameChange={(name) => {
+              const updated = { ...userSettings, displayName: name };
+              saveUserSettings(updated);
+              setUserSettings(updated);
+              setLastUsedName(name);
+              success('Name set to ' + name);
+            }}
           />
 
           <AboutModal
