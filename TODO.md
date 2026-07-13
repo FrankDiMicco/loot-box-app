@@ -109,11 +109,8 @@ source — a bot can bill us directly. Layers, in bang-for-buck order:
 
 ---
 
-## Fun factor (ranked by fun-per-effort; live party feed shipped July 2026)
+## Fun factor (ranked by fun-per-effort; party feed + discovery log shipped July 2026)
 
-- **Discovery log** — "You've found 4/10 items" per box, silhouettes for
-  unfound items. Strongest retention hook (collection compulsion); data is
-  already in pullHistory; pairs beautifully with hideContents. Top pick.
 - **Golden opens** — every ~50th open randomly upgrades: chest turns gold
   mid-shake, odds visibly double, extra FX. Pure animation/sound layer.
 - **Hold-to-charge opening** — press-and-hold instead of tap; chest rattles
