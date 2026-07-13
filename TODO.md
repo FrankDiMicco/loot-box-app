@@ -88,8 +88,25 @@ race across devices too. Requires Blaze (already on it).
 
 ## Ideas / nice-to-have
 
+### Push notifications ("someone opened your box!")
+Works on iOS since 16.4 — but ONLY for users who added the app to their Home
+Screen (manifest + icons already shipped). Android works everywhere. Plan:
+1. Service worker (also unlocks offline PWA — see next item)
+2. Firebase Cloud Messaging for web push (fits the existing stack): generate
+   VAPID key in Firebase console, request permission from a user gesture
+   (e.g. a "Notify me" toggle on shared boxes — never on page load),
+   store FCM tokens per device on the shared box doc
+3. Cloud Function triggered on new pulls → push to the box creator /
+   subscribed participants (requires the Functions setup from the
+   "server-authoritative opening" item; can share it)
+Related iOS limitation, for the record: real haptics are impossible in a web
+app — iOS Safari has no `navigator.vibrate`, so `triggerHaptic()` is
+Android-only today. Options: the iOS 17.4+ checkbox-switch hack (single tick
+on button taps only) or wrapping the app in Capacitor for the native Haptics
+API (a `normalizeAssetPath` comment suggests Capacitor was already considered).
+
 - Service worker → true offline PWA + install prompt on older Android
-  (manifest + icons already done)
+  (manifest + icons already done; also required for push, above)
 - Sound tuning: opening SFX is fully synthesized (see `playBuildUpSound` /
   `playRevealSound` / `playRareSound`); all envelopes/frequencies are
   parameterized. If synthesis isn't cutting it, switch to CC0 samples
