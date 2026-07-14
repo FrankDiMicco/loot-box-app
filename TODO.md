@@ -172,33 +172,21 @@ rich: add a comma-separated "Keywords" field to box-admin.html's add/edit
 form (store as array on the boxCatalog doc), then tag the existing 14 boxes
 (e.g. skull → "pirate, spooky, halloween"). Zero app changes needed.
 
-### Item images (decided: no emoji — cheapens the look; no Firebase Storage)
-Two phases, zero/near-zero backend cost:
-
-**Phase 1 — curated item icon pack (do first).** 40–60 icons in a consistent
-style matching the chest art (weapons, potions, gems, gifts, food, tickets,
-money…), shipped as repo assets on GitHub Pages (free). Items store an icon
-id. Same pattern as the box-skin catalog, guarantees the designed look, no
-compression pipeline needed. Add a picker to ItemCreator (items already
-support `imageUrl`; there is just no picker UI).
-
-**Phase 2 — custom user images (candidate Pro feature).** User photos,
-compressed client-side and embedded as base64 data URIs — Firebase Storage
-never involved:
-- Canvas pipeline: crop square → downscale ~128px → WebP/JPEG q≈0.6 →
-  target 4–12KB per image
-- Local boxes: data URIs live in localStorage with the box (~5MB quota =
-  dozens of image-boxes; consider IndexedDB if that ever pinches)
-- Shared boxes: Firestore doc storage cost is pennies, BUT two required
-  design decisions or it blows up:
-  1. PULLS MUST STORE itemId ONLY, not a copied imageUrl — today every pull
-     copies `imageUrl` into pullHistory; with data URIs each open would
-     duplicate the whole image and hit the 1MB doc cap in dozens of pulls.
-     (This refactor is worth doing in Phase 1 anyway.) UI resolves images
-     by looking up the item; mind hideContents when resolving for others.
-  2. Images live in a sibling doc (`sharedBoxes/{code}/meta/images`),
-     fetched once and cached — NOT the main box doc, which realtime
-     listeners re-send in full to every participant on every pull.
+### Item images — custom photo uploads SHIPPED July 2026 (stages 1–3)
+Users attach their own photos to items; compressed client-side to ~160px
+WebP data URIs (~8KB), no Firebase Storage. Pulls reference items by id
+(resolveItemImage); shared-box images live in sibling doc
+sharedBoxes/{code}/meta/images with a no-loss inline fallback.
+REQUIRES the sharedBoxes/{code}/meta/{doc} rule in firestore.rules to be
+DEPLOYED for the per-pull optimization; until then shared photos work
+inline (unoptimized). Still open:
+- **Curated item icon pack** — the picker UI exists; this just needs 40–60
+  consistent-style icons shipped as repo assets, added as pre-made entries.
+  Needs art generated first; then it's trivial (same as box-skin catalog).
+- Consider IndexedDB if localStorage (~5MB) ever pinches for photo-heavy
+  users; today a failed save surfaces an inline error instead of losing data.
+- Custom item images are a natural candidate to gate behind the one-time
+  Pro unlock (see Monetization direction).
 
 ### Capacitor / iOS App Store (future direction)
 Wrap the existing app in Capacitor (a `normalizeAssetPath` comment shows this
