@@ -1,0 +1,3024 @@
+{
+  "exportedAt": "2026-07-14T18:09:53.362736",
+  "project": "lootbox-app-dd5fa",
+  "collections": {
+    "boxCatalog": [
+      {
+        "id": "03Wc4rzQMEP6DSI82bTN",
+        "fields": {
+          "storagePath": {
+            "stringValue": "box-catalog/default/1784046519308_army_camo.webp"
+          },
+          "name": {
+            "stringValue": "Chamo Box"
+          },
+          "createdAt": {
+            "integerValue": "1770762708400"
+          },
+          "imageUrl": {
+            "stringValue": "https://firebasestorage.googleapis.com/v0/b/lootbox-app-dd5fa.firebasestorage.app/o/box-catalog%2Fdefault%2F1784046519308_army_camo.webp?alt=media&token=9f9e57c5-c6c8-4b59-8fc8-e42787ffa371"
+          },
+          "seasonalInfo": {
+            "nullValue": null
+          },
+          "price": {
+            "nullValue": null
+          },
+          "source": {
+            "stringValue": "default"
+          },
+          "active": {
+            "booleanValue": true
+          }
+        }
+      },
+      {
+        "id": "3LdCPgCg1YUOoMFz7A6I",
+        "fields": {
+          "createdAt": {
+            "integerValue": "1770762594025"
+          },
+          "name": {
+            "stringValue": "Ghost Chest"
+          },
+          "storagePath": {
+            "stringValue": "box-catalog/seasonal/1784046527768_gray_ghost.webp"
+          },
+          "active": {
+            "booleanValue": true
+          },
+          "imageUrl": {
+            "stringValue": "https://firebasestorage.googleapis.com/v0/b/lootbox-app-dd5fa.firebasestorage.app/o/box-catalog%2Fseasonal%2F1784046527768_gray_ghost.webp?alt=media&token=72b07054-e282-420b-bbde-454110efc266"
+          },
+          "source": {
+            "stringValue": "seasonal"
+          },
+          "price": {
+            "integerValue": "0"
+          },
+          "seasonalInfo": {
+            "mapValue": {
+              "fields": {
+                "endDate": {
+                  "integerValue": "1773354540000"
+                },
+                "startDate": {
+                  "integerValue": "1770762540000"
+                },
+                "label": {
+                  "stringValue": "Seasonal"
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "id": "3aUbKPn4KVbKSrc24Fia",
+        "fields": {
+          "storagePath": {
+            "stringValue": "box-catalog/default/1784046510527_chest.webp"
+          },
+          "name": {
+            "stringValue": "Basic Chest"
+          },
+          "createdAt": {
+            "integerValue": "1770765141249"
+          },
+          "source": {
+            "stringValue": "default"
+          },
+          "price": {
+            "nullValue": null
+          },
+          "seasonalInfo": {
+            "nullValue": null
+          },
+          "imageUrl": {
+            "stringValue": "https://firebasestorage.googleapis.com/v0/b/lootbox-app-dd5fa.firebasestorage.app/o/box-catalog%2Fdefault%2F1784046510527_chest.webp?alt=media&token=cac94ac8-0017-4c25-8791-ffb34bde0c89"
+          },
+          "active": {
+            "booleanValue": true
+          }
+        }
+      },
+      {
+        "id": "4yGQL9kiJcH6NDaAARlE",
+        "fields": {
+          "active": {
+            "booleanValue": true
+          },
+          "imageUrl": {
+            "stringValue": "https://firebasestorage.googleapis.com/v0/b/lootbox-app-dd5fa.firebasestorage.app/o/box-catalog%2Fdefault%2F1784046496260_skull_bone.webp?alt=media&token=99ae3f8a-04d2-474b-a01e-66b0bf2abf36"
+          },
+          "source": {
+            "stringValue": "default"
+          },
+          "price": {
+            "nullValue": null
+          },
+          "seasonalInfo": {
+            "nullValue": null
+          },
+          "createdAt": {
+            "integerValue": "1770765206644"
+          },
+          "name": {
+            "stringValue": "Skull Chest"
+          },
+          "storagePath": {
+            "stringValue": "box-catalog/default/1784046496260_skull_bone.webp"
+          }
+        }
+      },
+      {
+        "id": "94MKNjeAzYToG0gF0KvM",
+        "fields": {
+          "storagePath": {
+            "stringValue": "box-catalog/default/1784046503313_metal.webp"
+          },
+          "createdAt": {
+            "integerValue": "1770765155559"
+          },
+          "name": {
+            "stringValue": "Metal Chest"
+          },
+          "imageUrl": {
+            "stringValue": "https://firebasestorage.googleapis.com/v0/b/lootbox-app-dd5fa.firebasestorage.app/o/box-catalog%2Fdefault%2F1784046503313_metal.webp?alt=media&token=9bf6584f-284e-4fa2-8011-a239161fd968"
+          },
+          "source": {
+            "stringValue": "default"
+          },
+          "price": {
+            "nullValue": null
+          },
+          "seasonalInfo": {
+            "nullValue": null
+          },
+          "active": {
+            "booleanValue": true
+          }
+        }
+      },
+      {
+        "id": "GhKlqiOLnciNxZMR8Uw2",
+        "fields": {
+          "active": {
+            "booleanValue": true
+          },
+          "source": {
+            "stringValue": "default"
+          },
+          "price": {
+            "nullValue": null
+          },
+          "seasonalInfo": {
+            "nullValue": null
+          },
+          "imageUrl": {
+            "stringValue": "https://firebasestorage.googleapis.com/v0/b/lootbox-app-dd5fa.firebasestorage.app/o/box-catalog%2Fdefault%2F1784046406579_space_craft.webp?alt=media&token=3e4ba538-c253-4acc-bee5-f16196fdbe7f"
+          },
+          "name": {
+            "stringValue": "Space Craft"
+          },
+          "createdAt": {
+            "integerValue": "1772232124124"
+          },
+          "storagePath": {
+            "stringValue": "box-catalog/default/1784046406579_space_craft.webp"
+          }
+        }
+      },
+      {
+        "id": "GzhJpevGRp0mfBAo6U2P",
+        "fields": {
+          "storagePath": {
+            "stringValue": "box-catalog/default/1784046460725_frozen_ice.webp"
+          },
+          "name": {
+            "stringValue": "Frozen Ice"
+          },
+          "createdAt": {
+            "integerValue": "1771966019747"
+          },
+          "seasonalInfo": {
+            "nullValue": null
+          },
+          "price": {
+            "nullValue": null
+          },
+          "source": {
+            "stringValue": "default"
+          },
+          "imageUrl": {
+            "stringValue": "https://firebasestorage.googleapis.com/v0/b/lootbox-app-dd5fa.firebasestorage.app/o/box-catalog%2Fdefault%2F1784046460725_frozen_ice.webp?alt=media&token=72c2ebda-1d3d-4dd9-9ce7-906883a4c2ab"
+          },
+          "active": {
+            "booleanValue": true
+          }
+        }
+      },
+      {
+        "id": "ancient_relic",
+        "fields": {
+          "name": {
+            "stringValue": "Ancient Relic"
+          },
+          "createdAt": {
+            "integerValue": "1770682801264"
+          },
+          "imageUrl": {
+            "stringValue": "https://via.placeholder.com/200x200/64748b/ffffff?text=Ancient"
+          },
+          "seasonalInfo": {
+            "nullValue": null
+          },
+          "price": {
+            "doubleValue": 0.99
+          },
+          "source": {
+            "stringValue": "store"
+          },
+          "active": {
+            "booleanValue": true
+          },
+          "id": {
+            "stringValue": "ancient_relic"
+          }
+        }
+      },
+      {
+        "id": "cyber_elite",
+        "fields": {
+          "id": {
+            "stringValue": "cyber_elite"
+          },
+          "active": {
+            "booleanValue": true
+          },
+          "seasonalInfo": {
+            "nullValue": null
+          },
+          "price": {
+            "doubleValue": 1.99
+          },
+          "source": {
+            "stringValue": "store"
+          },
+          "imageUrl": {
+            "stringValue": "https://via.placeholder.com/200x200/3b82f6/ffffff?text=Cyber"
+          },
+          "name": {
+            "stringValue": "Cyber Elite Box"
+          },
+          "createdAt": {
+            "integerValue": "1770682801264"
+          }
+        }
+      },
+      {
+        "id": "dQwb5CDm6FkdPm7RflbA",
+        "fields": {
+          "storagePath": {
+            "stringValue": "box-catalog/default/1784046471905_weapon_wood.webp"
+          },
+          "name": {
+            "stringValue": "Weapon Box"
+          },
+          "createdAt": {
+            "integerValue": "1771169648894"
+          },
+          "source": {
+            "stringValue": "default"
+          },
+          "price": {
+            "nullValue": null
+          },
+          "seasonalInfo": {
+            "nullValue": null
+          },
+          "imageUrl": {
+            "stringValue": "https://firebasestorage.googleapis.com/v0/b/lootbox-app-dd5fa.firebasestorage.app/o/box-catalog%2Fdefault%2F1784046471905_weapon_wood.webp?alt=media&token=f78b63b3-dd3e-45d7-8d23-64078d10a7a8"
+          },
+          "active": {
+            "booleanValue": true
+          }
+        }
+      },
+      {
+        "id": "fGW3SHdC70QG9g3MUZl3",
+        "fields": {
+          "imageUrl": {
+            "stringValue": "https://firebasestorage.googleapis.com/v0/b/lootbox-app-dd5fa.firebasestorage.app/o/box-catalog%2Fdefault%2F1784046421826_slime.webp?alt=media&token=c55131de-49d0-4230-951d-a1f3c1f23032"
+          },
+          "source": {
+            "stringValue": "default"
+          },
+          "price": {
+            "nullValue": null
+          },
+          "seasonalInfo": {
+            "nullValue": null
+          },
+          "active": {
+            "booleanValue": true
+          },
+          "storagePath": {
+            "stringValue": "box-catalog/default/1784046421826_slime.webp"
+          },
+          "createdAt": {
+            "integerValue": "1771966104394"
+          },
+          "name": {
+            "stringValue": "Slime"
+          }
+        }
+      },
+      {
+        "id": "golden_treasure",
+        "fields": {
+          "id": {
+            "stringValue": "golden_treasure"
+          },
+          "active": {
+            "booleanValue": true
+          },
+          "source": {
+            "stringValue": "store"
+          },
+          "price": {
+            "doubleValue": 2.99
+          },
+          "seasonalInfo": {
+            "nullValue": null
+          },
+          "imageUrl": {
+            "stringValue": "https://via.placeholder.com/200x200/f59e0b/ffffff?text=Gold"
+          },
+          "name": {
+            "stringValue": "Golden Treasure"
+          },
+          "createdAt": {
+            "integerValue": "1770682801264"
+          }
+        }
+      },
+      {
+        "id": "ha3uF9ijKWUYljbkr0Hf",
+        "fields": {
+          "name": {
+            "stringValue": "Beachy"
+          },
+          "createdAt": {
+            "integerValue": "1784046294942"
+          },
+          "storagePath": {
+            "stringValue": "box-catalog/default/1784046294041_beach_box.webp"
+          },
+          "active": {
+            "booleanValue": true
+          },
+          "source": {
+            "stringValue": "default"
+          },
+          "price": {
+            "nullValue": null
+          },
+          "seasonalInfo": {
+            "nullValue": null
+          },
+          "imageUrl": {
+            "stringValue": "https://firebasestorage.googleapis.com/v0/b/lootbox-app-dd5fa.firebasestorage.app/o/box-catalog%2Fdefault%2F1784046294041_beach_box.webp?alt=media&token=72e6fc29-7deb-4c2a-8b28-579bd1807d0d"
+          }
+        }
+      },
+      {
+        "id": "lUlf0MLTrFcmv0LI94SY",
+        "fields": {
+          "storagePath": {
+            "stringValue": "box-catalog/default/1784046431892_potion.webp"
+          },
+          "name": {
+            "stringValue": "Potion"
+          },
+          "createdAt": {
+            "integerValue": "1771966087877"
+          },
+          "seasonalInfo": {
+            "nullValue": null
+          },
+          "price": {
+            "nullValue": null
+          },
+          "source": {
+            "stringValue": "default"
+          },
+          "imageUrl": {
+            "stringValue": "https://firebasestorage.googleapis.com/v0/b/lootbox-app-dd5fa.firebasestorage.app/o/box-catalog%2Fdefault%2F1784046431892_potion.webp?alt=media&token=63249da0-bf79-4d45-a0c7-5d430d9135f2"
+          },
+          "active": {
+            "booleanValue": true
+          }
+        }
+      },
+      {
+        "id": "suTkxKSj3ROsbMVLdZ1l",
+        "fields": {
+          "name": {
+            "stringValue": "Blue Tron"
+          },
+          "createdAt": {
+            "integerValue": "1770766621895"
+          },
+          "storagePath": {
+            "stringValue": "box-catalog/default/1784046484041_blue_tron.webp"
+          },
+          "active": {
+            "booleanValue": true
+          },
+          "price": {
+            "nullValue": null
+          },
+          "seasonalInfo": {
+            "nullValue": null
+          },
+          "source": {
+            "stringValue": "default"
+          },
+          "imageUrl": {
+            "stringValue": "https://firebasestorage.googleapis.com/v0/b/lootbox-app-dd5fa.firebasestorage.app/o/box-catalog%2Fdefault%2F1784046484041_blue_tron.webp?alt=media&token=d25a17a4-2a8d-40bb-8842-a5468e422052"
+          }
+        }
+      },
+      {
+        "id": "wYRtfpOnuB41gx0HpryV",
+        "fields": {
+          "name": {
+            "stringValue": "Neon Lights"
+          },
+          "createdAt": {
+            "integerValue": "1771966063392"
+          },
+          "storagePath": {
+            "stringValue": "box-catalog/default/1784046452909_neon_lights.webp"
+          },
+          "active": {
+            "booleanValue": true
+          },
+          "imageUrl": {
+            "stringValue": "https://firebasestorage.googleapis.com/v0/b/lootbox-app-dd5fa.firebasestorage.app/o/box-catalog%2Fdefault%2F1784046452909_neon_lights.webp?alt=media&token=a7f47361-e071-4620-a966-3483bfebb628"
+          },
+          "source": {
+            "stringValue": "default"
+          },
+          "seasonalInfo": {
+            "nullValue": null
+          },
+          "price": {
+            "nullValue": null
+          }
+        }
+      },
+      {
+        "id": "z1pPpNpQYZjhXEpVEaC8",
+        "fields": {
+          "source": {
+            "stringValue": "default"
+          },
+          "price": {
+            "nullValue": null
+          },
+          "seasonalInfo": {
+            "nullValue": null
+          },
+          "imageUrl": {
+            "stringValue": "https://firebasestorage.googleapis.com/v0/b/lootbox-app-dd5fa.firebasestorage.app/o/box-catalog%2Fdefault%2F1784046443176_obsidian.webp?alt=media&token=f4b57894-b4df-4a0b-92df-5da87bc83754"
+          },
+          "active": {
+            "booleanValue": true
+          },
+          "storagePath": {
+            "stringValue": "box-catalog/default/1784046443176_obsidian.webp"
+          },
+          "createdAt": {
+            "integerValue": "1771966075209"
+          },
+          "name": {
+            "stringValue": "Obsidian"
+          }
+        }
+      }
+    ],
+    "sharedBoxes": [
+      {
+        "id": "7RZQ7Q",
+        "fields": {
+          "maxPullsPerUser": {
+            "integerValue": "3"
+          },
+          "boxImageId": {
+            "stringValue": "https://firebasestorage.googleapis.com/v0/b/lootbox-app-dd5fa.firebasestorage.app/o/box-catalog%2Fdefault%2F1770762703658_army_camo.png?alt=media&token=a97cd2f1-80b6-4e6f-8147-c2fc760ff549"
+          },
+          "createdAt": {
+            "integerValue": "1771033582033"
+          },
+          "name": {
+            "stringValue": "Test box"
+          },
+          "pullHistory": {
+            "arrayValue": {
+              "values": [
+                {
+                  "mapValue": {
+                    "fields": {
+                      "timestamp": {
+                        "integerValue": "1771033626478"
+                      },
+                      "itemId": {
+                        "stringValue": "1771033553126"
+                      },
+                      "userName": {
+                        "stringValue": "FF"
+                      },
+                      "percentage": {
+                        "integerValue": "25"
+                      },
+                      "color": {
+                        "stringValue": "#f97316"
+                      },
+                      "itemName": {
+                        "stringValue": "1"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      }
+                    }
+                  }
+                },
+                {
+                  "mapValue": {
+                    "fields": {
+                      "color": {
+                        "stringValue": "#f97316"
+                      },
+                      "itemName": {
+                        "stringValue": "1"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "timestamp": {
+                        "integerValue": "1771033720517"
+                      },
+                      "itemId": {
+                        "stringValue": "1771033553126"
+                      },
+                      "percentage": {
+                        "integerValue": "25"
+                      },
+                      "userName": {
+                        "stringValue": "real FF"
+                      }
+                    }
+                  }
+                },
+                {
+                  "mapValue": {
+                    "fields": {
+                      "itemName": {
+                        "stringValue": "4"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "color": {
+                        "stringValue": "#22c55e"
+                      },
+                      "userName": {
+                        "stringValue": "Mobile "
+                      },
+                      "percentage": {
+                        "integerValue": "25"
+                      },
+                      "itemId": {
+                        "stringValue": "1771033579957"
+                      },
+                      "timestamp": {
+                        "integerValue": "1771034935229"
+                      }
+                    }
+                  }
+                },
+                {
+                  "mapValue": {
+                    "fields": {
+                      "color": {
+                        "stringValue": "#9ca3af"
+                      },
+                      "itemName": {
+                        "stringValue": "3"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "timestamp": {
+                        "integerValue": "1771039577941"
+                      },
+                      "itemId": {
+                        "stringValue": "1771033571777"
+                      },
+                      "percentage": {
+                        "integerValue": "25"
+                      },
+                      "userName": {
+                        "stringValue": "FF"
+                      }
+                    }
+                  }
+                },
+                {
+                  "mapValue": {
+                    "fields": {
+                      "color": {
+                        "stringValue": "#22c55e"
+                      },
+                      "itemName": {
+                        "stringValue": "4"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "timestamp": {
+                        "integerValue": "1771510407377"
+                      },
+                      "deviceId": {
+                        "stringValue": "device_mlmv0szn_pezfvd9l"
+                      },
+                      "percentage": {
+                        "integerValue": "25"
+                      },
+                      "userName": {
+                        "stringValue": "Mobile"
+                      },
+                      "itemId": {
+                        "stringValue": "1771033579957"
+                      }
+                    }
+                  }
+                },
+                {
+                  "mapValue": {
+                    "fields": {
+                      "itemId": {
+                        "stringValue": "1771033571777"
+                      },
+                      "userName": {
+                        "stringValue": "Mobile"
+                      },
+                      "percentage": {
+                        "integerValue": "25"
+                      },
+                      "timestamp": {
+                        "integerValue": "1771527104125"
+                      },
+                      "deviceId": {
+                        "stringValue": "device_mlmv0szn_pezfvd9l"
+                      },
+                      "itemName": {
+                        "stringValue": "3"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "color": {
+                        "stringValue": "#9ca3af"
+                      }
+                    }
+                  }
+                },
+                {
+                  "mapValue": {
+                    "fields": {
+                      "color": {
+                        "stringValue": "#f97316"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "itemName": {
+                        "stringValue": "1"
+                      },
+                      "timestamp": {
+                        "integerValue": "1771527120352"
+                      },
+                      "deviceId": {
+                        "stringValue": "device_mlmv0szn_pezfvd9l"
+                      },
+                      "percentage": {
+                        "integerValue": "25"
+                      },
+                      "userName": {
+                        "stringValue": "Mobile"
+                      },
+                      "itemId": {
+                        "stringValue": "1771033553126"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "maxPulls": {
+            "nullValue": null
+          },
+          "hideOdds": {
+            "booleanValue": false
+          },
+          "hideContents": {
+            "booleanValue": false
+          },
+          "shareCode": {
+            "stringValue": "7RZQ7Q"
+          },
+          "items": {
+            "arrayValue": {
+              "values": [
+                {
+                  "mapValue": {
+                    "fields": {
+                      "maxQuantity": {
+                        "nullValue": null
+                      },
+                      "color": {
+                        "stringValue": "#f97316"
+                      },
+                      "id": {
+                        "stringValue": "1771033553126"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "percentage": {
+                        "integerValue": "25"
+                      },
+                      "name": {
+                        "stringValue": "1"
+                      }
+                    }
+                  }
+                },
+                {
+                  "mapValue": {
+                    "fields": {
+                      "maxQuantity": {
+                        "nullValue": null
+                      },
+                      "color": {
+                        "stringValue": "#ec4899"
+                      },
+                      "id": {
+                        "stringValue": "1771033561787"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "percentage": {
+                        "integerValue": "25"
+                      },
+                      "name": {
+                        "stringValue": "2"
+                      }
+                    }
+                  }
+                },
+                {
+                  "mapValue": {
+                    "fields": {
+                      "percentage": {
+                        "integerValue": "25"
+                      },
+                      "name": {
+                        "stringValue": "3"
+                      },
+                      "maxQuantity": {
+                        "nullValue": null
+                      },
+                      "color": {
+                        "stringValue": "#9ca3af"
+                      },
+                      "id": {
+                        "stringValue": "1771033571777"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      }
+                    }
+                  }
+                },
+                {
+                  "mapValue": {
+                    "fields": {
+                      "id": {
+                        "stringValue": "1771033579957"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "maxQuantity": {
+                        "nullValue": null
+                      },
+                      "color": {
+                        "stringValue": "#22c55e"
+                      },
+                      "percentage": {
+                        "integerValue": "25"
+                      },
+                      "name": {
+                        "stringValue": "4"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "updatedAt": {
+            "integerValue": "1771527121697"
+          },
+          "id": {
+            "stringValue": "1771033582033"
+          },
+          "type": {
+            "stringValue": "shared"
+          },
+          "expiresAt": {
+            "nullValue": null
+          },
+          "allowParticipantSharing": {
+            "booleanValue": true
+          }
+        }
+      },
+      {
+        "id": "ECTWZF",
+        "fields": {
+          "allowParticipantSharing": {
+            "booleanValue": false
+          },
+          "type": {
+            "stringValue": "shared"
+          },
+          "id": {
+            "stringValue": "1771988495376"
+          },
+          "updatedAt": {
+            "integerValue": "1772593269337"
+          },
+          "pullRechargeCycles": {
+            "integerValue": "5"
+          },
+          "expiresAt": {
+            "nullValue": null
+          },
+          "hideContents": {
+            "booleanValue": false
+          },
+          "shareCode": {
+            "stringValue": "ECTWZF"
+          },
+          "hideOdds": {
+            "booleanValue": false
+          },
+          "maxPulls": {
+            "nullValue": null
+          },
+          "items": {
+            "arrayValue": {
+              "values": [
+                {
+                  "mapValue": {
+                    "fields": {
+                      "name": {
+                        "stringValue": "Go to bed"
+                      },
+                      "percentage": {
+                        "integerValue": "75"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "id": {
+                        "stringValue": "1771988452318"
+                      },
+                      "color": {
+                        "stringValue": "#374151"
+                      },
+                      "maxQuantity": {
+                        "nullValue": null
+                      }
+                    }
+                  }
+                },
+                {
+                  "mapValue": {
+                    "fields": {
+                      "id": {
+                        "stringValue": "1771988471260"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "color": {
+                        "stringValue": "#eab308"
+                      },
+                      "maxQuantity": {
+                        "nullValue": null
+                      },
+                      "name": {
+                        "stringValue": "30 "
+                      },
+                      "percentage": {
+                        "integerValue": "2"
+                      }
+                    }
+                  }
+                },
+                {
+                  "mapValue": {
+                    "fields": {
+                      "percentage": {
+                        "integerValue": "15"
+                      },
+                      "name": {
+                        "stringValue": "10"
+                      },
+                      "color": {
+                        "stringValue": "#06b6d4"
+                      },
+                      "maxQuantity": {
+                        "nullValue": null
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "id": {
+                        "stringValue": "1771988483405"
+                      }
+                    }
+                  }
+                },
+                {
+                  "mapValue": {
+                    "fields": {
+                      "id": {
+                        "stringValue": "1771988492961"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "maxQuantity": {
+                        "nullValue": null
+                      },
+                      "color": {
+                        "stringValue": "#a855f7"
+                      },
+                      "name": {
+                        "stringValue": "20 min"
+                      },
+                      "percentage": {
+                        "integerValue": "8"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "pullRechargeMax": {
+            "integerValue": "3"
+          },
+          "pullHistory": {
+            "arrayValue": {
+              "values": [
+                {
+                  "mapValue": {
+                    "fields": {
+                      "itemName": {
+                        "stringValue": "10"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "color": {
+                        "stringValue": "#06b6d4"
+                      },
+                      "itemId": {
+                        "stringValue": "1771988483405"
+                      },
+                      "percentage": {
+                        "integerValue": "15"
+                      },
+                      "userName": {
+                        "stringValue": "Christian"
+                      },
+                      "timestamp": {
+                        "integerValue": "1771988521867"
+                      },
+                      "deviceId": {
+                        "stringValue": "device_mlojgb1m_vcie717x"
+                      }
+                    }
+                  }
+                },
+                {
+                  "mapValue": {
+                    "fields": {
+                      "color": {
+                        "stringValue": "#a855f7"
+                      },
+                      "itemName": {
+                        "stringValue": "20 min"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "timestamp": {
+                        "integerValue": "1772024284905"
+                      },
+                      "deviceId": {
+                        "stringValue": "device_mlmv0szn_pezfvd9l"
+                      },
+                      "itemId": {
+                        "stringValue": "1771988492961"
+                      },
+                      "userName": {
+                        "stringValue": "Dads phone"
+                      },
+                      "percentage": {
+                        "integerValue": "8"
+                      }
+                    }
+                  }
+                },
+                {
+                  "mapValue": {
+                    "fields": {
+                      "color": {
+                        "stringValue": "#374151"
+                      },
+                      "itemName": {
+                        "stringValue": "Go to bed"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "timestamp": {
+                        "integerValue": "1772074881331"
+                      },
+                      "deviceId": {
+                        "stringValue": "device_mlojgb1m_vcie717x"
+                      },
+                      "itemId": {
+                        "stringValue": "1771988452318"
+                      },
+                      "percentage": {
+                        "integerValue": "75"
+                      },
+                      "userName": {
+                        "stringValue": "Christian"
+                      }
+                    }
+                  }
+                },
+                {
+                  "mapValue": {
+                    "fields": {
+                      "itemName": {
+                        "stringValue": "Go to bed"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "color": {
+                        "stringValue": "#374151"
+                      },
+                      "percentage": {
+                        "integerValue": "75"
+                      },
+                      "userName": {
+                        "stringValue": "Christian"
+                      },
+                      "itemId": {
+                        "stringValue": "1771988452318"
+                      },
+                      "deviceId": {
+                        "stringValue": "device_mlojgb1m_vcie717x"
+                      },
+                      "timestamp": {
+                        "integerValue": "1772160973363"
+                      }
+                    }
+                  }
+                },
+                {
+                  "mapValue": {
+                    "fields": {
+                      "percentage": {
+                        "integerValue": "75"
+                      },
+                      "userName": {
+                        "stringValue": "Dads phone"
+                      },
+                      "itemId": {
+                        "stringValue": "1771988452318"
+                      },
+                      "timestamp": {
+                        "integerValue": "1772160978694"
+                      },
+                      "deviceId": {
+                        "stringValue": "device_mlmv0szn_pezfvd9l"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "itemName": {
+                        "stringValue": "Go to bed"
+                      },
+                      "color": {
+                        "stringValue": "#374151"
+                      }
+                    }
+                  }
+                },
+                {
+                  "mapValue": {
+                    "fields": {
+                      "userName": {
+                        "stringValue": "Dads phone"
+                      },
+                      "percentage": {
+                        "integerValue": "15"
+                      },
+                      "itemId": {
+                        "stringValue": "1771988483405"
+                      },
+                      "timestamp": {
+                        "integerValue": "1772160982485"
+                      },
+                      "deviceId": {
+                        "stringValue": "device_mlmv0szn_pezfvd9l"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "itemName": {
+                        "stringValue": "10"
+                      },
+                      "color": {
+                        "stringValue": "#06b6d4"
+                      }
+                    }
+                  }
+                },
+                {
+                  "mapValue": {
+                    "fields": {
+                      "percentage": {
+                        "integerValue": "75"
+                      },
+                      "userName": {
+                        "stringValue": "Dads phone"
+                      },
+                      "itemId": {
+                        "stringValue": "1771988452318"
+                      },
+                      "timestamp": {
+                        "integerValue": "1772593267803"
+                      },
+                      "deviceId": {
+                        "stringValue": "device_mlmv0szn_pezfvd9l"
+                      },
+                      "itemName": {
+                        "stringValue": "Go to bed"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "color": {
+                        "stringValue": "#374151"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "pullRechargeUnlimited": {
+            "booleanValue": true
+          },
+          "name": {
+            "stringValue": "Bedtime Box"
+          },
+          "pullRechargePeriod": {
+            "stringValue": "day"
+          },
+          "pullRechargeAmount": {
+            "integerValue": "1"
+          },
+          "createdAt": {
+            "integerValue": "1771988495376"
+          },
+          "boxImageId": {
+            "stringValue": "https://firebasestorage.googleapis.com/v0/b/lootbox-app-dd5fa.firebasestorage.app/o/box-catalog%2Fdefault%2F1771966016808_frozen%20ice.png?alt=media&token=42821f4a-392e-4132-a41d-5f526a3692c7"
+          },
+          "maxPullsPerUser": {
+            "integerValue": "4"
+          },
+          "pullRechargeEnabled": {
+            "booleanValue": false
+          }
+        }
+      },
+      {
+        "id": "EK5V34",
+        "fields": {
+          "items": {
+            "arrayValue": {
+              "values": [
+                {
+                  "mapValue": {
+                    "fields": {
+                      "name": {
+                        "stringValue": "sd"
+                      },
+                      "percentage": {
+                        "integerValue": "100"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "id": {
+                        "stringValue": "1771039651514"
+                      },
+                      "color": {
+                        "stringValue": "#3b82f6"
+                      },
+                      "maxQuantity": {
+                        "nullValue": null
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "shareCode": {
+            "stringValue": "EK5V34"
+          },
+          "hideContents": {
+            "booleanValue": false
+          },
+          "maxPulls": {
+            "nullValue": null
+          },
+          "hideOdds": {
+            "booleanValue": false
+          },
+          "expiresAt": {
+            "nullValue": null
+          },
+          "type": {
+            "stringValue": "shared"
+          },
+          "id": {
+            "stringValue": "1771039652950"
+          },
+          "updatedAt": {
+            "integerValue": "1771039664339"
+          },
+          "allowParticipantSharing": {
+            "booleanValue": false
+          },
+          "maxPullsPerUser": {
+            "integerValue": "2"
+          },
+          "boxImageId": {
+            "stringValue": "https://firebasestorage.googleapis.com/v0/b/lootbox-app-dd5fa.firebasestorage.app/o/box-catalog%2Fdefault%2F1770765153255_metal.png?alt=media&token=3431b105-1bdc-4290-8595-631dbe2040c1"
+          },
+          "createdAt": {
+            "integerValue": "1771039652950"
+          },
+          "name": {
+            "stringValue": "asdfsdfs"
+          },
+          "pullHistory": {
+            "arrayValue": {
+              "values": [
+                {
+                  "mapValue": {
+                    "fields": {
+                      "itemId": {
+                        "stringValue": "1771039651514"
+                      },
+                      "percentage": {
+                        "integerValue": "100"
+                      },
+                      "userName": {
+                        "stringValue": "FF"
+                      },
+                      "timestamp": {
+                        "integerValue": "1771039664338"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "itemName": {
+                        "stringValue": "sd"
+                      },
+                      "color": {
+                        "stringValue": "#3b82f6"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": "JGP119",
+        "fields": {
+          "pullRechargeEnabled": {
+            "booleanValue": false
+          },
+          "maxPullsPerUser": {
+            "nullValue": null
+          },
+          "createdAt": {
+            "integerValue": "1772216790862"
+          },
+          "boxImageId": {
+            "stringValue": "https://firebasestorage.googleapis.com/v0/b/lootbox-app-dd5fa.firebasestorage.app/o/box-catalog%2Fdefault%2F1771966084799_potion.png?alt=media&token=12694472-8887-4cb9-948f-df1976f9cc20"
+          },
+          "pullRechargePeriod": {
+            "stringValue": "day"
+          },
+          "name": {
+            "stringValue": "Testing box"
+          },
+          "pullRechargeAmount": {
+            "integerValue": "1"
+          },
+          "pullRechargeMax": {
+            "integerValue": "3"
+          },
+          "pullRechargeUnlimited": {
+            "booleanValue": true
+          },
+          "pullHistory": {
+            "arrayValue": {
+              "values": [
+                {
+                  "mapValue": {
+                    "fields": {
+                      "color": {
+                        "stringValue": "#3b82f6"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "itemName": {
+                        "stringValue": "common"
+                      },
+                      "timestamp": {
+                        "integerValue": "1772216846975"
+                      },
+                      "deviceId": {
+                        "stringValue": "device_mlmd6yks_te81un8g"
+                      },
+                      "percentage": {
+                        "integerValue": "50"
+                      },
+                      "userName": {
+                        "stringValue": "frank"
+                      },
+                      "itemId": {
+                        "stringValue": "1771964332798.8372"
+                      }
+                    }
+                  }
+                },
+                {
+                  "mapValue": {
+                    "fields": {
+                      "itemId": {
+                        "stringValue": "1771964332798.8372"
+                      },
+                      "userName": {
+                        "stringValue": "frank"
+                      },
+                      "percentage": {
+                        "integerValue": "50"
+                      },
+                      "timestamp": {
+                        "integerValue": "1772216861203"
+                      },
+                      "deviceId": {
+                        "stringValue": "device_mlmd6yks_te81un8g"
+                      },
+                      "itemName": {
+                        "stringValue": "common"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "color": {
+                        "stringValue": "#3b82f6"
+                      }
+                    }
+                  }
+                },
+                {
+                  "mapValue": {
+                    "fields": {
+                      "itemName": {
+                        "stringValue": "rare"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "color": {
+                        "stringValue": "#ef4444"
+                      },
+                      "itemId": {
+                        "stringValue": "1771964332798.9497"
+                      },
+                      "userName": {
+                        "stringValue": "frank"
+                      },
+                      "percentage": {
+                        "integerValue": "29"
+                      },
+                      "deviceId": {
+                        "stringValue": "device_mlmd6yks_te81un8g"
+                      },
+                      "timestamp": {
+                        "integerValue": "1772216866115"
+                      }
+                    }
+                  }
+                },
+                {
+                  "mapValue": {
+                    "fields": {
+                      "userName": {
+                        "stringValue": "firefox"
+                      },
+                      "percentage": {
+                        "integerValue": "15"
+                      },
+                      "itemId": {
+                        "stringValue": "1771964332798.3083"
+                      },
+                      "deviceId": {
+                        "stringValue": "device_mlmd6yks_te81un8g"
+                      },
+                      "timestamp": {
+                        "integerValue": "1772217983988"
+                      },
+                      "itemName": {
+                        "stringValue": "Epic"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "color": {
+                        "stringValue": "#10b981"
+                      }
+                    }
+                  }
+                },
+                {
+                  "mapValue": {
+                    "fields": {
+                      "itemId": {
+                        "stringValue": "1771964332798.8372"
+                      },
+                      "percentage": {
+                        "integerValue": "50"
+                      },
+                      "userName": {
+                        "stringValue": "firefox"
+                      },
+                      "timestamp": {
+                        "integerValue": "1772221834651"
+                      },
+                      "deviceId": {
+                        "stringValue": "device_mlmd6yks_te81un8g"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "itemName": {
+                        "stringValue": "common"
+                      },
+                      "color": {
+                        "stringValue": "#3b82f6"
+                      }
+                    }
+                  }
+                },
+                {
+                  "mapValue": {
+                    "fields": {
+                      "itemName": {
+                        "stringValue": "Epic"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "color": {
+                        "stringValue": "#10b981"
+                      },
+                      "itemId": {
+                        "stringValue": "1771964332798.3083"
+                      },
+                      "userName": {
+                        "stringValue": "firefox"
+                      },
+                      "percentage": {
+                        "integerValue": "15"
+                      },
+                      "deviceId": {
+                        "stringValue": "device_mlmd6yks_te81un8g"
+                      },
+                      "timestamp": {
+                        "integerValue": "1772222176261"
+                      }
+                    }
+                  }
+                },
+                {
+                  "mapValue": {
+                    "fields": {
+                      "color": {
+                        "stringValue": "#3b82f6"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "itemName": {
+                        "stringValue": "common"
+                      },
+                      "deviceId": {
+                        "stringValue": "device_mlmd6yks_te81un8g"
+                      },
+                      "timestamp": {
+                        "integerValue": "1772222184339"
+                      },
+                      "userName": {
+                        "stringValue": "firefox"
+                      },
+                      "percentage": {
+                        "integerValue": "50"
+                      },
+                      "itemId": {
+                        "stringValue": "1771964332798.8372"
+                      }
+                    }
+                  }
+                },
+                {
+                  "mapValue": {
+                    "fields": {
+                      "timestamp": {
+                        "integerValue": "1772222566918"
+                      },
+                      "deviceId": {
+                        "stringValue": "device_mlmd6yks_te81un8g"
+                      },
+                      "userName": {
+                        "stringValue": "firefox"
+                      },
+                      "percentage": {
+                        "integerValue": "50"
+                      },
+                      "itemId": {
+                        "stringValue": "1771964332798.8372"
+                      },
+                      "color": {
+                        "stringValue": "#3b82f6"
+                      },
+                      "itemName": {
+                        "stringValue": "common"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      }
+                    }
+                  }
+                },
+                {
+                  "mapValue": {
+                    "fields": {
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "itemName": {
+                        "stringValue": "Legendary"
+                      },
+                      "color": {
+                        "stringValue": "#ec4899"
+                      },
+                      "itemId": {
+                        "stringValue": "1771964332798.0757"
+                      },
+                      "userName": {
+                        "stringValue": "firefox"
+                      },
+                      "percentage": {
+                        "integerValue": "5"
+                      },
+                      "deviceId": {
+                        "stringValue": "device_mlmd6yks_te81un8g"
+                      },
+                      "timestamp": {
+                        "integerValue": "1772222572300"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "maxPulls": {
+            "nullValue": null
+          },
+          "hideOdds": {
+            "booleanValue": false
+          },
+          "shareCode": {
+            "stringValue": "JGP119"
+          },
+          "hideContents": {
+            "booleanValue": false
+          },
+          "items": {
+            "arrayValue": {
+              "values": [
+                {
+                  "mapValue": {
+                    "fields": {
+                      "percentage": {
+                        "integerValue": "50"
+                      },
+                      "name": {
+                        "stringValue": "common"
+                      },
+                      "color": {
+                        "stringValue": "#3b82f6"
+                      },
+                      "maxQuantity": {
+                        "nullValue": null
+                      },
+                      "id": {
+                        "stringValue": "1771964332798.8372"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      }
+                    }
+                  }
+                },
+                {
+                  "mapValue": {
+                    "fields": {
+                      "percentage": {
+                        "integerValue": "29"
+                      },
+                      "name": {
+                        "stringValue": "rare"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "id": {
+                        "stringValue": "1771964332798.9497"
+                      },
+                      "maxQuantity": {
+                        "nullValue": null
+                      },
+                      "color": {
+                        "stringValue": "#ef4444"
+                      }
+                    }
+                  }
+                },
+                {
+                  "mapValue": {
+                    "fields": {
+                      "percentage": {
+                        "integerValue": "15"
+                      },
+                      "name": {
+                        "stringValue": "Epic"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "id": {
+                        "stringValue": "1771964332798.3083"
+                      },
+                      "maxQuantity": {
+                        "nullValue": null
+                      },
+                      "color": {
+                        "stringValue": "#10b981"
+                      }
+                    }
+                  }
+                },
+                {
+                  "mapValue": {
+                    "fields": {
+                      "percentage": {
+                        "integerValue": "5"
+                      },
+                      "name": {
+                        "stringValue": "Legendary"
+                      },
+                      "maxQuantity": {
+                        "nullValue": null
+                      },
+                      "color": {
+                        "stringValue": "#ec4899"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "id": {
+                        "stringValue": "1771964332798.0757"
+                      }
+                    }
+                  }
+                },
+                {
+                  "mapValue": {
+                    "fields": {
+                      "percentage": {
+                        "integerValue": "1"
+                      },
+                      "name": {
+                        "stringValue": "Mythic"
+                      },
+                      "id": {
+                        "stringValue": "1771964332798.4697"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "color": {
+                        "stringValue": "#ffffff"
+                      },
+                      "maxQuantity": {
+                        "nullValue": null
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "id": {
+            "stringValue": "1772216790862"
+          },
+          "pullRechargeCycles": {
+            "integerValue": "5"
+          },
+          "updatedAt": {
+            "integerValue": "1772223560188"
+          },
+          "type": {
+            "stringValue": "shared"
+          },
+          "expiresAt": {
+            "nullValue": null
+          },
+          "allowParticipantSharing": {
+            "booleanValue": false
+          }
+        }
+      },
+      {
+        "id": "NEU8EM",
+        "fields": {
+          "boxImageId": {
+            "stringValue": "skull_bone"
+          },
+          "createdAt": {
+            "integerValue": "1770744806192"
+          },
+          "type": {
+            "stringValue": "shared"
+          },
+          "updatedAt": {
+            "integerValue": "1770744841810"
+          },
+          "id": {
+            "stringValue": "1770744806192"
+          },
+          "items": {
+            "arrayValue": {
+              "values": [
+                {
+                  "mapValue": {
+                    "fields": {
+                      "name": {
+                        "stringValue": "hjk"
+                      },
+                      "percentage": {
+                        "integerValue": "100"
+                      },
+                      "color": {
+                        "stringValue": "#3b82f6"
+                      },
+                      "maxQuantity": {
+                        "nullValue": null
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "id": {
+                        "stringValue": "1770744793783"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "shareCode": {
+            "stringValue": "NEU8EM"
+          },
+          "hideContents": {
+            "booleanValue": false
+          },
+          "maxPulls": {
+            "nullValue": null
+          },
+          "hideOdds": {
+            "booleanValue": false
+          },
+          "pullHistory": {
+            "arrayValue": {
+              "values": [
+                {
+                  "mapValue": {
+                    "fields": {
+                      "timestamp": {
+                        "integerValue": "1770744841804"
+                      },
+                      "userName": {
+                        "stringValue": "zxc"
+                      },
+                      "percentage": {
+                        "integerValue": "100"
+                      },
+                      "itemId": {
+                        "stringValue": "1770744793783"
+                      },
+                      "color": {
+                        "stringValue": "#3b82f6"
+                      },
+                      "itemName": {
+                        "stringValue": "hjk"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "name": {
+            "stringValue": "test"
+          }
+        }
+      },
+      {
+        "id": "TDLQQL",
+        "fields": {
+          "boxImageId": {
+            "stringValue": "https://firebasestorage.googleapis.com/v0/b/lootbox-app-dd5fa.firebasestorage.app/o/box-catalog%2Fdefault%2F1784046406579_space_craft.webp?alt=media&token=3e4ba538-c253-4acc-bee5-f16196fdbe7f"
+          },
+          "createdAt": {
+            "integerValue": "1783901270462"
+          },
+          "pullRechargeEnabled": {
+            "booleanValue": false
+          },
+          "maxPullsPerUser": {
+            "integerValue": "10"
+          },
+          "pullRechargeUnlimited": {
+            "booleanValue": true
+          },
+          "pullHistory": {
+            "arrayValue": {
+              "values": [
+                {
+                  "mapValue": {
+                    "fields": {
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "itemName": {
+                        "stringValue": "Test 3"
+                      },
+                      "color": {
+                        "stringValue": "#10b981"
+                      },
+                      "itemId": {
+                        "stringValue": "1783901253482"
+                      },
+                      "percentage": {
+                        "integerValue": "34"
+                      },
+                      "userName": {
+                        "stringValue": "Dorito butt"
+                      },
+                      "timestamp": {
+                        "integerValue": "1783901435265"
+                      },
+                      "deviceId": {
+                        "stringValue": "device_mrh57gnc_8g3rhg6v"
+                      }
+                    }
+                  }
+                },
+                {
+                  "mapValue": {
+                    "fields": {
+                      "timestamp": {
+                        "integerValue": "1783901620517"
+                      },
+                      "deviceId": {
+                        "stringValue": "device_mrigyka4_c5de9apt"
+                      },
+                      "percentage": {
+                        "integerValue": "33"
+                      },
+                      "userName": {
+                        "stringValue": "Chris"
+                      },
+                      "itemId": {
+                        "stringValue": "1783901232934"
+                      },
+                      "color": {
+                        "stringValue": "#3b82f6"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "itemName": {
+                        "stringValue": "Test 1"
+                      }
+                    }
+                  }
+                },
+                {
+                  "mapValue": {
+                    "fields": {
+                      "itemName": {
+                        "stringValue": "Test 3"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "color": {
+                        "stringValue": "#10b981"
+                      },
+                      "userName": {
+                        "stringValue": "Chris"
+                      },
+                      "percentage": {
+                        "integerValue": "34"
+                      },
+                      "itemId": {
+                        "stringValue": "1783901253482"
+                      },
+                      "timestamp": {
+                        "integerValue": "1783901624940"
+                      },
+                      "deviceId": {
+                        "stringValue": "device_mrigyka4_c5de9apt"
+                      }
+                    }
+                  }
+                },
+                {
+                  "mapValue": {
+                    "fields": {
+                      "timestamp": {
+                        "integerValue": "1783901631431"
+                      },
+                      "deviceId": {
+                        "stringValue": "device_mrigyka4_c5de9apt"
+                      },
+                      "itemId": {
+                        "stringValue": "1783901232934"
+                      },
+                      "percentage": {
+                        "integerValue": "33"
+                      },
+                      "userName": {
+                        "stringValue": "Chris"
+                      },
+                      "color": {
+                        "stringValue": "#3b82f6"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "itemName": {
+                        "stringValue": "Test 1"
+                      }
+                    }
+                  }
+                },
+                {
+                  "mapValue": {
+                    "fields": {
+                      "timestamp": {
+                        "integerValue": "1783901698317"
+                      },
+                      "deviceId": {
+                        "stringValue": "device_mrh57gnc_8g3rhg6v"
+                      },
+                      "percentage": {
+                        "integerValue": "33"
+                      },
+                      "userName": {
+                        "stringValue": "Dorito butt"
+                      },
+                      "itemId": {
+                        "stringValue": "1783901242622"
+                      },
+                      "color": {
+                        "stringValue": "#ef4444"
+                      },
+                      "itemName": {
+                        "stringValue": "Test 2"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      }
+                    }
+                  }
+                },
+                {
+                  "mapValue": {
+                    "fields": {
+                      "itemId": {
+                        "stringValue": "1783901253482"
+                      },
+                      "percentage": {
+                        "integerValue": "34"
+                      },
+                      "userName": {
+                        "stringValue": "Dorito finger butt"
+                      },
+                      "timestamp": {
+                        "integerValue": "1783901724337"
+                      },
+                      "deviceId": {
+                        "stringValue": "device_mrh57gnc_8g3rhg6v"
+                      },
+                      "itemName": {
+                        "stringValue": "Test 3"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "color": {
+                        "stringValue": "#10b981"
+                      }
+                    }
+                  }
+                },
+                {
+                  "mapValue": {
+                    "fields": {
+                      "color": {
+                        "stringValue": "#3b82f6"
+                      },
+                      "itemName": {
+                        "stringValue": "Test 1"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "timestamp": {
+                        "integerValue": "1783902652674"
+                      },
+                      "deviceId": {
+                        "stringValue": "device_mrh57gnc_8g3rhg6v"
+                      },
+                      "itemId": {
+                        "stringValue": "1783901232934"
+                      },
+                      "percentage": {
+                        "integerValue": "33"
+                      },
+                      "userName": {
+                        "stringValue": "Dorito finger butt"
+                      }
+                    }
+                  }
+                },
+                {
+                  "mapValue": {
+                    "fields": {
+                      "color": {
+                        "stringValue": "#10b981"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "itemName": {
+                        "stringValue": "Test 3"
+                      },
+                      "timestamp": {
+                        "integerValue": "1783961398532"
+                      },
+                      "deviceId": {
+                        "stringValue": "device_mrh57gnc_8g3rhg6v"
+                      },
+                      "itemId": {
+                        "stringValue": "1783901253482"
+                      },
+                      "percentage": {
+                        "integerValue": "34"
+                      },
+                      "userName": {
+                        "stringValue": "Cheeto fingers"
+                      }
+                    }
+                  }
+                },
+                {
+                  "mapValue": {
+                    "fields": {
+                      "color": {
+                        "stringValue": "#10b981"
+                      },
+                      "itemName": {
+                        "stringValue": "Test 3"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "timestamp": {
+                        "integerValue": "1784048589283"
+                      },
+                      "deviceId": {
+                        "stringValue": "device_mrigyka4_c5de9apt"
+                      },
+                      "itemId": {
+                        "stringValue": "1783901253482"
+                      },
+                      "percentage": {
+                        "integerValue": "34"
+                      },
+                      "userName": {
+                        "stringValue": "Dorito Boy"
+                      }
+                    }
+                  }
+                },
+                {
+                  "mapValue": {
+                    "fields": {
+                      "itemId": {
+                        "stringValue": "1783901253482"
+                      },
+                      "percentage": {
+                        "integerValue": "34"
+                      },
+                      "userName": {
+                        "stringValue": "Cheeto fingers"
+                      },
+                      "timestamp": {
+                        "integerValue": "1784048598093"
+                      },
+                      "deviceId": {
+                        "stringValue": "device_mrh57gnc_8g3rhg6v"
+                      },
+                      "itemName": {
+                        "stringValue": "Test 3"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "color": {
+                        "stringValue": "#10b981"
+                      }
+                    }
+                  }
+                },
+                {
+                  "mapValue": {
+                    "fields": {
+                      "color": {
+                        "stringValue": "#ef4444"
+                      },
+                      "itemName": {
+                        "stringValue": "Test 2"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "timestamp": {
+                        "integerValue": "1784048605821"
+                      },
+                      "deviceId": {
+                        "stringValue": "device_mrh57gnc_8g3rhg6v"
+                      },
+                      "itemId": {
+                        "stringValue": "1783901242622"
+                      },
+                      "userName": {
+                        "stringValue": "Cheeto fingers"
+                      },
+                      "percentage": {
+                        "integerValue": "33"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "pullRechargeMax": {
+            "integerValue": "3"
+          },
+          "pullRechargeAmount": {
+            "integerValue": "1"
+          },
+          "pullRechargePeriod": {
+            "stringValue": "day"
+          },
+          "name": {
+            "stringValue": "Test box"
+          },
+          "expiresAt": {
+            "nullValue": null
+          },
+          "id": {
+            "stringValue": "1783901270462"
+          },
+          "pullRechargeCycles": {
+            "integerValue": "5"
+          },
+          "updatedAt": {
+            "integerValue": "1784048606095"
+          },
+          "type": {
+            "stringValue": "shared"
+          },
+          "items": {
+            "arrayValue": {
+              "values": [
+                {
+                  "mapValue": {
+                    "fields": {
+                      "maxQuantity": {
+                        "nullValue": null
+                      },
+                      "color": {
+                        "stringValue": "#3b82f6"
+                      },
+                      "id": {
+                        "stringValue": "1783901232934"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "name": {
+                        "stringValue": "Test 1"
+                      },
+                      "percentage": {
+                        "integerValue": "33"
+                      }
+                    }
+                  }
+                },
+                {
+                  "mapValue": {
+                    "fields": {
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "id": {
+                        "stringValue": "1783901242622"
+                      },
+                      "color": {
+                        "stringValue": "#ef4444"
+                      },
+                      "maxQuantity": {
+                        "nullValue": null
+                      },
+                      "name": {
+                        "stringValue": "Test 2"
+                      },
+                      "percentage": {
+                        "integerValue": "33"
+                      }
+                    }
+                  }
+                },
+                {
+                  "mapValue": {
+                    "fields": {
+                      "maxQuantity": {
+                        "nullValue": null
+                      },
+                      "color": {
+                        "stringValue": "#10b981"
+                      },
+                      "id": {
+                        "stringValue": "1783901253482"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "name": {
+                        "stringValue": "Test 3"
+                      },
+                      "percentage": {
+                        "integerValue": "34"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "creatorDeviceId": {
+            "stringValue": "device_mrh57gnc_8g3rhg6v"
+          },
+          "maxPulls": {
+            "nullValue": null
+          },
+          "hideOdds": {
+            "booleanValue": false
+          },
+          "shareCode": {
+            "stringValue": "TDLQQL"
+          },
+          "hideContents": {
+            "booleanValue": false
+          },
+          "allowParticipantSharing": {
+            "booleanValue": false
+          }
+        }
+      },
+      {
+        "id": "TWGXPS",
+        "fields": {
+          "items": {
+            "arrayValue": {
+              "values": [
+                {
+                  "mapValue": {
+                    "fields": {
+                      "percentage": {
+                        "integerValue": "100"
+                      },
+                      "name": {
+                        "stringValue": "Diamond"
+                      },
+                      "color": {
+                        "stringValue": "#3b82f6"
+                      },
+                      "maxQuantity": {
+                        "nullValue": null
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "id": {
+                        "stringValue": "1772724897844"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "maxPulls": {
+            "nullValue": null
+          },
+          "hideOdds": {
+            "booleanValue": false
+          },
+          "hideContents": {
+            "booleanValue": false
+          },
+          "shareCode": {
+            "stringValue": "TWGXPS"
+          },
+          "expiresAt": {
+            "nullValue": null
+          },
+          "updatedAt": {
+            "integerValue": "1772728055898"
+          },
+          "pullRechargeCycles": {
+            "integerValue": "5"
+          },
+          "id": {
+            "stringValue": "1772724912701"
+          },
+          "type": {
+            "stringValue": "shared"
+          },
+          "allowParticipantSharing": {
+            "booleanValue": false
+          },
+          "maxPullsPerUser": {
+            "nullValue": null
+          },
+          "pullRechargeEnabled": {
+            "booleanValue": false
+          },
+          "createdAt": {
+            "integerValue": "1772724912701"
+          },
+          "boxImageId": {
+            "stringValue": "chest"
+          },
+          "pullRechargeAmount": {
+            "integerValue": "1"
+          },
+          "pullRechargePeriod": {
+            "stringValue": "day"
+          },
+          "name": {
+            "stringValue": "Test Shared Box"
+          },
+          "pullRechargeUnlimited": {
+            "booleanValue": true
+          },
+          "pullHistory": {
+            "arrayValue": {
+              "values": [
+                {
+                  "mapValue": {
+                    "fields": {
+                      "itemName": {
+                        "stringValue": "Diamond"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "color": {
+                        "stringValue": "#3b82f6"
+                      },
+                      "itemId": {
+                        "stringValue": "1772724897844"
+                      },
+                      "percentage": {
+                        "integerValue": "100"
+                      },
+                      "userName": {
+                        "stringValue": "Visitor"
+                      },
+                      "timestamp": {
+                        "integerValue": "1772725348065"
+                      },
+                      "deviceId": {
+                        "stringValue": "device_mmdmdot9_9ozisjaj"
+                      }
+                    }
+                  }
+                },
+                {
+                  "mapValue": {
+                    "fields": {
+                      "itemId": {
+                        "stringValue": "1772724897844"
+                      },
+                      "percentage": {
+                        "integerValue": "100"
+                      },
+                      "userName": {
+                        "stringValue": "Visitor"
+                      },
+                      "timestamp": {
+                        "integerValue": "1772728054510"
+                      },
+                      "deviceId": {
+                        "stringValue": "device_mmdmdot9_9ozisjaj"
+                      },
+                      "itemName": {
+                        "stringValue": "Diamond"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "color": {
+                        "stringValue": "#3b82f6"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "pullRechargeMax": {
+            "integerValue": "3"
+          }
+        }
+      }
+    ],
+    "boxTemplates": [
+      {
+        "id": "0EUDEQ",
+        "fields": {
+          "createdBy": {
+            "stringValue": "Anonymous"
+          },
+          "expiresAt": {
+            "nullValue": null
+          },
+          "boxImageId": {
+            "stringValue": "https://firebasestorage.googleapis.com/v0/b/lootbox-app-dd5fa.firebasestorage.app/o/box-catalog%2Fdefault%2F1770765201990_skull_bone.png?alt=media&token=664a1fa1-dba9-48f8-8b56-c7e5db7a6235"
+          },
+          "templateId": {
+            "stringValue": "0EUDEQ"
+          },
+          "maxPulls": {
+            "nullValue": null
+          },
+          "createdAt": {
+            "integerValue": "1770902625889"
+          },
+          "hideOdds": {
+            "booleanValue": false
+          },
+          "shareCode": {
+            "stringValue": "0EUDEQ"
+          },
+          "name": {
+            "stringValue": "fates"
+          },
+          "items": {
+            "arrayValue": {
+              "values": [
+                {
+                  "mapValue": {
+                    "fields": {
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "id": {
+                        "stringValue": "1770901583806"
+                      },
+                      "name": {
+                        "stringValue": "s"
+                      },
+                      "percentage": {
+                        "integerValue": "70"
+                      },
+                      "maxQuantity": {
+                        "nullValue": null
+                      },
+                      "color": {
+                        "stringValue": "#60a5fa"
+                      }
+                    }
+                  }
+                },
+                {
+                  "mapValue": {
+                    "fields": {
+                      "color": {
+                        "stringValue": "#60a5fa"
+                      },
+                      "maxQuantity": {
+                        "nullValue": null
+                      },
+                      "name": {
+                        "stringValue": "a"
+                      },
+                      "percentage": {
+                        "integerValue": "25"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "id": {
+                        "stringValue": "1770901599202"
+                      }
+                    }
+                  }
+                },
+                {
+                  "mapValue": {
+                    "fields": {
+                      "color": {
+                        "stringValue": "#60a5fa"
+                      },
+                      "maxQuantity": {
+                        "nullValue": null
+                      },
+                      "name": {
+                        "stringValue": "d"
+                      },
+                      "percentage": {
+                        "integerValue": "5"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "id": {
+                        "stringValue": "1770901603758"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "hideContents": {
+            "booleanValue": false
+          }
+        }
+      },
+      {
+        "id": "EB3QZ2",
+        "fields": {
+          "hideContents": {
+            "booleanValue": false
+          },
+          "curated": {
+            "booleanValue": false
+          },
+          "pullRechargeEnabled": {
+            "booleanValue": false
+          },
+          "name": {
+            "stringValue": "testing box"
+          },
+          "pullRechargeAmount": {
+            "integerValue": "1"
+          },
+          "hideOdds": {
+            "booleanValue": false
+          },
+          "createdAt": {
+            "integerValue": "1772216837446"
+          },
+          "createdBy": {
+            "stringValue": "frank"
+          },
+          "category": {
+            "stringValue": "General"
+          },
+          "items": {
+            "arrayValue": {
+              "values": [
+                {
+                  "mapValue": {
+                    "fields": {
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "id": {
+                        "stringValue": "1771964332798.8372"
+                      },
+                      "name": {
+                        "stringValue": "common"
+                      },
+                      "percentage": {
+                        "integerValue": "50"
+                      },
+                      "maxQuantity": {
+                        "nullValue": null
+                      },
+                      "color": {
+                        "stringValue": "#3b82f6"
+                      }
+                    }
+                  }
+                },
+                {
+                  "mapValue": {
+                    "fields": {
+                      "percentage": {
+                        "integerValue": "29"
+                      },
+                      "name": {
+                        "stringValue": "rare"
+                      },
+                      "id": {
+                        "stringValue": "1771964332798.9497"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "color": {
+                        "stringValue": "#ef4444"
+                      },
+                      "maxQuantity": {
+                        "nullValue": null
+                      }
+                    }
+                  }
+                },
+                {
+                  "mapValue": {
+                    "fields": {
+                      "maxQuantity": {
+                        "nullValue": null
+                      },
+                      "color": {
+                        "stringValue": "#10b981"
+                      },
+                      "id": {
+                        "stringValue": "1771964332798.3083"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "percentage": {
+                        "integerValue": "15"
+                      },
+                      "name": {
+                        "stringValue": "Epic"
+                      }
+                    }
+                  }
+                },
+                {
+                  "mapValue": {
+                    "fields": {
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "id": {
+                        "stringValue": "1771964332798.0757"
+                      },
+                      "name": {
+                        "stringValue": "Legendary"
+                      },
+                      "percentage": {
+                        "integerValue": "5"
+                      },
+                      "maxQuantity": {
+                        "nullValue": null
+                      },
+                      "color": {
+                        "stringValue": "#ec4899"
+                      }
+                    }
+                  }
+                },
+                {
+                  "mapValue": {
+                    "fields": {
+                      "maxQuantity": {
+                        "nullValue": null
+                      },
+                      "color": {
+                        "stringValue": "#ffffff"
+                      },
+                      "id": {
+                        "stringValue": "1771964332798.4697"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "percentage": {
+                        "integerValue": "1"
+                      },
+                      "name": {
+                        "stringValue": "Mythic"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "pullRechargePeriod": {
+            "stringValue": "day"
+          },
+          "description": {
+            "stringValue": ""
+          },
+          "pullRechargeUnlimited": {
+            "booleanValue": true
+          },
+          "shareCode": {
+            "stringValue": "EB3QZ2"
+          },
+          "pullRechargeCycles": {
+            "integerValue": "5"
+          },
+          "pullRechargeMax": {
+            "integerValue": "3"
+          },
+          "maxPulls": {
+            "nullValue": null
+          },
+          "templateId": {
+            "stringValue": "EB3QZ2"
+          },
+          "expiresAt": {
+            "nullValue": null
+          },
+          "boxImageId": {
+            "stringValue": "https://firebasestorage.googleapis.com/v0/b/lootbox-app-dd5fa.firebasestorage.app/o/box-catalog%2Fdefault%2F1771966072402_obsidian.png?alt=media&token=f38461f1-eb1c-4e8c-a33e-19ee02a0208c"
+          }
+        }
+      },
+      {
+        "id": "N6G14G",
+        "fields": {
+          "shareCode": {
+            "stringValue": "N6G14G"
+          },
+          "description": {
+            "stringValue": ""
+          },
+          "items": {
+            "arrayValue": {
+              "values": [
+                {
+                  "mapValue": {
+                    "fields": {
+                      "id": {
+                        "stringValue": "1771964332798.8372"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "percentage": {
+                        "integerValue": "50"
+                      },
+                      "name": {
+                        "stringValue": "common"
+                      },
+                      "maxQuantity": {
+                        "nullValue": null
+                      },
+                      "color": {
+                        "stringValue": "#3b82f6"
+                      }
+                    }
+                  }
+                },
+                {
+                  "mapValue": {
+                    "fields": {
+                      "percentage": {
+                        "integerValue": "29"
+                      },
+                      "name": {
+                        "stringValue": "rare"
+                      },
+                      "id": {
+                        "stringValue": "1771964332798.9497"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "color": {
+                        "stringValue": "#ef4444"
+                      },
+                      "maxQuantity": {
+                        "nullValue": null
+                      }
+                    }
+                  }
+                },
+                {
+                  "mapValue": {
+                    "fields": {
+                      "color": {
+                        "stringValue": "#10b981"
+                      },
+                      "maxQuantity": {
+                        "nullValue": null
+                      },
+                      "name": {
+                        "stringValue": "Epic"
+                      },
+                      "percentage": {
+                        "integerValue": "15"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "id": {
+                        "stringValue": "1771964332798.3083"
+                      }
+                    }
+                  }
+                },
+                {
+                  "mapValue": {
+                    "fields": {
+                      "maxQuantity": {
+                        "nullValue": null
+                      },
+                      "color": {
+                        "stringValue": "#ec4899"
+                      },
+                      "id": {
+                        "stringValue": "1771964332798.0757"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "percentage": {
+                        "integerValue": "5"
+                      },
+                      "name": {
+                        "stringValue": "Legendary"
+                      }
+                    }
+                  }
+                },
+                {
+                  "mapValue": {
+                    "fields": {
+                      "color": {
+                        "stringValue": "#ffffff"
+                      },
+                      "maxQuantity": {
+                        "nullValue": null
+                      },
+                      "name": {
+                        "stringValue": "Mythic"
+                      },
+                      "percentage": {
+                        "integerValue": "1"
+                      },
+                      "imageUrl": {
+                        "nullValue": null
+                      },
+                      "id": {
+                        "stringValue": "1771964332798.4697"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "maxPulls": {
+            "nullValue": null
+          },
+          "boxImageId": {
+            "stringValue": "skull_bone"
+          },
+          "expiresAt": {
+            "nullValue": null
+          },
+          "templateId": {
+            "stringValue": "N6G14G"
+          },
+          "name": {
+            "stringValue": "testing box"
+          },
+          "curated": {
+            "booleanValue": true
+          },
+          "hideContents": {
+            "booleanValue": false
+          },
+          "category": {
+            "stringValue": "General"
+          },
+          "createdBy": {
+            "stringValue": "Admin"
+          },
+          "hideOdds": {
+            "booleanValue": false
+          },
+          "createdAt": {
+            "integerValue": "1771964528185"
+          }
+        }
+      }
+    ]
+  }
+}
