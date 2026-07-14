@@ -540,6 +540,8 @@
     // Get image URL (supports both local and Firebase URLs)
     // Normalises paths so they work under Capacitor's different base URL.
     const getBoxImageUrl = (imageId, boxCatalog = null) => {
+      // A custom uploaded box image is stored inline as a data: URI
+      if (imageId && imageId.startsWith('data:')) return imageId;
       // If imageId is already a full URL, return it directly
       if (imageId && imageId.startsWith('http')) return imageId;
 
@@ -1079,7 +1081,17 @@
         }
         return { ...item };
       });
-      return { mainBox: { ...box, items }, imagesMap };
+      const mainBox = { ...box, items };
+      // A custom (uploaded) box image also moves to the sibling doc under a
+      // reserved key so it isn't re-broadcast on every pull. Catalog ids /
+      // http URLs are tiny and stay inline.
+      // Key can't be wrapped in double underscores (Firestore reserves those);
+      // item ids are numeric strings, so 'boxCover' can't collide with one.
+      if (typeof box.boxImageId === 'string' && box.boxImageId.startsWith('data:')) {
+        imagesMap.boxCover = box.boxImageId;
+        mainBox.boxImageId = null;
+      }
+      return { mainBox, imagesMap };
     };
 
     // Write the images sibling doc. Returns true if the images are safely
@@ -1115,15 +1127,18 @@
     // Reattach images to a box's items by id (images doc wins; falls back to
     // any inline image on the item, so legacy boxes still render).
     const mergeItemImages = (box, imagesMap) => {
-      if (!box || !Array.isArray(box.items) || !imagesMap || Object.keys(imagesMap).length === 0) {
-        return box;
-      }
-      return {
-        ...box,
-        items: box.items.map(item =>
+      if (!box || !imagesMap || Object.keys(imagesMap).length === 0) return box;
+      const merged = { ...box };
+      if (Array.isArray(box.items)) {
+        merged.items = box.items.map(item =>
           imagesMap[item.id] ? { ...item, imageUrl: imagesMap[item.id] } : item
-        ),
-      };
+        );
+      }
+      // Restore a custom box image moved to the sibling doc
+      if (imagesMap.boxCover && !merged.boxImageId) {
+        merged.boxImageId = imagesMap.boxCover;
+      }
+      return merged;
     };
 
     // Save a shared box to Firestore
@@ -4286,11 +4301,36 @@
       const [loading, setLoading] = useState(true);
       const [pickerOpen, setPickerOpen] = useState(false);
       const [search, setSearch] = useState('');
+      const [uploadBusy, setUploadBusy] = useState(false);
+      const [uploadError, setUploadError] = useState('');
+      const boxFileInputRef = useRef(null);
       const isMobile = useIsMobile();
 
       useEffect(() => {
         loadBoxCatalog();
       }, []);
+
+      // Upload a custom box image: compressed to a ~400px WebP data URI
+      // (bigger than item images since the box renders large)
+      const handleBoxUpload = async (e) => {
+        const file = e.target.files && e.target.files[0];
+        e.target.value = '';
+        if (!file) return;
+        if (!file.type.startsWith('image/')) { setUploadError('Please choose an image file'); return; }
+        if (file.size > 10 * 1024 * 1024) { setUploadError('Image too large (max 10MB)'); return; }
+        setUploadError('');
+        setUploadBusy(true);
+        try {
+          const dataUrl = await compressToDataURL(file, 400, 0.8);
+          onSelectImage(dataUrl);
+          setPickerOpen(false);
+          setSearch('');
+        } catch (err) {
+          setUploadError("Couldn't process that image");
+        } finally {
+          setUploadBusy(false);
+        }
+      };
 
       // Lock body scroll + close on Escape while the picker sheet is open
       useEffect(() => {
@@ -4398,7 +4438,9 @@
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {loading ? 'Loading boxes...' : (selectedImage ? selectedImage.name : 'Choose a box')}
+                {loading ? 'Loading boxes...'
+                  : (typeof selectedImageId === 'string' && selectedImageId.startsWith('data:')) ? 'Your photo'
+                  : (selectedImage ? selectedImage.name : 'Choose a box')}
               </div>
               <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '2px' }}>
                 Tap to change
@@ -4511,6 +4553,37 @@
                     );
                   })}
                 </div>
+
+                {/* Upload your own box image */}
+                <input ref={boxFileInputRef} type="file" accept="image/*" onChange={handleBoxUpload} style={{ display: 'none' }} />
+                <button
+                  type="button"
+                  onClick={() => boxFileInputRef.current && boxFileInputRef.current.click()}
+                  disabled={uploadBusy}
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                    width: '100%', padding: '0.6rem', marginBottom: '0.75rem',
+                    fontSize: '0.82rem', fontWeight: 600, fontFamily: 'inherit',
+                    color: uploadBusy ? '#64748b' : '#93c5fd',
+                    background: 'rgba(59, 130, 246, 0.1)',
+                    border: '2px dashed rgba(59, 130, 246, 0.35)', borderRadius: '10px',
+                    cursor: uploadBusy ? 'default' : 'pointer',
+                  }}
+                >
+                  {uploadBusy ? 'Processing…' : (
+                    <>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                        <circle cx="8.5" cy="8.5" r="1.5" />
+                        <polyline points="21 15 16 10 5 21" />
+                      </svg>
+                      Upload your own
+                    </>
+                  )}
+                </button>
+                {uploadError && (
+                  <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#f87171', marginBottom: '0.5rem' }}>{uploadError}</div>
+                )}
 
                 {/* Scrolling grid: 4 wide on mobile */}
                 <div style={{ overflowY: 'auto', flex: 1, paddingRight: '2px' }}>
@@ -7217,6 +7290,10 @@
                       id: b.id,
                       isSharedRef: b.isSharedRef,
                       isVisitor: b.isVisitor,
+                      // Snapshot omits a custom box image (it lives in the meta
+                      // doc); keep the one we already have so the card image
+                      // doesn't blank out on every pull.
+                      boxImageId: updatedBox.boxImageId || b.boxImageId,
                     };
                     // Also persist to localStorage
                     saveBox(updated);
@@ -7253,6 +7330,9 @@
                     id: box.id,
                     isSharedRef: box.isSharedRef,
                     isVisitor: box.isVisitor,
+                    // Images were skipped in this fetch; keep the custom box
+                    // image already stored locally so the card keeps showing it.
+                    boxImageId: freshBox.boxImageId || box.boxImageId,
                   };
                 }
               } catch (err) {
