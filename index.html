@@ -5551,6 +5551,15 @@
       const isExpired = box.expiresAt ? Date.now() > box.expiresAt : false;
       const canPull = totalLimitOk && userLimitOk && rechargeLimitOk && !isExpired;
 
+      // Resolve a pull's item image from the box's current item list by
+      // itemId. Falls back to any image copied onto the pull itself, so
+      // pulls recorded before this refactor still render correctly.
+      const resolveItemImage = (pull) => {
+        if (!pull) return null;
+        const item = (box.items || []).find(i => i.id === pull.itemId);
+        return (item && item.imageUrl) || pull.imageUrl || null;
+      };
+
       // Calculate current odds with dynamic adjustment
       const currentOdds = calculateDynamicOdds(box.items, pullHistory);
 
@@ -5634,12 +5643,17 @@
             (p.deviceId ? p.deviceId === getDeviceId() : p.userName === (userName || 'You'))
           );
 
+          // Pulls reference the item by id and no longer copy its image —
+          // images are resolved from the box's item list at render time (see
+          // resolveItemImage). This keeps pull records tiny so an item image
+          // can't balloon a shared box document. Name/%/color are kept as
+          // lightweight scalars so history still renders if an item is later
+          // deleted from the box.
           const pull = {
             itemId: selectedItem.id,
             itemName: selectedItem.name,
             percentage: selectedItem.percentage,
             color: selectedItem.color,
-            imageUrl: selectedItem.imageUrl || null,
             timestamp: Date.now(),
             userName: userName || 'You',
             deviceId: getDeviceId(),
@@ -6209,9 +6223,9 @@
                   animation: 'resultReveal 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
                 }}
               >
-                {currentPull.imageUrl ? (
+                {resolveItemImage(currentPull) ? (
                   <img
-                    src={currentPull.imageUrl}
+                    src={resolveItemImage(currentPull)}
                     alt={currentPull.itemName}
                     style={{
                       width: '80px', height: '80px',
@@ -6780,9 +6794,9 @@
                               fontSize: '0.875rem',
                             }}
                           >
-                            {pull.imageUrl && !shouldHideItemName ? (
+                            {resolveItemImage(pull) && !shouldHideItemName ? (
                               <img
-                                src={pull.imageUrl}
+                                src={resolveItemImage(pull)}
                                 alt={pull.itemName}
                                 style={{
                                   width: '24px',
