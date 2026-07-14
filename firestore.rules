@@ -35,6 +35,14 @@ service cloud.firestore {
       // Needed so the creator's client can delete its own box.
       // Cannot be restricted to the creator without real auth (see above).
       allow delete: if true;
+
+      // Item photos are stored here (out of the main doc so pulls don't
+      // re-broadcast them). Publicly readable like the box; writable under
+      // the same no-auth trust model. Bounded by the 1MB doc limit.
+      match /meta/{doc} {
+        allow read: if true;
+        allow write: if true;
+      }
     }
 
     match /boxCatalog/{boxId} {

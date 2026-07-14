@@ -1060,14 +1060,85 @@
 
     // ========== FIRESTORE FUNCTIONS FOR SHARED BOXES ==========
 
+    // ---- Shared-box item images live in a sibling doc ----
+    // Item photos (data: URIs) are moved out of the main sharedBoxes doc into
+    // sharedBoxes/{code}/meta/images. The main doc is rewritten on every pull
+    // and re-broadcast to all listeners, so keeping images out of it avoids
+    // re-sending ~KB of image data per pull. The images doc is fetched once.
+
+    // Split a box into a main box (item images stripped) + an itemId->dataURI
+    // map. Clones so the caller's box object keeps its images. imagesMap is
+    // null when there is no items array (an update that shouldn't touch images).
+    const splitItemImages = (box) => {
+      if (!Array.isArray(box.items)) return { mainBox: { ...box }, imagesMap: null };
+      const imagesMap = {};
+      const items = box.items.map(item => {
+        if (item && typeof item.imageUrl === 'string' && item.imageUrl.startsWith('data:')) {
+          imagesMap[item.id] = item.imageUrl;
+          return { ...item, imageUrl: null };
+        }
+        return { ...item };
+      });
+      return { mainBox: { ...box, items }, imagesMap };
+    };
+
+    // Write the images sibling doc. Returns true if the images are safely
+    // stored (or there was nothing to store), false if the write was rejected
+    // (e.g. the meta subcollection rule isn't deployed yet) — in which case
+    // the caller keeps the images inline in the main doc so no photo is lost.
+    const writeSharedImages = async (shareCode, imagesMap) => {
+      if (imagesMap === null) return true; // update not touching item images
+      try {
+        const ref = db.collection('sharedBoxes').doc(shareCode).collection('meta').doc('images');
+        if (Object.keys(imagesMap).length === 0) {
+          await ref.delete().catch(() => {});
+        } else {
+          await ref.set({ images: imagesMap, updatedAt: Date.now() });
+        }
+        return true;
+      } catch (e) {
+        console.warn('Could not write shared item images — keeping them inline (deploy firestore.rules to optimize):', e);
+        return false;
+      }
+    };
+
+    const readSharedImages = async (shareCode) => {
+      try {
+        const snap = await db.collection('sharedBoxes').doc(shareCode)
+          .collection('meta').doc('images').get();
+        return snap.exists ? (snap.data().images || {}) : {};
+      } catch (e) {
+        return {};
+      }
+    };
+
+    // Reattach images to a box's items by id (images doc wins; falls back to
+    // any inline image on the item, so legacy boxes still render).
+    const mergeItemImages = (box, imagesMap) => {
+      if (!box || !Array.isArray(box.items) || !imagesMap || Object.keys(imagesMap).length === 0) {
+        return box;
+      }
+      return {
+        ...box,
+        items: box.items.map(item =>
+          imagesMap[item.id] ? { ...item, imageUrl: imagesMap[item.id] } : item
+        ),
+      };
+    };
+
     // Save a shared box to Firestore
     const saveSharedBox = async (box) => {
       if (!firebaseEnabled || !db) {
         throw new Error('Firebase not available');
       }
       try {
+        const { mainBox, imagesMap } = splitItemImages(box);
+        // Move images to the sibling doc first; if that's rejected, fall back
+        // to writing the original box with images kept inline (no photo lost).
+        const metaOk = await writeSharedImages(box.shareCode, imagesMap);
+        const docToWrite = metaOk ? mainBox : box;
         await db.collection('sharedBoxes').doc(box.shareCode).set({
-          ...box,
+          ...docToWrite,
           updatedAt: Date.now()
         });
         return true;
@@ -1085,22 +1156,28 @@
         throw new Error('Firebase not available');
       }
       const { pullHistory, ...safeUpdates } = updates;
+      const { mainBox, imagesMap } = splitItemImages(safeUpdates);
+      const metaOk = await writeSharedImages(shareCode, imagesMap);
+      const docToWrite = metaOk ? mainBox : safeUpdates;
       await db.collection('sharedBoxes').doc(shareCode).update({
-        ...safeUpdates,
+        ...docToWrite,
         updatedAt: Date.now()
       });
       return true;
     };
 
-    // Fetch a shared box by share code
-    const fetchSharedBox = async (shareCode) => {
+    // Fetch a shared box by share code. Pass includeImages=false to skip the
+    // extra images read when the caller only needs box metadata (e.g. the
+    // home feed's cards, which don't show item images).
+    const fetchSharedBox = async (shareCode, includeImages = true) => {
       if (!firebaseEnabled || !db) return null;
       try {
         const doc = await db.collection('sharedBoxes').doc(shareCode).get();
-        if (doc.exists) {
-          return { id: doc.id, ...doc.data() };
-        }
-        return null;
+        if (!doc.exists) return null;
+        const box = { id: doc.id, ...doc.data() };
+        if (!includeImages) return box;
+        const imagesMap = await readSharedImages(shareCode);
+        return mergeItemImages(box, imagesMap);
       } catch (error) {
         console.error('Error fetching shared box:', error);
         return null;
@@ -1182,6 +1259,10 @@
     const deleteSharedBox = async (shareCode) => {
       if (!firebaseEnabled || !db) return false;
       try {
+        // Remove the item-images sibling doc too (Firestore doesn't cascade).
+        // Best-effort: never block box deletion on it.
+        await db.collection('sharedBoxes').doc(shareCode)
+          .collection('meta').doc('images').delete().catch(() => {});
         await db.collection('sharedBoxes').doc(shareCode).delete();
         return true;
       } catch (error) {
@@ -7163,7 +7244,8 @@
           loadedBoxes.map(async (box) => {
             if (box.type === 'shared' && box.shareCode) {
               try {
-                const freshBox = await fetchSharedBox(box.shareCode);
+                // Home feed cards don't render item images — skip the images read
+                const freshBox = await fetchSharedBox(box.shareCode, false);
                 if (freshBox) {
                   return {
                     ...box,
