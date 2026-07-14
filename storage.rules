@@ -1,0 +1,34 @@
+rules_version = '2';
+
+// Canonical Cloud Storage rules for Loot Box Creator.
+// Deploy via Firebase console: Storage > Rules > paste > Publish.
+// (Storage rules are separate from firestore.rules and deploy separately.)
+//
+// LIMITATION: box-admin.html has no auth, so catalog writes are open. They
+// are bounded to the box-catalog/ path, image content types, and a size cap
+// so the bucket can't be cheaply abused for denial-of-wallet. This is NOT a
+// substitute for real protection — enable Firebase App Check enforcement and
+// give the admin page auth (see TODO items 4 and 7) to actually lock writes.
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Catalog images: publicly readable (shown to every user).
+    match /box-catalog/{allPaths=**} {
+      allow read: if true;
+
+      // Allow the admin replace/delete flow (request.resource == null on
+      // delete) and uploads that are images under the size cap. Compressed
+      // catalog images are ~40KB; the 2MB ceiling is pure abuse headroom.
+      allow write: if request.resource == null
+                   || (request.resource.size < 2 * 1024 * 1024
+                       && request.resource.contentType.matches('image/.*'));
+    }
+
+    // Everything else: readable, never writable from the client.
+    match /{allPaths=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+  }
+}

@@ -81,8 +81,11 @@ source — a bot can bill us directly. Layers, in bang-for-buck order:
   `[A-Z0-9]{6}` on create; set `boxCatalog` write to false — NOTE this breaks
   box-admin.html until it gets auth; manage the catalog via the Firebase
   console in the interim.
-- Write `storage.rules` (currently unaudited): block client writes, or cap
-  size (<2MB) and restrict content type to images.
+- `storage.rules` written (box-catalog path + image type + 2MB cap, still
+  unauthenticated); deploy in console and tighten to require auth once the
+  admin page has login. NOTE: default test-mode Storage rules expire after
+  30 days — that is why catalog uploads started failing with
+  storage/unauthorized.
 - Shared-box ephemerality (see Monetization direction below) also bounds
   storage costs permanently.
 
