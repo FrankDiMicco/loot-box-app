@@ -165,6 +165,13 @@ API (a `normalizeAssetPath` comment suggests Capacitor was already considered).
 - Analytics dashboard for creators (pull stats per box, charts)
 - Social: favorites exist; leaderboards/achievements do not
 
+### Box search keywords (picker shipped July 2026; search works on names now)
+The image picker is a modal sheet with search that already matches a
+`keywords` array on catalog docs — but no docs have one yet. To make search
+rich: add a comma-separated "Keywords" field to box-admin.html's add/edit
+form (store as array on the boxCatalog doc), then tag the existing 14 boxes
+(e.g. skull → "pirate, spooky, halloween"). Zero app changes needed.
+
 ### Item images (decided: no emoji — cheapens the look; no Firebase Storage)
 Two phases, zero/near-zero backend cost:
 

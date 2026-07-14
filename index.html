@@ -4089,30 +4089,33 @@
     };
 
     // ImagePicker Component
+    // Collapsed row showing the current selection; tapping opens a modal
+    // sheet with a 4-wide vertically-scrolling grid, tabs, and search.
+    // Search matches box names now and `keywords` arrays on catalog docs
+    // once they exist (added via box-admin).
     const ImagePicker = ({ selectedImageId, onSelectImage, userSettings, success, error, info }) => {
       const [activeTab, setActiveTab] = useState('defaults');
       const [boxCatalog, setBoxCatalog] = useState(null);
       const [loading, setLoading] = useState(true);
+      const [pickerOpen, setPickerOpen] = useState(false);
+      const [search, setSearch] = useState('');
       const isMobile = useIsMobile();
-      const selectedRef = useRef(null);
-      const scrollerRef = useRef(null);
-      const [showScrollHint, setShowScrollHint] = useState(false);
-
-      // Show a fade + chevron on the right edge while more boxes are off-screen
-      const updateScrollHint = () => {
-        const el = scrollerRef.current;
-        if (!el) return;
-        setShowScrollHint(el.scrollWidth - el.clientWidth - el.scrollLeft > 8);
-      };
-
-      useEffect(() => {
-        const timer = setTimeout(updateScrollHint, 150);
-        return () => clearTimeout(timer);
-      }, [boxCatalog, activeTab, loading, isMobile]);
 
       useEffect(() => {
         loadBoxCatalog();
       }, []);
+
+      // Lock body scroll + close on Escape while the picker sheet is open
+      useEffect(() => {
+        if (!pickerOpen) return;
+        document.body.style.overflow = 'hidden';
+        const onKey = (e) => { if (e.key === 'Escape') setPickerOpen(false); };
+        document.addEventListener('keydown', onKey);
+        return () => {
+          document.body.style.overflow = '';
+          document.removeEventListener('keydown', onKey);
+        };
+      }, [pickerOpen]);
 
       const loadBoxCatalog = async () => {
         setLoading(true);
@@ -4132,37 +4135,38 @@
           ? image.imageUrl
           : image.id;
         onSelectImage(imageRef);
-        // Auto-scroll selected image into view on mobile
-        if (isMobile) {
-          setTimeout(() => {
-            selectedRef.current?.scrollIntoView({
-              behavior: 'smooth',
-              block: 'nearest',
-              inline: 'center',
-            });
-          }, 50);
-        }
+        setPickerOpen(false);
+        setSearch('');
       };
 
       const getActiveBoxes = () => {
         if (!boxCatalog) return [];
-
         switch (activeTab) {
-          case 'defaults':
-            return boxCatalog.defaults;
-          case 'seasonal':
-            return boxCatalog.seasonal;
-          default:
-            return [];
+          case 'defaults': return boxCatalog.defaults;
+          case 'seasonal': return boxCatalog.seasonal;
+          default: return [];
         }
       };
+
+      // Resolve the currently selected image for the collapsed row
+      const allImages = boxCatalog ? boxCatalog.all : [];
+      const selectedImage =
+        allImages.find(img => img.id === selectedImageId || img.imageUrl === selectedImageId) ||
+        DEFAULT_BOX_IMAGES.find(img => img.id === selectedImageId) ||
+        null;
+      const selectedUrl = getBoxImageUrl(selectedImageId, boxCatalog);
+
+      const q = search.trim().toLowerCase();
+      const visibleBoxes = getActiveBoxes().filter(img =>
+        !q ||
+        (img.name || '').toLowerCase().includes(q) ||
+        (img.keywords || []).some(k => (k || '').toLowerCase().includes(q))
+      );
 
       const tabs = [
         { id: 'defaults', label: 'Defaults', count: boxCatalog?.defaults.length || 0 },
         { id: 'seasonal', label: 'Seasonal', count: boxCatalog?.seasonal.length || 0 },
       ];
-
-      const activeBoxes = getActiveBoxes();
 
       return (
         <div style={{ marginBottom: '1.5rem' }}>
@@ -4176,201 +4180,240 @@
             Box Image
           </label>
 
-          {/* Tabs */}
-          <div style={{
-            display: 'flex',
-            gap: '0.5rem',
-            marginBottom: '1rem',
-            overflowX: 'auto',
-          }}>
-            {tabs.map(tab => {
-              const isActive = activeTab === tab.id;
-
-              return (
-                <button
-                  key={tab.id}
-                  style={{
-                    flex: '0 0 auto',
-                    padding: '0.4rem 0.75rem',
-                    fontSize: '0.8rem',
-                    fontWeight: 600,
-                    color: isActive ? '#ffffff' : '#a0aec0',
-                    background: isActive
-                      ? 'linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)'
-                      : 'rgba(15, 22, 36, 0.6)',
-                    border: `1px solid ${isActive ? '#3b82f6' : 'rgba(59, 130, 246, 0.2)'}`,
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    fontFamily: 'inherit',
-                    transition: 'all 0.2s ease',
-                  }}
-                  onClick={() => setActiveTab(tab.id)}
-                >
-                  {tab.label} {tab.count > 0 && `(${tab.count})`}
-                </button>
-              );
-            })}
+          {/* Collapsed: current selection, tap to change */}
+          <div
+            onClick={() => { if (!loading) setPickerOpen(true); }}
+            role="button"
+            aria-label="Change box image"
+            style={{
+              display: 'flex', alignItems: 'center', gap: '0.9rem',
+              padding: '0.6rem 0.75rem',
+              background: 'rgba(15, 22, 36, 0.6)',
+              border: '2px solid rgba(59, 130, 246, 0.25)',
+              borderRadius: '12px',
+              cursor: loading ? 'default' : 'pointer',
+            }}
+          >
+            <div style={{
+              width: '64px', height: '64px', flexShrink: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'linear-gradient(135deg, rgba(30, 64, 175, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%)',
+              borderRadius: '10px', overflow: 'hidden',
+            }}>
+              {selectedUrl && (
+                <img
+                  src={selectedUrl}
+                  alt=""
+                  onError={(e) => { e.target.onerror = null; e.target.src = 'assets/images/boxes/free/chest.png'; }}
+                  style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                />
+              )}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {loading ? 'Loading boxes...' : (selectedImage ? selectedImage.name : 'Choose a box')}
+              </div>
+              <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '2px' }}>
+                Tap to change
+              </div>
+            </div>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
           </div>
 
-          {/* Loading State */}
-          {loading && (
-            <div style={{
-              textAlign: 'center',
-              padding: '2rem',
-              color: '#64748b',
-            }}>
-              Loading boxes...
-            </div>
-          )}
-
-          {/* Box Grid */}
-          {!loading && (
-            <div style={{ position: 'relative', overflow: 'visible' }}>
+          {/* Modal sheet picker — portaled to body: the parent Card's
+              backdrop-filter would otherwise trap position:fixed inside it */}
+          {pickerOpen && ReactDOM.createPortal(
             <div
-              ref={scrollerRef}
-              onScroll={updateScrollHint}
-              className={isMobile ? 'mobile-image-scroll' : undefined}
-              style={isMobile ? {
+              onClick={() => setPickerOpen(false)}
+              style={{
+                position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                background: 'rgba(0, 0, 0, 0.7)',
+                backdropFilter: 'blur(6px)',
+                WebkitBackdropFilter: 'blur(6px)',
+                zIndex: 9999,
                 display: 'flex',
-                flexDirection: 'row',
-                overflowX: 'auto',
-                overflowY: 'hidden',
-                gap: '0.5rem',
-                padding: '0.75rem 1.25rem 0.75rem 0',
-                scrollPadding: '0 1.25rem 0 0',
-                WebkitOverflowScrolling: 'touch',
-                scrollSnapType: 'x mandatory',
-              } : {
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(90px, 1fr))',
-                gap: '0.75rem',
-                padding: '10px 10px 10px 0',
+                alignItems: isMobile ? 'flex-end' : 'center',
+                justifyContent: 'center',
+                animation: 'fadeIn 0.2s ease',
               }}
             >
-              {activeBoxes.length === 0 && (
-                <div style={{
-                  ...(isMobile ? {} : { gridColumn: '1 / -1' }),
-                  textAlign: 'center',
-                  padding: '2rem',
-                  color: '#64748b',
+              <div
+                onClick={(e) => e.stopPropagation()}
+                role="dialog"
+                aria-label="Choose a box image"
+                style={{
                   width: '100%',
-                }}>
-                  No boxes available in this category
-                </div>
-              )}
-
-              {activeBoxes.map(image => {
-                const isSelected = selectedImageId === image.id || selectedImageId === image.imageUrl;
-                const isSeasonal = image.source === BOX_SOURCES.SEASONAL;
-
-                return (
-                  <div
-                    key={image.id}
-                    ref={isSelected ? selectedRef : null}
+                  maxWidth: '480px',
+                  maxHeight: '80vh',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  background: 'linear-gradient(180deg, #0f172a 0%, #1e293b 100%)',
+                  border: '1px solid rgba(99, 102, 241, 0.3)',
+                  borderRadius: isMobile ? '20px 20px 0 0' : '20px',
+                  padding: isMobile
+                    ? '1rem 1rem calc(1rem + env(safe-area-inset-bottom))'
+                    : '1.25rem',
+                  boxShadow: '0 -8px 40px rgba(0, 0, 0, 0.5)',
+                  animation: 'slideUp 0.25s ease',
+                }}
+              >
+                {/* Header */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                  <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#e2e8f0' }}>
+                    Choose a Box
+                  </h3>
+                  <button
+                    onClick={() => setPickerOpen(false)}
+                    aria-label="Close"
                     style={{
-                      position: 'relative',
-                      cursor: 'pointer',
-                      padding: '0.5rem',
-                      background: 'rgba(15, 22, 36, 0.6)',
-                      border: `3px solid ${isSelected ? '#3b82f6' : 'rgba(59, 130, 246, 0.2)'}`,
-                      borderRadius: '12px',
-                      transition: 'all 0.2s ease',
-                      boxShadow: isSelected ? 'inset 0 0 15px rgba(59, 130, 246, 0.3)' : 'none',
-                      ...(isMobile ? {
-                        flexShrink: 0,
-                        width: '72px',
-                        scrollSnapAlign: 'start',
-                      } : {}),
+                      width: '32px', height: '32px', borderRadius: '8px',
+                      background: 'rgba(15, 23, 42, 0.6)',
+                      border: '1px solid rgba(148, 163, 184, 0.2)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      cursor: 'pointer', color: '#a0aec0', padding: 0,
                     }}
-                    onClick={() => handleImageClick(image)}
                   >
-                    {/* Image preview */}
-                    <div style={{
-                      width: '100%',
-                      height: isMobile ? '60px' : '65px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      background: 'linear-gradient(135deg, rgba(30, 64, 175, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%)',
-                      borderRadius: '8px',
-                      marginBottom: '0.5rem',
-                      opacity: 1,
-                      overflow: 'hidden',
-                      position: 'relative',
-                    }}>
-                      <img
-                        src={getBoxImageUrl(image.id, boxCatalog)}
-                        alt={image.name}
-                        onError={(e) => { e.target.onerror = null; e.target.src = 'assets/images/boxes/free/chest.png'; }}
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                      <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                  </button>
+                </div>
+
+                {/* Search */}
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search boxes..."
+                  style={{
+                    width: '100%', padding: '10px 14px', fontSize: '0.95rem',
+                    fontFamily: 'inherit', color: '#e2e8f0',
+                    background: 'rgba(30, 41, 59, 0.8)',
+                    border: '1.5px solid rgba(65, 105, 225, 0.35)',
+                    borderRadius: '10px', outline: 'none',
+                    marginBottom: '0.75rem',
+                    boxSizing: 'border-box',
+                  }}
+                />
+
+                {/* Tabs */}
+                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                  {tabs.map(tab => {
+                    const isActive = activeTab === tab.id;
+                    return (
+                      <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id)}
                         style={{
-                          width: '100%',
-                          height: '100%',
-                          objectFit: 'contain',
+                          flex: '0 0 auto',
+                          padding: '0.4rem 0.85rem',
+                          fontSize: '0.8rem', fontWeight: 600,
+                          color: isActive ? '#ffffff' : '#a0aec0',
+                          background: isActive
+                            ? 'linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)'
+                            : 'rgba(15, 22, 36, 0.6)',
+                          border: `1px solid ${isActive ? '#3b82f6' : 'rgba(59, 130, 246, 0.2)'}`,
+                          borderRadius: '8px', cursor: 'pointer',
+                          fontFamily: 'inherit', transition: 'all 0.2s ease',
                         }}
-                      />
+                      >
+                        {tab.label} {tab.count > 0 && `(${tab.count})`}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Scrolling grid: 4 wide on mobile */}
+                <div style={{ overflowY: 'auto', flex: 1, paddingRight: '2px' }}>
+                  {visibleBoxes.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '2.5rem 1rem', color: '#64748b', fontSize: '0.85rem' }}>
+                      {q ? `No boxes match "${search.trim()}"` : 'No boxes in this category'}
                     </div>
-
-                    {/* Image name */}
-                    <div
-                      title={image.name}
-                      style={{
-                        fontSize: '0.65rem',
-                        fontWeight: 600,
-                        color: '#cbd5e1',
-                        textAlign: 'center',
-                        marginBottom: '0.25rem',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {image.name}
+                  ) : (
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: isMobile ? 'repeat(4, 1fr)' : 'repeat(auto-fill, minmax(96px, 1fr))',
+                      gap: '0.5rem',
+                      paddingBottom: '0.25rem',
+                    }}>
+                      {visibleBoxes.map(image => {
+                        const isSelected = selectedImageId === image.id || selectedImageId === image.imageUrl;
+                        const isSeasonal = image.source === BOX_SOURCES.SEASONAL;
+                        return (
+                          <div
+                            key={image.id}
+                            onClick={() => handleImageClick(image)}
+                            style={{
+                              position: 'relative',
+                              cursor: 'pointer',
+                              padding: '0.4rem',
+                              background: 'rgba(15, 22, 36, 0.6)',
+                              border: `2px solid ${isSelected ? '#3b82f6' : 'rgba(59, 130, 246, 0.15)'}`,
+                              borderRadius: '10px',
+                              boxShadow: isSelected ? 'inset 0 0 12px rgba(59, 130, 246, 0.3)' : 'none',
+                              minWidth: 0,
+                            }}
+                          >
+                            <div style={{
+                              width: '100%',
+                              aspectRatio: '1',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              background: 'linear-gradient(135deg, rgba(30, 64, 175, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%)',
+                              borderRadius: '7px',
+                              marginBottom: '0.35rem',
+                              overflow: 'hidden',
+                            }}>
+                              <img
+                                src={getBoxImageUrl(image.id, boxCatalog)}
+                                alt={image.name}
+                                loading="lazy"
+                                onError={(e) => { e.target.onerror = null; e.target.src = 'assets/images/boxes/free/chest.png'; }}
+                                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                              />
+                            </div>
+                            <div
+                              title={image.name}
+                              style={{
+                                fontSize: '0.62rem',
+                                fontWeight: 600,
+                                color: '#cbd5e1',
+                                textAlign: 'center',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              {image.name}
+                            </div>
+                            {isSeasonal && image.seasonalInfo && (
+                              <div style={{
+                                position: 'absolute',
+                                top: '3px',
+                                right: '3px',
+                                padding: '1px 5px',
+                                background: 'linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)',
+                                borderRadius: '5px',
+                                fontSize: '0.5rem',
+                                fontWeight: 700,
+                                color: '#ffffff',
+                                textTransform: 'uppercase',
+                              }}>
+                                {image.seasonalInfo.label || 'Seasonal'}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
-
-                    {/* Badges */}
-                    {isSeasonal && image.seasonalInfo && (
-                      <div style={{
-                        position: 'absolute',
-                        top: '0.5rem',
-                        right: '0.5rem',
-                        padding: '0.25rem 0.5rem',
-                        background: 'linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)',
-                        borderRadius: '6px',
-                        fontSize: '0.625rem',
-                        fontWeight: 700,
-                        color: '#ffffff',
-                        textTransform: 'uppercase',
-                      }}>
-                        {image.seasonalInfo.label || 'Seasonal'}
-                      </div>
-                    )}
-
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Right-edge fade + chevron: signals more boxes off-screen */}
-            {isMobile && showScrollHint && (
-              <div style={{
-                position: 'absolute',
-                top: 0, right: 0, bottom: 0,
-                width: '52px',
-                background: 'linear-gradient(90deg, rgba(16, 22, 40, 0) 0%, rgba(16, 22, 40, 0.92) 80%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'flex-end',
-                paddingRight: '4px',
-                pointerEvents: 'none',
-                zIndex: 2,
-                transition: 'opacity 0.2s ease',
-              }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ animation: 'tapHint 2s ease-in-out infinite' }}>
-                  <polyline points="9 18 15 12 9 6" />
-                </svg>
+                  )}
+                </div>
               </div>
-            )}
-            </div>
+            </div>,
+            document.body
           )}
 
         </div>
