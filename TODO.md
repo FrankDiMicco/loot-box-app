@@ -172,21 +172,24 @@ rich: add a comma-separated "Keywords" field to box-admin.html's add/edit
 form (store as array on the boxCatalog doc), then tag the existing 14 boxes
 (e.g. skull → "pirate, spooky, halloween"). Zero app changes needed.
 
-### Item images — custom photo uploads SHIPPED July 2026 (stages 1–3)
-Users attach their own photos to items; compressed client-side to ~160px
-WebP data URIs (~8KB), no Firebase Storage. Pulls reference items by id
-(resolveItemImage); shared-box images live in sibling doc
-sharedBoxes/{code}/meta/images with a no-loss inline fallback.
-REQUIRES the sharedBoxes/{code}/meta/{doc} rule in firestore.rules to be
-DEPLOYED for the per-pull optimization; until then shared photos work
-inline (unoptimized). Still open:
+### Custom photo uploads (items + boxes) SHIPPED July 2026
+Users attach their own photos to both ITEMS and the BOX image. Compressed
+client-side to WebP data URIs (items ~160px/~8KB; box ~400px/~50KB), no
+Firebase Storage. Pulls reference items by id (resolveItemImage). Shared
+boxes: images live in sibling doc sharedBoxes/{code}/meta/images — items
+keyed by itemId, the box photo under key `boxCover` (NOT double-underscore;
+Firestore reserves __names__). meta rule in firestore.rules is DEPLOYED.
+No-loss inline fallback if the meta write ever fails. loadData + the App
+realtime subscription preserve a locally-known boxImageId so cards don't
+blank when the stripped snapshot omits it. Still open:
 - **Curated item icon pack** — the picker UI exists; this just needs 40–60
   consistent-style icons shipped as repo assets, added as pre-made entries.
   Needs art generated first; then it's trivial (same as box-skin catalog).
+  (A "curated box skin pack" is the same idea for box images.)
 - Consider IndexedDB if localStorage (~5MB) ever pinches for photo-heavy
   users; today a failed save surfaces an inline error instead of losing data.
-- Custom item images are a natural candidate to gate behind the one-time
-  Pro unlock (see Monetization direction).
+- Custom images are a natural candidate to gate behind the one-time Pro
+  unlock (see Monetization direction).
 
 ### Capacitor / iOS App Store (future direction)
 Wrap the existing app in Capacitor (a `normalizeAssetPath` comment shows this
