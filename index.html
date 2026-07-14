@@ -411,6 +411,14 @@
       to { opacity: 1; transform: translate(-50%, 0); }
     }
 
+    @keyframes fieldShake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-6px); }
+      40% { transform: translateX(6px); }
+      60% { transform: translateX(-4px); }
+      80% { transform: translateX(4px); }
+    }
+
     /* Boot / loading screen (shown before React mounts and while settings load) */
     .boot-screen {
       min-height: 100vh;
@@ -4421,12 +4429,38 @@
         editingBox && editingBox.pullRechargeCycles ? editingBox.pullRechargeCycles.toString() : '5'
       );
 
+      // Inline validation: no toasts — scroll to the problem, shake it,
+      // and show a caption attached to the field itself
+      const [stepAlert, setStepAlert] = useState(null); // 'name' | 'items' | 'percent'
+      const nameInputRef = useRef(null);
+      const itemsSectionRef = useRef(null);
+      const validationBarRef = useRef(null);
+
+      const raiseAlert = (which, ref, block = 'center') => {
+        // clear + re-set so the shake replays on repeated taps
+        // (setTimeout, not rAF — rAF never fires in backgrounded tabs)
+        setStepAlert(null);
+        setTimeout(() => setStepAlert(which), 0);
+        if (ref && ref.current) {
+          ref.current.scrollIntoView({ behavior: 'smooth', block });
+        }
+        triggerHaptic('medium');
+      };
+
       const userSettings = getUserSettings();
 
       const handleAddItem = (item) => {
         triggerHaptic('light');
         setItems([...items, item]);
+        if (stepAlert === 'items') setStepAlert(null);
       };
+
+      // Clear the percentage alert as soon as the totals become valid
+      useEffect(() => {
+        if (stepAlert === 'percent' && validatePercentages(items).valid) {
+          setStepAlert(null);
+        }
+      }, [items]);
 
       const handleUpdateItem = (updatedItem) => {
         setItems(items.map(item => item.id === updatedItem.id ? updatedItem : item));
@@ -4453,22 +4487,24 @@
       };
 
       const handleCreate = async () => {
-        triggerHaptic('success');
         if (!boxName.trim()) {
-          error('Please enter a box name');
+          raiseAlert('name', nameInputRef);
+          setTimeout(() => nameInputRef.current && nameInputRef.current.focus({ preventScroll: true }), 400);
           return;
         }
 
         if (items.length === 0) {
-          error('Please add at least one item');
+          raiseAlert('items', itemsSectionRef, 'start');
           return;
         }
 
         const validation = validatePercentages(items);
         if (!validation.valid) {
-          error(`Percentages must add up to 100%. ${validation.message}`);
+          raiseAlert('percent', validationBarRef);
           return;
         }
+
+        triggerHaptic('success');
 
         if (expirationEnabled && expiresAt && new Date(expiresAt).getTime() <= Date.now()) {
           error('Expiration date must be in the future');
@@ -4612,17 +4648,26 @@
               <span style={{ fontSize: '0.7rem', fontWeight: 600, color: '#38bdf8', marginLeft: '0.25rem' }}>REQUIRED</span>
             </div>
             <input
+              ref={nameInputRef}
               type="text"
               value={boxName}
-              onChange={(e) => setBoxName(e.target.value)}
+              onChange={(e) => {
+                setBoxName(e.target.value);
+                if (stepAlert === 'name' && e.target.value.trim()) setStepAlert(null);
+              }}
               maxLength={40}
               placeholder="What's your box called?"
               style={{
                 width: '100%', padding: '16px 20px', fontSize: '1.2rem', fontFamily: 'inherit', fontWeight: 600,
                 color: '#e2e8f0', background: 'rgba(30, 64, 175, 0.15)',
-                border: boxName.trim() ? '2px solid rgba(59, 130, 246, 0.5)' : '2px solid rgba(56, 189, 248, 0.3)',
+                border: stepAlert === 'name'
+                  ? '2px solid #ef4444'
+                  : boxName.trim() ? '2px solid rgba(59, 130, 246, 0.5)' : '2px solid rgba(56, 189, 248, 0.3)',
                 borderRadius: '14px', outline: 'none', transition: 'all 0.25s ease',
-                boxShadow: '0 0 20px rgba(59, 130, 246, 0.1)',
+                boxShadow: stepAlert === 'name'
+                  ? '0 0 20px rgba(239, 68, 68, 0.25)'
+                  : '0 0 20px rgba(59, 130, 246, 0.1)',
+                animation: stepAlert === 'name' ? 'fieldShake 0.4s ease' : 'none',
               }}
               onFocus={(e) => {
                 e.target.style.borderColor = '#3b82f6';
@@ -4635,6 +4680,11 @@
                 e.target.style.background = 'rgba(30, 64, 175, 0.15)';
               }}
             />
+            {stepAlert === 'name' && (
+              <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#f87171', marginTop: '0.4rem' }}>
+                Give your box a name
+              </div>
+            )}
           </div>
 
           {/* STEP 2 - Choose Appearance */}
@@ -4739,19 +4789,29 @@
           </div>
 
           {/* STEP 3 - Add Items */}
-          <div style={{ marginBottom: '1.5rem' }}>
+          <div ref={itemsSectionRef} style={{
+            marginBottom: '1.5rem',
+            animation: stepAlert === 'items' ? 'fieldShake 0.4s ease' : 'none',
+          }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
               <div style={{
                 width: '24px', height: '24px', borderRadius: '50%',
-                background: items.length > 0 ? 'linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)' : 'rgba(51, 65, 85, 0.6)',
+                background: stepAlert === 'items'
+                  ? 'linear-gradient(135deg, #b91c1c 0%, #ef4444 100%)'
+                  : items.length > 0 ? 'linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)' : 'rgba(51, 65, 85, 0.6)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '0.75rem', fontWeight: 700, color: items.length > 0 ? '#ffffff' : '#64748b',
+                fontSize: '0.75rem', fontWeight: 700, color: (items.length > 0 || stepAlert === 'items') ? '#ffffff' : '#64748b',
                 flexShrink: 0, transition: 'all 0.3s ease',
               }}>3</div>
               <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#a0aec0', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 Add Items
               </span>
               <span style={{ fontSize: '0.7rem', fontWeight: 600, color: '#38bdf8', marginLeft: '0.25rem' }}>REQUIRED</span>
+              {stepAlert === 'items' && (
+                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#f87171' }}>
+                  — add at least one item
+                </span>
+              )}
             </div>
 
 
@@ -5016,13 +5076,14 @@
 
           {/* Percentage validation bar - only when items exist */}
           {validation && items.length > 0 && (
-            <div style={{
+            <div ref={validationBarRef} style={{
               padding: '1rem',
               background: validation.valid ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
               border: `2px solid ${validation.valid ? '#10b981' : '#ef4444'}`,
               borderRadius: '12px',
               textAlign: 'center',
               marginBottom: '2rem',
+              animation: stepAlert === 'percent' ? 'fieldShake 0.4s ease' : 'none',
             }}>
               <div style={{ fontSize: '0.875rem', color: validation.valid ? '#6ee7b7' : '#fca5a5', fontWeight: 600 }}>
                 {validation.message} ({validation.total}%)
@@ -5047,8 +5108,10 @@
 
           <div style={{ display: 'flex', gap: '1rem' }}>
             <Button variant="ghost" onClick={onCancel} fullWidth>Cancel</Button>
-            <Button variant="primary" onClick={handleCreate} disabled={!validation.valid || !boxName.trim()} fullWidth style={{
-              ...(validation.valid && boxName.trim() && items.length > 0 ? { boxShadow: '0 4px 20px rgba(59, 130, 246, 0.5)' } : {}),
+            <Button variant="primary" onClick={handleCreate} fullWidth style={{
+              ...(validation.valid && boxName.trim() && items.length > 0
+                ? { boxShadow: '0 4px 20px rgba(59, 130, 246, 0.5)' }
+                : { opacity: 0.6, filter: 'saturate(0.6)' }),
             }}>
               {editingBox ? 'Save Changes' : 'Create Box'}
             </Button>
