@@ -576,6 +576,20 @@
       return 'mythic';
     }
 
+    // One coherent accent hue per rarity tier — drives flash, particles, rays,
+    // and card border/glow so the whole reveal reads as a single color.
+    // Mythic keeps a rainbow spread as the deliberate outlier.
+    function getTierAccent(tier) {
+      switch (tier) {
+        case 'rare':      return { accent: '#3b82f6', particles: ['#60a5fa', '#3b82f6'] };
+        case 'epic':      return { accent: '#8b5cf6', particles: ['#a78bfa', '#8b5cf6', '#c4b5fd'] };
+        case 'legendary': return { accent: '#f59e0b', particles: ['#fbbf24', '#f59e0b', '#fcd34d'] };
+        case 'mythic':    return { accent: '#f0abfc', particles: ['#fbbf24', '#f0abfc', '#60a5fa', '#34d399', '#f87171'] };
+        case 'common':
+        default:          return { accent: '#94a3b8', particles: ['#cbd5e1', '#94a3b8'] };
+      }
+    }
+
     // Calculate dynamic odds
     const calculateDynamicOdds = (items, pullHistory) => {
       const remainingItems = items.map(item => {
@@ -5529,6 +5543,7 @@
 
       React.useEffect(() => {
         const randomRange = (min, max) => Math.random() * (max - min) + min;
+        const { accent, particles: tierColors } = getTierAccent(tier);
 
         const makeParticles = (count, colors, sizeRange, txRange, delay = 0) => {
           const p = [];
@@ -5547,38 +5562,38 @@
         if (tier === 'common') {
           setShowChildren(true);
           setFlashStyle({
-            background: 'rgba(255, 255, 255, 0.3)',
+            background: accent + '4d',
             animation: 'screenFlash 0.4s ease-out forwards',
           });
-          setParticles(makeParticles(6, ['#93c5fd'], [4, 5], 80));
+          setParticles(makeParticles(6, tierColors, [4, 5], 80));
           totalDuration = 600;
         } else if (tier === 'rare') {
           setShowChildren(true);
           setShakeClass('shakeScreen 0.5s ease-out');
           setFlashStyle({
-            background: 'rgba(59, 130, 246, 0.4)',
+            background: accent + '66',
             animation: 'screenFlash 0.6s ease-out forwards',
           });
-          setParticles(makeParticles(12, ['#60a5fa', '#a78bfa'], [5, 6], 80));
+          setParticles(makeParticles(12, tierColors, [5, 6], 80));
           totalDuration = 800;
         } else if (tier === 'epic') {
           setShowChildren(true);
           setShakeClass('shakeScreen 0.7s ease-out');
           setFlashStyle({
-            background: 'rgba(139, 92, 246, 0.5)',
+            background: accent + '80',
             animation: 'screenFlash 0.8s ease-out forwards',
           });
-          const wave1 = makeParticles(20, ['#a78bfa', '#fbbf24', '#f0abfc'], [5, 8], 120);
-          const wave2 = makeParticles(10, ['#a78bfa', '#fbbf24', '#f0abfc'], [5, 8], 120, 0.2);
+          const wave1 = makeParticles(20, tierColors, [5, 8], 120);
+          const wave2 = makeParticles(10, tierColors, [5, 8], 120, 0.2);
           setParticles([...wave1, ...wave2]);
           totalDuration = 1200;
         } else if (tier === 'legendary') {
           setShakeClass('shakeScreenHard 0.8s ease-out');
           setFlashStyle({
-            background: 'rgba(251, 191, 36, 0.6)',
+            background: accent + '99',
             animation: 'screenFlash 1s ease-out forwards',
           });
-          setParticles(makeParticles(30, ['#fbbf24', '#38bdf8', '#fef08a'], [6, 10], 160));
+          setParticles(makeParticles(30, tierColors, [6, 10], 160));
           setTimeout(() => setShakeClass('shakeScreenHard 0.8s ease-out 0.1s'), 900);
           setTimeout(() => setShowChildren(true), 300);
           totalDuration = 1500;
@@ -5876,6 +5891,8 @@
       const rechargeLimitOk = !box.pullRechargeEnabled || rechargeAvailable > 0;
       const isExpired = box.expiresAt ? Date.now() > box.expiresAt : false;
       const canPull = totalLimitOk && userLimitOk && rechargeLimitOk && !isExpired;
+      // Tier accent for the reveal card — one color for rays, border, and glow.
+      const tierAccent = getTierAccent(revealTier).accent;
 
       // Resolve a pull's item image from the box's current item list by
       // itemId. Falls back to any image copied onto the pull itself, so
@@ -6508,7 +6525,7 @@
                 <div style={{
                   width: '100%',
                   height: '100%',
-                  background: `repeating-conic-gradient(from 0deg, ${currentPull.color}00 0deg 14deg, ${currentPull.color}30 20deg, ${currentPull.color}00 26deg)`,
+                  background: `repeating-conic-gradient(from 0deg, ${tierAccent}00 0deg 14deg, ${tierAccent}30 20deg, ${tierAccent}00 26deg)`,
                   WebkitMaskImage: 'radial-gradient(closest-side, rgba(0,0,0,0.9), transparent 72%)',
                   maskImage: 'radial-gradient(closest-side, rgba(0,0,0,0.9), transparent 72%)',
                   animation: 'raysSpin 14s linear infinite',
@@ -6530,15 +6547,9 @@
                   textAlign: 'center',
                   padding: '3rem',
                   borderRadius: '16px',
-                  background: isLightColor(currentPull.color)
-                    ? `linear-gradient(135deg, ${currentPull.color}40 0%, ${currentPull.color}20 100%)`
-                    : `linear-gradient(135deg, ${currentPull.color}40 0%, ${currentPull.color}20 100%)`,
-                  border: isLightColor(currentPull.color)
-                    ? '2px solid #a0aec0'
-                    : `2px solid ${currentPull.color}`,
-                  boxShadow: isLightColor(currentPull.color)
-                    ? '0 0 40px rgba(100, 116, 139, 0.6)'
-                    : `0 0 40px ${currentPull.color}60`,
+                  background: `linear-gradient(135deg, ${tierAccent}40 0%, ${tierAccent}20 100%)`,
+                  border: `2px solid ${tierAccent}`,
+                  boxShadow: `0 0 40px ${tierAccent}60`,
                   width: '100%',
                   maxWidth: '500px',
                   cursor: canPull && !isExpired ? 'pointer' : 'default',
@@ -6580,14 +6591,14 @@
                 )}
                 <div style={{
                   fontSize: '2rem', fontWeight: 800, marginBottom: '0.5rem',
-                  color: getReadableTextColor(currentPull.color),
+                  color: getReadableTextColor(tierAccent),
                   animation: 'shimmerText 1.5s ease-in-out 0.5s',
                 }}>
                   {currentPull.itemName}
                 </div>
                 <div style={{
                   fontSize: '1rem', fontWeight: 500,
-                  color: isLightColor(currentPull.color) ? '#475569' : '#a0aec0',
+                  color: isLightColor(tierAccent) ? '#475569' : '#a0aec0',
                 }}>
                   {currentPull.percentage}% chance
                 </div>
