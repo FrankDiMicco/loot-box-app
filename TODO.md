@@ -93,6 +93,13 @@ source — a bot can bill us directly. Layers, in bang-for-buck order:
 
 ## Cleanups (small, do opportunistically)
 
+- **Header logo needs a real, professional design.** Current state is a
+  text-only gradient wordmark ("LOOT BOX" + "CREATOR" tag) in the `Header`
+  component in `index.html` — a stopgap after removing the raster chest photo
+  and a code-drawn cube mark, neither of which looked good. This needs an
+  actual designed logo/mark (designer or a proper asset), not another
+  code-generated attempt. There's also a matching logo on the boot splash
+  (`.boot-screen`, still the old `logo-chest.png`) to update in tandem.
 - Delete `set-premium.html` (sets a `tier` field nothing reads)
 - Delete the 3 placeholder `boxCatalog` docs with `source: "store"` and
   `via.placeholder.com` URLs (Ancient Relic, Cyber Elite Box, Golden Treasure)
