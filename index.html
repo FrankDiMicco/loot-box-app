@@ -5298,6 +5298,27 @@
         setItems(newItems);
       };
 
+      // Random odds that still total exactly 100, with a 1% floor per item so
+      // nothing lands at 0% (unreachable). Any rounding drift goes to the
+      // largest item so a tiny item never gets pushed negative.
+      const handleRandomize = () => {
+        const n = items.length;
+        if (n === 0) return;
+        const floor = Math.min(1, Math.floor((100 / n) * 100) / 100);
+        const budget = 100 - floor * n;
+        const weights = items.map(() => Math.random());
+        const wsum = weights.reduce((a, b) => a + b, 0) || 1;
+        let pcts = weights.map(w => Math.round((floor + (w / wsum) * budget) * 100) / 100);
+        const drift = Math.round((100 - pcts.reduce((a, b) => a + b, 0)) * 100) / 100;
+        if (drift !== 0) {
+          let maxIdx = 0;
+          for (let i = 1; i < pcts.length; i++) if (pcts[i] > pcts[maxIdx]) maxIdx = i;
+          pcts[maxIdx] = Math.round((pcts[maxIdx] + drift) * 100) / 100;
+        }
+        setItems(items.map((it, i) => ({ ...it, percentage: pcts[i] })));
+        triggerHaptic('light');
+      };
+
       const handleCreate = async () => {
         if (!boxName.trim()) {
           raiseAlert('name', nameInputRef);
@@ -5650,6 +5671,34 @@
               items={items}
               onItemsChange={setItems}
             />
+
+            {/* Quick odds actions — always available with 2+ items */}
+            {items.length >= 2 && (
+              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
+                <button
+                  type="button"
+                  onClick={handleSplitEvenly}
+                  style={{
+                    padding: '0.5rem 1rem', fontSize: '0.8rem', fontWeight: 600, color: '#e2e8f0',
+                    background: 'rgba(59, 130, 246, 0.15)', border: '1px solid rgba(59, 130, 246, 0.35)',
+                    borderRadius: '8px', cursor: 'pointer', fontFamily: 'inherit',
+                  }}
+                >
+                  Split evenly
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRandomize}
+                  style={{
+                    padding: '0.5rem 1rem', fontSize: '0.8rem', fontWeight: 600, color: '#e2e8f0',
+                    background: 'rgba(59, 130, 246, 0.15)', border: '1px solid rgba(59, 130, 246, 0.35)',
+                    borderRadius: '8px', cursor: 'pointer', fontFamily: 'inherit',
+                  }}
+                >
+                  Randomize
+                </button>
+              </div>
+            )}
           </div>
 
           {/* STEP 4 - Advanced Settings (Optional) */}
@@ -5906,21 +5955,6 @@
               <div style={{ fontSize: '0.875rem', color: validation.valid ? '#6ee7b7' : '#fca5a5', fontWeight: 600 }}>
                 {validation.message} ({validation.total}%)
               </div>
-              {!validation.valid && (
-                <button
-                  type="button"
-                  onClick={handleSplitEvenly}
-                  style={{
-                    marginTop: '0.6rem', padding: '0.45rem 1rem',
-                    fontSize: '0.8rem', fontWeight: 600, color: '#e2e8f0',
-                    background: 'rgba(59, 130, 246, 0.2)',
-                    border: '1px solid rgba(59, 130, 246, 0.4)',
-                    borderRadius: '8px', cursor: 'pointer', fontFamily: 'inherit',
-                  }}
-                >
-                  Split evenly across {items.length} item{items.length === 1 ? '' : 's'}
-                </button>
-              )}
             </div>
           )}
 
