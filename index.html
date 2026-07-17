@@ -4630,7 +4630,6 @@
     // the items array shape identical to the old form so save/open are untouched.
     const ItemsEditor = ({ items, onItemsChange }) => {
       const [openColorFor, setOpenColorFor] = useState(null);
-      const [expandedQtyFor, setExpandedQtyFor] = useState(null);
       const [imgTargetId, setImgTargetId] = useState(null);
       const [imgError, setImgError] = useState('');
       const fileInputRef = useRef(null);
@@ -4649,7 +4648,6 @@
       const removeRow = (id) => {
         onItemsChange(items.filter(it => it.id !== id));
         if (openColorFor === id) setOpenColorFor(null);
-        if (expandedQtyFor === id) setExpandedQtyFor(null);
       };
 
       const openImagePicker = (id) => {
@@ -4752,30 +4750,21 @@
                         )}
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() => setExpandedQtyFor(expandedQtyFor === item.id ? null : item.id)}
-                        style={{
-                          fontSize: '0.75rem', fontWeight: 600, color: '#a0aec0', background: 'transparent',
-                          border: '1px solid rgba(148,163,184,0.25)', borderRadius: '8px', padding: '6px 10px',
-                          cursor: 'pointer', fontFamily: 'inherit',
-                        }}
-                      >
-                        {item.maxQuantity ? `Max ${item.maxQuantity}` : 'Limit'}
-                      </button>
-
-                      {expandedQtyFor === item.id && (
+                      <div style={{
+                        display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0,
+                        border: '1px solid rgba(148,163,184,0.25)', borderRadius: '8px', padding: '0 6px 0 10px',
+                      }} title="Max times this item can be pulled (optional)">
+                        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#a0aec0' }}>Max</span>
                         <input
-                          type="number" min="1" placeholder="Unlimited" value={item.maxQuantity}
+                          type="number" min="1" placeholder="∞" value={item.maxQuantity}
                           onChange={(e) => setField(item.id, { maxQuantity: e.target.value })}
-                          aria-label="Max quantity"
+                          aria-label="Max quantity (optional)"
                           style={{
-                            width: '92px', padding: '6px 8px', fontSize: '0.85rem', color: '#e2e8f0',
-                            background: 'rgba(15,22,36,0.9)', border: '1px solid rgba(59,130,246,0.2)',
-                            borderRadius: '8px', outline: 'none', fontFamily: 'inherit',
+                            width: '42px', padding: '6px 2px', fontSize: '0.85rem', textAlign: 'center',
+                            color: '#e2e8f0', background: 'transparent', border: 'none', outline: 'none', fontFamily: 'inherit',
                           }}
                         />
-                      )}
+                      </div>
                     </div>
                   </div>
                 );
