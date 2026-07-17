@@ -4546,6 +4546,263 @@
       );
     };
 
+    // ===== Inline items editor (add/edit all items on one screen) =====
+
+    // Curated colors that read well on the dark UI. Auto-assigned to new rows
+    // (first unused, in this order) and shown as the picker's swatch grid.
+    const ITEM_PALETTE = [
+      '#3b82f6', '#f59e0b', '#22c55e', '#ec4899', '#8b5cf6',
+      '#06b6d4', '#ef4444', '#84cc16', '#a855f7', '#eab308',
+      '#38bdf8', '#f43f5e', '#10b981', '#6366f1', '#fb923c',
+    ];
+    const ITEM_SWATCHES = [
+      '#ef4444', '#38bdf8', '#f59e0b', '#eab308', '#84cc16',
+      '#22c55e', '#10b981', '#06b6d4', '#3b82f6', '#1e40af',
+      '#6366f1', '#8b5cf6', '#a855f7', '#ec4899', '#f43f5e',
+      '#78716c', '#a8a29e', '#92400e', '#b45309', '#854d0e',
+      '#374151', '#6b7280', '#9ca3af', '#d4d4d8', '#ffffff',
+    ];
+
+    // Next palette color not already in use (falls back to cycling by count)
+    const pickAutoColor = (items) => {
+      const used = new Set((items || []).map(i => (i.color || '').toLowerCase()));
+      return ITEM_PALETTE.find(c => !used.has(c.toLowerCase()))
+        || ITEM_PALETTE[(items ? items.length : 0) % ITEM_PALETTE.length];
+    };
+
+    // Lift a near-black custom color so it stays visible as a dot/accent on
+    // the dark background; leaves palette colors untouched.
+    const ensureVisibleColor = (hex) => {
+      if (!/^#[0-9a-fA-F]{6}$/.test(hex || '')) return hex;
+      const c = hex.replace('#', '');
+      const r = parseInt(c.slice(0, 2), 16), g = parseInt(c.slice(2, 4), 16), b = parseInt(c.slice(4, 6), 16);
+      const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+      if (lum >= 0.22) return hex;
+      const lift = (v) => Math.round(v + (255 - v) * 0.5);
+      const h = (v) => v.toString(16).padStart(2, '0');
+      return `#${h(lift(r))}${h(lift(g))}${h(lift(b))}`;
+    };
+
+    // Swatch grid + native custom color, in a small popover anchored to a row.
+    const ColorPopover = ({ value, onPick, onClose }) => {
+      return (
+        <>
+          <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
+          <div style={{
+            position: 'absolute', top: '40px', left: 0, zIndex: 41, width: '198px',
+            padding: '0.6rem', background: 'rgba(15, 22, 36, 0.98)',
+            border: '2px solid rgba(59, 130, 246, 0.35)', borderRadius: '12px',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+          }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.35rem' }}>
+              {ITEM_SWATCHES.map(c => (
+                <button
+                  key={c}
+                  type="button"
+                  aria-label={getColorName(c)}
+                  onClick={() => onPick(c, true)}
+                  style={{
+                    width: '100%', aspectRatio: '1', background: c, borderRadius: '6px', cursor: 'pointer',
+                    border: value === c ? '2px solid #ffffff'
+                      : c === '#ffffff' ? '2px solid rgba(148,163,184,0.5)' : '2px solid rgba(59,130,246,0.15)',
+                  }}
+                />
+              ))}
+            </div>
+            <label style={{
+              display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.6rem',
+              fontSize: '0.75rem', color: '#a0aec0', cursor: 'pointer',
+            }}>
+              <input
+                type="color"
+                value={/^#[0-9a-fA-F]{6}$/.test(value) ? value : '#3b82f6'}
+                onChange={(e) => onPick(e.target.value, false)}
+                style={{ width: '30px', height: '30px', padding: 0, border: 'none', background: 'none', cursor: 'pointer' }}
+              />
+              Custom color
+            </label>
+          </div>
+        </>
+      );
+    };
+
+    // One editable row per item; "+ Add item" appends a new blank row. Keeps
+    // the items array shape identical to the old form so save/open are untouched.
+    const ItemsEditor = ({ items, onItemsChange }) => {
+      const [openColorFor, setOpenColorFor] = useState(null);
+      const [expandedQtyFor, setExpandedQtyFor] = useState(null);
+      const [imgTargetId, setImgTargetId] = useState(null);
+      const [imgError, setImgError] = useState('');
+      const fileInputRef = useRef(null);
+      const lastRowRef = useRef(null);
+
+      const setField = (id, patch) =>
+        onItemsChange(items.map(it => it.id === id ? { ...it, ...patch } : it));
+
+      const addRow = () => {
+        const id = Date.now().toString() + Math.random().toString(36).slice(2, 6);
+        onItemsChange([...items, { id, name: '', percentage: '', color: pickAutoColor(items), maxQuantity: '', imageUrl: '' }]);
+        triggerHaptic('light');
+        setTimeout(() => { if (lastRowRef.current) lastRowRef.current.focus(); }, 0);
+      };
+
+      const removeRow = (id) => {
+        onItemsChange(items.filter(it => it.id !== id));
+        if (openColorFor === id) setOpenColorFor(null);
+        if (expandedQtyFor === id) setExpandedQtyFor(null);
+      };
+
+      const openImagePicker = (id) => {
+        setImgTargetId(id); setImgError('');
+        if (fileInputRef.current) fileInputRef.current.click();
+      };
+
+      const handleFile = async (e) => {
+        const file = e.target.files && e.target.files[0];
+        e.target.value = '';
+        const id = imgTargetId;
+        if (!file || !id) return;
+        if (!file.type.startsWith('image/')) { setImgError('Please choose an image file'); return; }
+        if (file.size > 10 * 1024 * 1024) { setImgError('Image too large (max 10MB)'); return; }
+        try {
+          const dataUrl = await compressToDataURL(file);
+          setField(id, { imageUrl: dataUrl });
+        } catch (err) { setImgError("Couldn't process that image"); }
+      };
+
+      return (
+        <div>
+          <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFile} style={{ display: 'none' }} />
+
+          {items.length > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+              {items.map((item, idx) => {
+                const isLast = idx === items.length - 1;
+                return (
+                  <div key={item.id} style={{
+                    display: 'flex', flexDirection: 'column', gap: '0.5rem',
+                    padding: '0.6rem 0.75rem', background: 'rgba(15, 22, 36, 0.6)',
+                    border: `1px solid ${item.color}40`, borderLeft: `4px solid ${item.color}`,
+                    borderRadius: '8px',
+                  }}>
+                    {/* Row line 1: photo · name · remove */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                      <button
+                        type="button"
+                        onClick={() => openImagePicker(item.id)}
+                        title={item.imageUrl ? 'Change photo' : 'Add photo'}
+                        aria-label={item.imageUrl ? 'Change photo' : 'Add photo'}
+                        style={{
+                          width: '40px', height: '40px', flexShrink: 0, padding: 0, cursor: 'pointer',
+                          borderRadius: '6px', overflow: 'hidden',
+                          border: item.imageUrl ? `1px solid ${item.color}40` : '1px dashed rgba(148,163,184,0.35)',
+                          background: item.imageUrl ? 'rgba(30,64,175,0.15)' : 'transparent',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b',
+                        }}
+                      >
+                        {item.imageUrl
+                          ? <img src={item.imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                          : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>}
+                      </button>
+
+                      <input
+                        ref={isLast ? lastRowRef : null}
+                        value={item.name}
+                        onChange={(e) => setField(item.id, { name: e.target.value })}
+                        placeholder="Item name"
+                        aria-label="Item name"
+                        style={{
+                          flex: 1, minWidth: 0, padding: '8px 10px', fontSize: '1rem', fontWeight: 600,
+                          color: '#e2e8f0', background: 'rgba(15,22,36,0.9)',
+                          border: '1px solid rgba(59,130,246,0.2)', borderRadius: '8px', outline: 'none', fontFamily: 'inherit',
+                        }}
+                      />
+
+                      <button
+                        type="button" onClick={() => removeRow(item.id)} aria-label="Remove item"
+                        style={{
+                          width: '32px', height: '32px', flexShrink: 0, background: 'transparent',
+                          border: '1px solid rgba(239,68,68,0.3)', borderRadius: '6px', color: '#ef4444',
+                          cursor: 'pointer', fontSize: '1.125rem',
+                        }}
+                      >×</button>
+                    </div>
+
+                    {/* Row line 2: odds · color · optional limit */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap', paddingLeft: '46px' }}>
+                      <PercentInput value={item.percentage} color={item.color} onCommit={(v) => setField(item.id, { percentage: v })} />
+
+                      <div style={{ position: 'relative' }}>
+                        <button
+                          type="button"
+                          onClick={() => setOpenColorFor(openColorFor === item.id ? null : item.id)}
+                          aria-label="Item color"
+                          style={{
+                            width: '32px', height: '32px', borderRadius: '8px', background: item.color, cursor: 'pointer',
+                            border: item.color === '#ffffff' ? '2px solid rgba(148,163,184,0.5)' : '2px solid rgba(255,255,255,0.15)',
+                            boxShadow: `0 0 8px ${item.color}40`,
+                          }}
+                        />
+                        {openColorFor === item.id && (
+                          <ColorPopover
+                            value={item.color}
+                            onPick={(hex, close) => { setField(item.id, { color: ensureVisibleColor(hex) }); if (close) setOpenColorFor(null); }}
+                            onClose={() => setOpenColorFor(null)}
+                          />
+                        )}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => setExpandedQtyFor(expandedQtyFor === item.id ? null : item.id)}
+                        style={{
+                          fontSize: '0.75rem', fontWeight: 600, color: '#a0aec0', background: 'transparent',
+                          border: '1px solid rgba(148,163,184,0.25)', borderRadius: '8px', padding: '6px 10px',
+                          cursor: 'pointer', fontFamily: 'inherit',
+                        }}
+                      >
+                        {item.maxQuantity ? `Max ${item.maxQuantity}` : 'Limit'}
+                      </button>
+
+                      {expandedQtyFor === item.id && (
+                        <input
+                          type="number" min="1" placeholder="Unlimited" value={item.maxQuantity}
+                          onChange={(e) => setField(item.id, { maxQuantity: e.target.value })}
+                          aria-label="Max quantity"
+                          style={{
+                            width: '92px', padding: '6px 8px', fontSize: '0.85rem', color: '#e2e8f0',
+                            background: 'rgba(15,22,36,0.9)', border: '1px solid rgba(59,130,246,0.2)',
+                            borderRadius: '8px', outline: 'none', fontFamily: 'inherit',
+                          }}
+                        />
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          <button
+            type="button" onClick={addRow}
+            style={{
+              marginTop: items.length ? '0.6rem' : 0,
+              display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
+              padding: '0.6rem 1rem', fontSize: '0.9rem', fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer',
+              color: '#e2e8f0', background: 'rgba(59,130,246,0.18)',
+              border: '1px solid rgba(59,130,246,0.4)', borderRadius: '10px',
+            }}
+          >
+            <span style={{ fontSize: '1.1rem', lineHeight: 1 }}>+</span> Add item
+          </button>
+
+          {imgError && (
+            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#f87171', marginTop: '0.4rem' }}>{imgError}</div>
+          )}
+        </div>
+      );
+    };
+
     // ImagePicker Component
     // Collapsed row showing the current selection; tapping opens a modal
     // sheet with a 4-wide vertically-scrolling grid, tabs, and search.
@@ -5064,6 +5321,13 @@
           return;
         }
 
+        // The inline editor can leave a blank row — every item needs a name
+        if (items.some(it => !String(it.name || '').trim())) {
+          error('Give every item a name (or remove the empty row)');
+          raiseAlert('items', itemsSectionRef, 'start');
+          return;
+        }
+
         const validation = validatePercentages(items);
         if (!validation.valid) {
           raiseAlert('percent', validationBarRef);
@@ -5084,10 +5348,18 @@
           return;
         }
 
+        // Normalize inline-edited item fields to their stored types
+        const normalizedItems = items.map(it => ({
+          ...it,
+          percentage: parseFloat(it.percentage) || 0,
+          maxQuantity: it.maxQuantity ? parseInt(it.maxQuantity) : null,
+          imageUrl: it.imageUrl || null,
+        }));
+
         const boxData = {
           id: editingBox ? editingBox.id : Date.now().toString(),
           name: boxName.trim(),
-          items,
+          items: normalizedItems,
           maxPulls: maxPulls ? parseInt(maxPulls) : null,
           maxPullsPerUser: maxPullsPerUser ? parseInt(maxPullsPerUser) : null,
           type: boxType,
@@ -5385,24 +5657,10 @@
             </div>
 
 
-            <ItemCreator
+            <ItemsEditor
               items={items}
-              onAddItem={handleAddItem}
-              editingItem={editingItem}
-              onUpdateItem={handleUpdateItem}
-              onCancelEdit={handleCancelEdit}
-              userSettings={userSettings}
+              onItemsChange={setItems}
             />
-            {items.length > 0 && (
-              <div style={{ marginBottom: '0.5rem' }}>
-                <ItemList
-                  items={items}
-                  onRemoveItem={(itemId) => setItems(items.filter(i => i.id !== itemId))}
-                  onEditItem={handleEditItem}
-                  onChangePercentage={handleChangePercentage}
-                />
-              </div>
-            )}
           </div>
 
           {/* STEP 4 - Advanced Settings (Optional) */}
