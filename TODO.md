@@ -28,15 +28,6 @@ GitHub Pages (e.g. via Actions). Also switch deprecated `ReactDOM.render` to
 - Nudge lowest-contrast grays (`#64748b` on dark) up a shade for timestamps/hints
 Already good: reduced-motion support, `:focus-visible`, keyboard-operable chest.
 
-### 3. Image size (24 MB of catalog PNGs)
-Catalog images are 1.6–2.6 MB each, displayed at ~200px. Two parts:
-- One-time: resize/convert existing images to ~400px WebP, upload, update
-  `imageUrl` in `boxCatalog` Firestore docs. Local backups of all 13 originals
-  are in `assets/images/boxes/catalog-backup/`.
-- Ongoing: auto-compress in `box-admin.html` at upload time (canvas resize →
-  WebP blob before Firebase Storage upload), so future boxes are small
-  automatically. User adds boxes regularly — this is the part that matters.
-
 ---
 
 ## Scale / security (needed before wide sharing; fine to defer for friends-scale)
