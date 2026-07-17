@@ -4374,7 +4374,47 @@
     };
 
     // ItemList (simplified)
-    const ItemList = ({ items, onRemoveItem, onEditItem }) => {
+    // Inline, tap-to-edit odds field used in the item list's "Edit odds" mode.
+    // Keeps its own text while focused so partial input (e.g. "33.") isn't
+    // clobbered, but syncs from the prop when unfocused (e.g. Split evenly).
+    // Commits a Number so downstream odds math stays numeric.
+    const PercentInput = ({ value, color, onCommit }) => {
+      const ref = useRef(null);
+      const fmt = (v) => (v === '' || v === null || v === undefined) ? '' : String(v);
+      const [text, setText] = useState(fmt(value));
+      useEffect(() => {
+        if (document.activeElement !== ref.current) setText(fmt(value));
+      }, [value]);
+      return (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '3px', flexShrink: 0 }}>
+          <input
+            ref={ref}
+            value={text}
+            inputMode="decimal"
+            aria-label="Item odds percentage"
+            onFocus={(e) => e.target.select()}
+            onChange={(e) => {
+              const t = e.target.value;
+              if (t !== '' && !/^\d*\.?\d*$/.test(t)) return;
+              setText(t);
+              onCommit(t === '' ? 0 : (parseFloat(t) || 0));
+            }}
+            onBlur={() => setText(fmt(value))}
+            style={{
+              width: '56px', padding: '6px 8px', fontSize: '1.05rem', fontWeight: 700,
+              textAlign: 'right', color: '#e2e8f0', background: 'rgba(15, 22, 36, 0.9)',
+              border: `2px solid ${color}66`, borderRadius: '8px', outline: 'none',
+              fontFamily: 'inherit',
+            }}
+          />
+          <span style={{ color: '#60a5fa', fontWeight: 700, fontSize: '1.05rem' }}>%</span>
+        </div>
+      );
+    };
+
+    const ItemList = ({ items, onRemoveItem, onEditItem, onChangePercentage }) => {
+      const [editingOdds, setEditingOdds] = useState(false);
+
       if (items.length === 0) {
         return null;
       }
@@ -4433,27 +4473,37 @@
                   )}
                 </div>
 
-                <span style={{ fontSize: '1.25rem', fontWeight: 700, color: '#60a5fa' }}>
-                  {item.percentage}%
-                </span>
+                {editingOdds ? (
+                  <PercentInput
+                    value={item.percentage}
+                    color={item.color}
+                    onCommit={(v) => onChangePercentage(item.id, v)}
+                  />
+                ) : (
+                  <span style={{ fontSize: '1.25rem', fontWeight: 700, color: '#60a5fa' }}>
+                    {item.percentage}%
+                  </span>
+                )}
 
-                <button
-                  style={{
-                    width: '32px',
-                    height: '32px',
-                    background: 'transparent',
-                    border: '1px solid rgba(59, 130, 246, 0.3)',
-                    borderRadius: '6px',
-                    color: '#60a5fa',
-                    cursor: 'pointer',
-                    fontSize: '1rem',
-                    fontWeight: 600,
-                  }}
-                  onClick={() => onEditItem(item)}
-                  title="Edit item"
-                >
-                  ✎
-                </button>
+                {!editingOdds && (
+                  <button
+                    style={{
+                      width: '32px',
+                      height: '32px',
+                      background: 'transparent',
+                      border: '1px solid rgba(59, 130, 246, 0.3)',
+                      borderRadius: '6px',
+                      color: '#60a5fa',
+                      cursor: 'pointer',
+                      fontSize: '1rem',
+                      fontWeight: 600,
+                    }}
+                    onClick={() => onEditItem(item)}
+                    title="Edit item"
+                  >
+                    ✎
+                  </button>
+                )}
 
                 <button
                   style={{
@@ -4474,6 +4524,24 @@
               </div>
             ))}
           </div>
+
+          {items.length > 1 && (
+            <button
+              type="button"
+              onClick={() => setEditingOdds(v => !v)}
+              style={{
+                marginTop: '0.6rem',
+                display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
+                padding: '0.5rem 0.85rem', fontSize: '0.8rem', fontWeight: 600,
+                fontFamily: 'inherit', cursor: 'pointer',
+                color: editingOdds ? '#e2e8f0' : '#60a5fa',
+                background: editingOdds ? 'rgba(59, 130, 246, 0.25)' : 'rgba(15, 22, 36, 0.6)',
+                border: '1px solid rgba(59, 130, 246, 0.35)', borderRadius: '8px',
+              }}
+            >
+              {editingOdds ? 'Done editing odds' : 'Edit odds'}
+            </button>
+          )}
         </div>
       );
     };
@@ -4966,6 +5034,13 @@
         setEditingItem(null);
       };
 
+      // Quick inline odds edit from the item list (stores a Number)
+      const handleChangePercentage = (itemId, value) => {
+        setItems(prev => prev.map(item =>
+          item.id === itemId ? { ...item, percentage: value } : item
+        ));
+      };
+
       // Redistribute all item percentages equally so they total exactly 100.
       // Rounding remainder goes to the last item.
       const handleSplitEvenly = () => {
@@ -5324,6 +5399,7 @@
                   items={items}
                   onRemoveItem={(itemId) => setItems(items.filter(i => i.id !== itemId))}
                   onEditItem={handleEditItem}
+                  onChangePercentage={handleChangePercentage}
                 />
               </div>
             )}
