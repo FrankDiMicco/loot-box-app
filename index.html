@@ -6590,7 +6590,7 @@
           const savePull = box.type === 'shared'
             ? addPullToSharedBox(box.shareCode, pull)
             : Promise.resolve();
-          const shakeAnim = new Promise(resolve => setTimeout(resolve, charged ? 600 : 1200));
+          const shakeAnim = new Promise(resolve => setTimeout(resolve, charged ? 40 : 1200));
 
           Promise.all([savePull, shakeAnim]).then(() => {
             // Phase 3: Reveal (1600ms+)
@@ -6744,11 +6744,14 @@
         if (chargeRafRef.current) cancelAnimationFrame(chargeRafRef.current);
         chargeRafRef.current = null;
         stopChargeHum();
-        const chest = chestRef.current;
-        if (chest) { chest.style.transform = ''; chest.style.filter = ''; }
         const glow = chargeGlowRef.current;
         if (glow) { glow.style.opacity = '0'; glow.style.transform = ''; }
         if (chargeSparkRef.current) chargeSparkRef.current.innerHTML = '';
+        // On a charged release the box is about to burst into the reveal
+        // (~40ms) — leave it at its charged peak so it doesn't visibly deflate
+        // first. Otherwise (cancel, or a quick tap) reset it back to rest.
+        const chest = chestRef.current;
+        if (chest && !(open && wasCharged)) { chest.style.transform = ''; chest.style.filter = ''; }
         setCharging(false);
         if (open) handleBoxTap(wasCharged);
       };
