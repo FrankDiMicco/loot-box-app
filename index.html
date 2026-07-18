@@ -216,6 +216,13 @@
       100% { opacity: 0; transform: scale(1.5); box-shadow: 0 0 80px rgba(255, 255, 255, 0.6), 0 0 160px rgba(245, 158, 11, 0.2); }
     }
 
+    /* Gold sparks gathering inward while charging a hold-to-open */
+    @keyframes chargeSpark {
+      0% { transform: translate(var(--sx), var(--sy)) scale(1); opacity: 0; }
+      25% { opacity: 0.9; }
+      100% { transform: translate(0, 0) scale(0.2); opacity: 0; }
+    }
+
     /* White flash burst */
     @keyframes flashBurst {
       0% { opacity: 1; transform: scale(0.5); }
@@ -2094,6 +2101,51 @@
           osc.start(now); osc.stop(now + DUR);
         });
       } catch(e) { console.warn('Sound error:', e); }
+    };
+
+    // Rising hum while holding to charge a box open. Frequency, brightness,
+    // and volume ramp with the hold progress (0..1); stopped on release.
+    let _chargeNodes = null;
+    const startChargeHum = () => {
+      if (!soundEnabled) return;
+      try {
+        const ctx = _ensureAudio();
+        const now = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(70, now);
+        const lp = ctx.createBiquadFilter();
+        lp.type = 'lowpass';
+        lp.frequency.setValueAtTime(300, now);
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0.0001, now);
+        g.gain.linearRampToValueAtTime(0.05, now + 0.15);
+        osc.connect(lp); lp.connect(g);
+        _routeOut(g, 0.4);
+        osc.start(now);
+        _chargeNodes = { osc, lp, g };
+      } catch (e) {}
+    };
+    const updateChargeHum = (progress) => {
+      if (!_chargeNodes || !_audioCtx) return;
+      try {
+        const now = _audioCtx.currentTime;
+        _chargeNodes.osc.frequency.linearRampToValueAtTime(70 + progress * 180, now + 0.05);
+        _chargeNodes.lp.frequency.linearRampToValueAtTime(300 + progress * 2200, now + 0.05);
+        _chargeNodes.g.gain.linearRampToValueAtTime(0.05 + progress * 0.06, now + 0.05);
+      } catch (e) {}
+    };
+    const stopChargeHum = () => {
+      if (!_chargeNodes || !_audioCtx) { _chargeNodes = null; return; }
+      try {
+        const now = _audioCtx.currentTime;
+        const { osc, g } = _chargeNodes;
+        g.gain.cancelScheduledValues(now);
+        g.gain.setValueAtTime(g.gain.value, now);
+        g.gain.linearRampToValueAtTime(0.0001, now + 0.12);
+        osc.stop(now + 0.16);
+      } catch (e) {}
+      _chargeNodes = null;
     };
 
     // Reveal: impact thump + crack + lush layered bell arpeggio
@@ -6215,6 +6267,16 @@
       const [revealAnimDone, setRevealAnimDone] = useState(false);
       const isOpeningRef = useRef(false);
       const particleContainerRef = React.useRef(null);
+      // Hold-to-charge (cosmetic wind-up before opening; never affects odds)
+      const [charging, setCharging] = useState(false);
+      const chargingRef = useRef(false);
+      const chargeStartRef = useRef(0);
+      const chargeRafRef = useRef(null);
+      const chestRef = useRef(null);
+      const chargeGlowRef = useRef(null);
+      const chargeSparkRef = useRef(null);
+      const lastSparkRef = useRef(0);
+      const lastHapticRef = useRef(0);
       const [userName, setUserName] = useState(() => {
         if (box.type === 'shared' && box.shareCode) {
           // Check for a name saved specifically for this box
@@ -6570,6 +6632,113 @@
         }, 400);
       };
 
+      // ===== Hold-to-charge: a cosmetic wind-up. Tap still opens instantly;
+      // holding gathers gold sparks + glow + rattle + a rising hum, then
+      // release opens. Dragging off cancels. Never touches the outcome. =====
+      const CHARGE_MS = 900;
+
+      const spawnChargeSpark = () => {
+        const cont = chargeSparkRef.current;
+        if (!cont) return;
+        const rect = cont.getBoundingClientRect();
+        const cx = rect.width / 2, cy = rect.height / 2;
+        const angle = Math.random() * Math.PI * 2;
+        const dist = 90 + Math.random() * 70;
+        const size = 3 + Math.random() * 3;
+        const el = document.createElement('div');
+        el.style.cssText =
+          `position:absolute;left:${cx}px;top:${cy}px;width:${size}px;height:${size}px;` +
+          `border-radius:50%;background:#fbbf24;box-shadow:0 0 6px 2px rgba(251,191,36,0.7);` +
+          `pointer-events:none;--sx:${(Math.cos(angle) * dist).toFixed(1)}px;` +
+          `--sy:${(Math.sin(angle) * dist).toFixed(1)}px;` +
+          `animation:chargeSpark ${(0.5 + Math.random() * 0.2).toFixed(2)}s ease-in forwards;`;
+        cont.appendChild(el);
+        setTimeout(() => { if (el.parentNode) el.parentNode.removeChild(el); }, 800);
+      };
+
+      const chargeFrame = () => {
+        if (!chargingRef.current) return;
+        const elapsed = performance.now() - chargeStartRef.current;
+        const progress = Math.min(1, elapsed / CHARGE_MS);
+        const chest = chestRef.current;
+        if (chest) {
+          const jitter = progress * 3;
+          const jx = (Math.random() - 0.5) * jitter * 2;
+          const jy = (Math.random() - 0.5) * jitter * 2;
+          const scale = 1 + 0.05 * progress + (progress >= 1 ? Math.sin(elapsed / 80) * 0.012 : 0);
+          chest.style.transform = `translate(${jx.toFixed(2)}px, ${jy.toFixed(2)}px) scale(${scale.toFixed(3)})`;
+          chest.style.filter = `drop-shadow(0 0 ${(25 + progress * 45).toFixed(0)}px rgba(251,191,36,${(0.6 + progress * 0.4).toFixed(2)}))`;
+        }
+        const glow = chargeGlowRef.current;
+        if (glow) {
+          const pulse = progress >= 1 ? Math.sin(elapsed / 70) * 0.08 : 0;
+          glow.style.opacity = String(Math.max(0, (0.1 + progress * 0.55 + pulse)).toFixed(3));
+          glow.style.transform = `scale(${(0.8 + progress * 0.4).toFixed(3)})`;
+        }
+        const now = performance.now();
+        if (now - lastSparkRef.current > (120 - progress * 80)) {
+          spawnChargeSpark();
+          if (progress > 0.5) spawnChargeSpark();
+          lastSparkRef.current = now;
+        }
+        if (now - lastHapticRef.current > (220 - progress * 140)) {
+          triggerHaptic('light');
+          lastHapticRef.current = now;
+        }
+        updateChargeHum(progress);
+        chargeRafRef.current = requestAnimationFrame(chargeFrame);
+      };
+
+      const startCharge = (e) => {
+        if (isOpeningRef.current || chargingRef.current) return;
+        if (!canPull || openingPhase !== 'idle' || isExpired || currentOdds.length === 0) return;
+        if (e && e.preventDefault) e.preventDefault();
+        _warmUpAudio();
+        chargingRef.current = true;
+        chargeStartRef.current = performance.now();
+        lastSparkRef.current = 0;
+        lastHapticRef.current = 0;
+        setCharging(true);
+        startChargeHum();
+        chargeRafRef.current = requestAnimationFrame(chargeFrame);
+      };
+
+      const endCharge = (open) => {
+        if (!chargingRef.current) return;
+        chargingRef.current = false;
+        if (chargeRafRef.current) cancelAnimationFrame(chargeRafRef.current);
+        chargeRafRef.current = null;
+        stopChargeHum();
+        const chest = chestRef.current;
+        if (chest) { chest.style.transform = ''; chest.style.filter = ''; }
+        const glow = chargeGlowRef.current;
+        if (glow) { glow.style.opacity = '0'; glow.style.transform = ''; }
+        if (chargeSparkRef.current) chargeSparkRef.current.innerHTML = '';
+        setCharging(false);
+        if (open) handleBoxTap();
+      };
+
+      // Touch pointers get implicit capture, so pointerleave won't fire when
+      // you drag off — hit-test on move so drag-off-to-cancel works on phones.
+      const handleChargeMove = (e) => {
+        if (!chargingRef.current) return;
+        const el = chestRef.current;
+        if (!el) return;
+        const r = el.getBoundingClientRect();
+        const m = 28;
+        if (e.clientX < r.left - m || e.clientX > r.right + m ||
+            e.clientY < r.top - m || e.clientY > r.bottom + m) {
+          endCharge(false);
+        }
+      };
+
+      // Stop any charge if the opener unmounts mid-hold
+      useEffect(() => () => {
+        chargingRef.current = false;
+        if (chargeRafRef.current) cancelAnimationFrame(chargeRafRef.current);
+        stopChargeHum();
+      }, []);
+
       const handleNameSubmit = (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -6896,6 +7065,29 @@
               animation: openingPhase === 'shaking' ? 'glowPulse 1.2s ease-in-out forwards' : 'none',
             }} />
 
+            {/* Gold charge glow — driven directly by the hold's rAF loop */}
+            <div ref={chargeGlowRef} style={{
+              position: 'absolute',
+              top: '50%', left: '50%',
+              width: '320px', height: '320px',
+              marginTop: '-170px', marginLeft: '-160px',
+              borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(251,191,36,0.55) 0%, rgba(251,191,36,0) 65%)',
+              opacity: 0,
+              zIndex: 1,
+              pointerEvents: 'none',
+            }} />
+
+            {/* Gold charge sparks gathering toward the box */}
+            <div ref={chargeSparkRef} style={{
+              position: 'absolute',
+              inset: 0,
+              zIndex: 3,
+              pointerEvents: 'none',
+              overflow: 'hidden',
+              borderRadius: '16px',
+            }} />
+
             {/* Flash overlay - visible at reveal moment */}
             <div style={{
               position: 'absolute',
@@ -6925,42 +7117,54 @@
             {(openingPhase === 'idle' || openingPhase === 'wiggle' || openingPhase === 'shaking') && (
               <div style={{ textAlign: 'center' }}>
                 <div
+                  ref={chestRef}
                   tabIndex={openingPhase === 'idle' && canPull && !isExpired ? 0 : -1}
                   role="button"
                   aria-label="Open loot box"
-                  onClick={openingPhase === 'idle' && canPull && !isExpired && !isOpeningRef.current ? handleBoxTap : undefined}
+                  onPointerDown={openingPhase === 'idle' && canPull && !isExpired && !isOpeningRef.current ? startCharge : undefined}
+                  onPointerUp={() => endCharge(true)}
+                  onPointerMove={handleChargeMove}
+                  onPointerLeave={() => endCharge(false)}
+                  onPointerCancel={() => endCharge(false)}
+                  onContextMenu={(e) => e.preventDefault()}
                   onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && openingPhase === 'idle' && canPull && !isExpired && !isOpeningRef.current) { e.preventDefault(); handleBoxTap(); } }}
                   style={{
                     width: '200px',
                     height: '200px',
                     margin: '0 auto 1.5rem',
                     cursor: openingPhase === 'idle' && canPull && !isExpired ? 'pointer' : 'default',
-                    animation:
-                      openingPhase === 'wiggle'
+                    animation: charging
+                      ? 'none'
+                      : openingPhase === 'wiggle'
                         ? 'boxWiggle 0.4s ease'
                         : openingPhase === 'shaking'
                           ? 'intenseShake 1.2s ease-in-out'
                           : canPull && !isExpired
                             ? 'boxIdle 3s ease-in-out infinite'
                             : 'none',
-                    transition: 'transform 0.2s ease, opacity 0.3s ease',
+                    transition: charging ? 'none' : 'transform 0.2s ease, opacity 0.3s ease',
                     filter: 'drop-shadow(0 0 25px rgba(59, 130, 246, 0.6))',
                     borderRadius: '16px',
                     zIndex: 2,
                     position: 'relative',
                     opacity: rechargeDepleted ? 0.6 : 1,
+                    touchAction: 'none',
+                    WebkitTouchCallout: 'none',
+                    WebkitUserSelect: 'none',
+                    userSelect: 'none',
                   }}
                 >
                   <img
                     src={getBoxImageUrl(box.boxImageId)}
                     alt={box.name}
-                    style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                    draggable={false}
+                    style={{ width: '100%', height: '100%', objectFit: 'contain', pointerEvents: 'none', WebkitTouchCallout: 'none', WebkitUserSelect: 'none', userSelect: 'none' }}
                     onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }}
                   />
                   <div style={{ fontSize: '6rem', display: 'none' }}>📦</div>
                 </div>
 
-                {openingPhase === 'idle' && canPull && !isExpired && (
+                {openingPhase === 'idle' && !charging && canPull && !isExpired && (
                   <div style={{
                     fontSize: '1rem', color: '#a0aec0',
                     animation: 'tapHint 2s ease-in-out infinite',
