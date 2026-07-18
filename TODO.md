@@ -92,8 +92,11 @@ source — a bot can bill us directly. Layers, in bang-for-buck order:
   code-generated attempt. There's also a matching logo on the boot splash
   (`.boot-screen`, still the old `logo-chest.png`) to update in tandem.
 - Delete `set-premium.html` (sets a `tier` field nothing reads)
-- Delete the 3 placeholder `boxCatalog` docs with `source: "store"` and
-  `via.placeholder.com` URLs (Ancient Relic, Cyber Elite Box, Golden Treasure)
+- The 3 `source: "store"` placeholder docs (Ancient Relic, Cyber Elite Box,
+  Golden Treasure — `via.placeholder.com` art, fake $0.99/$1.99/$2.99 prices)
+  are now DEACTIVATED (`active: false`), so they're hidden from the app.
+  Optional remaining step: hard-delete them via box-admin's Delete button.
+  Decision: no paid box store — user-uploaded boxes make it redundant.
 - Remove unused SDK script tags in index.html: `firebase-auth-compat` (until
   item 4), `firebase-storage-compat` (app never uses Storage directly)
 - `loadData` re-fetches every shared box on each visit to home AND `App` +
@@ -163,12 +166,13 @@ API (a `normalizeAssetPath` comment suggests Capacitor was already considered).
 - Analytics dashboard for creators (pull stats per box, charts)
 - Social: favorites exist; leaderboards/achievements do not
 
-### Box search keywords (picker shipped July 2026; search works on names now)
-The image picker is a modal sheet with search that already matches a
-`keywords` array on catalog docs — but no docs have one yet. To make search
-rich: add a comma-separated "Keywords" field to box-admin.html's add/edit
-form (store as array on the boxCatalog doc), then tag the existing 14 boxes
-(e.g. skull → "pirate, spooky, halloween"). Zero app changes needed.
+### Box search keywords — SHIPPED July 2026
+box-admin.html now has a comma-separated "Search Keywords" field (stored as a
+lowercased array on the boxCatalog doc); the picker search already matched
+that array. All 15 real catalog boxes were tagged directly in Firestore
+(the 3 store placeholders were skipped, then deactivated). Add keywords to
+any new box via the admin form. Note: picker search is scoped to the active
+tab, so a seasonal box's keywords only surface under the Seasonal tab.
 
 ### Custom photo uploads (items + boxes) SHIPPED July 2026
 Users attach their own photos to both ITEMS and the BOX image. Compressed
