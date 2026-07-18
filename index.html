@@ -2148,6 +2148,30 @@
       _chargeNodes = null;
     };
 
+    // Short downward whoosh punctuating a charged release (carries the hold's
+    // energy into the shake instead of restarting with the slow build-up riser)
+    const playChargeRelease = () => {
+      if (!soundEnabled) return;
+      try {
+        const ctx = _ensureAudio();
+        const now = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(420, now);
+        osc.frequency.exponentialRampToValueAtTime(80, now + 0.28);
+        const lp = ctx.createBiquadFilter();
+        lp.type = 'lowpass';
+        lp.frequency.setValueAtTime(2200, now);
+        lp.frequency.exponentialRampToValueAtTime(500, now + 0.28);
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0.13, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
+        osc.connect(lp); lp.connect(g);
+        _routeOut(g, 0.5);
+        osc.start(now); osc.stop(now + 0.32);
+      } catch (e) {}
+    };
+
     // Reveal: impact thump + crack + lush layered bell arpeggio
     const playRevealSound = () => {
       if (!soundEnabled) return;
@@ -6488,7 +6512,7 @@
       const discoveredCount = (box.items || []).filter(i => myDiscovered[i.id]).length;
       const collectionComplete = (box.items || []).length > 0 && discoveredCount === box.items.length;
 
-      const handleBoxTap = () => {
+      const handleBoxTap = (charged = false) => {
         if (isOpeningRef.current) return;
         if (!canPull || openingPhase !== 'idle' || isExpired || currentOdds.length === 0) return;
 
@@ -6516,15 +6540,13 @@
         // Lock immediately via ref (synchronous, prevents batched re-entry)
         isOpeningRef.current = true;
 
-        // Phase 1: Wiggle (0-400ms)
-        setOpeningPhase('wiggle');
-        triggerHaptic('light');
-
-        setTimeout(() => {
-          // Phase 2: Intense shake + glow (400-1600ms)
+        const beginShake = () => {
+          // Phase 2: Intense shake + glow. A charged release skips the slow
+          // build-up riser and bursts straight in so the hold's momentum
+          // carries through instead of restarting.
           setOpeningPhase('shaking');
-          triggerHaptic('open');
-          playBuildUpSound();
+          triggerHaptic(charged ? 'heavy' : 'open');
+          if (charged) playChargeRelease(); else playBuildUpSound();
 
           // Do the actual pull calculation now (during shake animation)
           const totalPercentage = currentOdds.reduce((sum, item) => sum + item.adjustedPercentage, 0);
@@ -6568,7 +6590,7 @@
           const savePull = box.type === 'shared'
             ? addPullToSharedBox(box.shareCode, pull)
             : Promise.resolve();
-          const shakeAnim = new Promise(resolve => setTimeout(resolve, 1200));
+          const shakeAnim = new Promise(resolve => setTimeout(resolve, charged ? 600 : 1200));
 
           Promise.all([savePull, shakeAnim]).then(() => {
             // Phase 3: Reveal (1600ms+)
@@ -6629,7 +6651,17 @@
               setNeedsName(true);
             }
           });
-        }, 400);
+        };
+
+        if (charged) {
+          // Momentum carries straight from the charge peak into the shake
+          beginShake();
+        } else {
+          // Phase 1: Wiggle, then build up
+          setOpeningPhase('wiggle');
+          triggerHaptic('light');
+          setTimeout(beginShake, 400);
+        }
       };
 
       // ===== Hold-to-charge: a cosmetic wind-up. Tap still opens instantly;
@@ -6705,6 +6737,9 @@
 
       const endCharge = (open) => {
         if (!chargingRef.current) return;
+        // A real hold gets the fast charged burst; a quick tap keeps the
+        // normal wiggle + build-up ceremony.
+        const wasCharged = (performance.now() - chargeStartRef.current) > 220;
         chargingRef.current = false;
         if (chargeRafRef.current) cancelAnimationFrame(chargeRafRef.current);
         chargeRafRef.current = null;
@@ -6715,7 +6750,7 @@
         if (glow) { glow.style.opacity = '0'; glow.style.transform = ''; }
         if (chargeSparkRef.current) chargeSparkRef.current.innerHTML = '';
         setCharging(false);
-        if (open) handleBoxTap();
+        if (open) handleBoxTap(wasCharged);
       };
 
       // Touch pointers get implicit capture, so pointerleave won't fire when
