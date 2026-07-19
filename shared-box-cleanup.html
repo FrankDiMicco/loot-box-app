@@ -62,6 +62,13 @@
     }
 
     .controls { display: flex; align-items: flex-end; gap: 1rem; flex-wrap: wrap; }
+    .admin-toggle {
+      display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem;
+      color: var(--text-muted); cursor: pointer; padding-bottom: 0.6rem;
+    }
+    .admin-toggle input { width: 17px; height: 17px; accent-color: var(--error); cursor: pointer; }
+    .admin-note { color: var(--gold); font-size: 0.8rem; margin-top: 0.75rem; display: none; }
+    .admin-note.on { display: block; }
     .form-group { display: flex; flex-direction: column; gap: 0.4rem; }
     .form-group label {
       font-size: 0.75rem; font-weight: 600; color: var(--text-muted);
@@ -158,7 +165,11 @@
         </div>
         <button class="btn btn-primary" id="scanBtn" onclick="scan()">Scan shared boxes</button>
         <button class="btn btn-ghost" id="rescanBtn" onclick="scan()" style="display:none;">Rescan</button>
+        <label class="admin-toggle" title="Makes every box selectable, including used ones">
+          <input type="checkbox" id="adminMode" onchange="onAdminToggle()"> Admin mode &mdash; allow deleting used boxes
+        </label>
       </div>
+      <div class="admin-note" id="adminNote">Admin mode is on: used boxes are now selectable but never auto-checked. Select each one deliberately.</div>
       <div class="progress-bar" id="progressBar"><div class="progress-fill" id="progressFill"></div></div>
       <div class="status" id="status"></div>
       <div class="summary" id="summary" style="display:none;"></div>
@@ -316,10 +327,14 @@
         ? `Found <strong>${candidates}</strong> box(es) safe to delete. Review below, then delete.`
         : 'No boxes match the deletion criteria. Nothing to clean up.', candidates > 0 ? '' : 'success');
 
+      const adminMode = $('adminMode').checked;
       $('resultsBody').innerHTML = rows.map(r => {
-        const rowClass = r.candidate ? 'candidate' : (r.pulls === 0 ? '' : 'protected');
-        const checkbox = r.candidate
-          ? `<input type="checkbox" class="rowCheck" data-code="${esc(r.code)}" checked onclick="updateDeleteBtn()">`
+        const selectable = adminMode || r.candidate;
+        const rowClass = r.candidate ? 'candidate' : (r.pulls > 0 && !adminMode ? 'protected' : '');
+        // Auto-check only the safe candidates (zero-pull + stale). In admin
+        // mode, used boxes are selectable but start unchecked on purpose.
+        const checkbox = selectable
+          ? `<input type="checkbox" class="rowCheck" data-code="${esc(r.code)}" data-pulls="${r.pulls}" ${r.candidate ? 'checked' : ''} onclick="updateDeleteBtn()">`
           : `<input type="checkbox" disabled>`;
         let state;
         if (r.pulls > 0) state = '<span class="pill pill-used">Used</span>';
@@ -359,13 +374,24 @@
       updateDeleteBtn();
     }
 
+    function onAdminToggle() {
+      $('adminNote').classList.toggle('on', $('adminMode').checked);
+      // Re-render so used-box checkboxes appear/disappear. Uncheck select-all
+      // so enabling admin mode never pre-selects a used box.
+      $('selectAll').checked = false;
+      if (rows.length) render(Math.max(0, parseInt($('minAge').value, 10) || 0));
+    }
+
     // ========== DELETE (with confirm) ==========
     function openConfirm() {
       const n = selectedCodes().length;
       if (n === 0) return;
+      const pulls = Array.from(document.querySelectorAll('.rowCheck:checked'))
+        .reduce((sum, el) => sum + (parseInt(el.dataset.pulls, 10) || 0), 0);
       $('confirmMessage').innerHTML =
-        `This permanently deletes <strong>${n}</strong> shared box(es) and their stored ` +
-        `item images. This cannot be undone.`;
+        `This permanently deletes <strong>${n}</strong> shared box(es)` +
+        (pulls > 0 ? `, including <strong>${pulls}</strong> recorded pull(s),` : '') +
+        ` and their stored item images. This cannot be undone.`;
       $('confirmOverlay').classList.remove('hidden');
     }
     function closeConfirm() { $('confirmOverlay').classList.add('hidden'); }
