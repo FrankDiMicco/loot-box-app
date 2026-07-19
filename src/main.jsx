@@ -5,7 +5,7 @@ import { BoxCreator } from './components/creator.jsx';
 import { BoxOpener } from './components/opener.jsx';
 import { DiscoverScreen, SettingsPage, StatsScreen } from './components/screens.jsx';
 import { APP_VERSION, AppStorage, STORAGE_KEYS, deleteBox, getAllBoxes, getBoxUserName, getFavorites, getLastSeenPullCounts, getLastUsedName, getSeenBoxes, getUserSettings, hasSeenWelcome, markBoxAsSeen, markPullsSeen, markWelcomeSeen, migrateOldName, saveBox, saveUserSettings, setBoxUserName, setLastUsedName, toggleFavorite } from './lib/storage.js';
-import { addPullToSharedBox, deleteSharedBox, fetchBoxTemplate, fetchCuratedTemplates, fetchSharedBox, getAllAvailableBoxImages, importBoxFromTemplate, saveBoxTemplate, saveSharedBox, subscribeToSharedBox, updateSharedBox } from './services/firebase.js';
+import { addPullToSharedBox, deleteSharedBox, ensureSignedIn, fetchBoxTemplate, fetchCuratedTemplates, fetchSharedBox, getAllAvailableBoxImages, importBoxFromTemplate, saveBoxTemplate, saveSharedBox, subscribeToSharedBox, updateSharedBox } from './services/firebase.js';
 import { _warmUpAudio, playBuildUpSound, playChargeRelease, playPartyPing, playTierRevealSound, setHapticEnabled, setSoundEnabled, spawnParticles, startChargeHum, stopChargeHum, triggerHaptic, updateChargeHum } from './services/audio.js';
 import { calculateDynamicOdds, formatExpirationCountdown, formatRechargeTimeRemaining, generateShareCode, getDeviceId, getRarityTier, getRechargeCyclesRemaining, getRechargeOpensAvailable, getRemainingPercentage, getTierAccent, getTimeUntilNextRecharge, getUserPullTimestamps, isExpiringSoon, validatePercentages } from './lib/utils.js';
 import { BOX_SOURCES, DEFAULT_BOX_IMAGES, getBoxImageUrl } from './lib/catalog.js';
@@ -157,6 +157,9 @@ import './styles.css';
       };
 
       useEffect(() => {
+        // Start the anonymous sign-in immediately; write paths await it
+        // themselves, this just hides the latency behind app startup.
+        ensureSignedIn();
         migrateOldName();
         loadData();
 

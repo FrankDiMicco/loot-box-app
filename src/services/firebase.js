@@ -1,5 +1,5 @@
 import { BOX_SOURCES, getDefaultBoxImages } from '../lib/catalog.js';
-import { generateShareCode } from '../lib/utils.js';
+import { generateShareCode, getDeviceId } from '../lib/utils.js';
 import { getUserSettings, saveBox } from '../lib/storage.js';
 // ========== FIREBASE CONFIGURATION ==========
 
@@ -33,6 +33,42 @@ try {
 } catch (error) {
   console.error('Firebase initialization failed:', error);
 }
+
+// ========== ANONYMOUS AUTH ==========
+
+// Firebase persists the anonymous user in IndexedDB, so the uid is stable
+// per browser profile across visits. If the Anonymous provider is disabled
+// or the network is down, the app degrades to its old unauthenticated
+// behavior (resolves null) instead of blocking.
+let _uid = null;
+let _authReady = null;
+
+const ensureSignedIn = () => {
+  if (!firebaseEnabled || !auth) return Promise.resolve(null);
+  if (!_authReady) {
+    _authReady = new Promise((resolve) => {
+      const unsub = auth.onAuthStateChanged(async (user) => {
+        unsub();
+        if (user) {
+          _uid = user.uid;
+          resolve(_uid);
+          return;
+        }
+        try {
+          const cred = await auth.signInAnonymously();
+          _uid = cred.user.uid;
+          resolve(_uid);
+        } catch (e) {
+          console.warn('Anonymous sign-in unavailable:', e.code || e.message);
+          resolve(null);
+        }
+      });
+    });
+  }
+  return _authReady;
+};
+
+const getUid = () => _uid;
 
 
 // ========== FIREBASE BOX CATALOG SERVICE ==========
@@ -201,6 +237,7 @@ const saveSharedBox = async (box) => {
     throw new Error('Firebase not available');
   }
   try {
+    const uid = await ensureSignedIn();
     const { mainBox, imagesMap } = splitItemImages(box);
     // Move images to the sibling doc first; if that's rejected, fall back
     // to writing the original box with images kept inline (no photo lost).
@@ -208,6 +245,7 @@ const saveSharedBox = async (box) => {
     const docToWrite = metaOk ? mainBox : box;
     await db.collection('sharedBoxes').doc(box.shareCode).set({
       ...docToWrite,
+      ...(uid ? { creatorUid: uid } : {}),
       updatedAt: Date.now()
     });
     return true;
@@ -224,7 +262,10 @@ const updateSharedBox = async (shareCode, updates) => {
   if (!firebaseEnabled || !db) {
     throw new Error('Firebase not available');
   }
-  const { pullHistory, ...safeUpdates } = updates;
+  await ensureSignedIn();
+  // Strip creatorUid along with pullHistory: a stale local copy must never
+  // overwrite the owner recorded on the server.
+  const { pullHistory, creatorUid, ...safeUpdates } = updates;
   const { mainBox, imagesMap } = splitItemImages(safeUpdates);
   const metaOk = await writeSharedImages(shareCode, imagesMap);
   const docToWrite = metaOk ? mainBox : safeUpdates;
@@ -238,12 +279,26 @@ const updateSharedBox = async (shareCode, updates) => {
 // Fetch a shared box by share code. Pass includeImages=false to skip the
 // extra images read when the caller only needs box metadata (e.g. the
 // home feed's cards, which don't show item images).
+// Legacy boxes predate anonymous auth: they carry creatorDeviceId but no
+// creatorUid. When the creator's own device next loads one, stamp the
+// current uid on it so ownership rules can apply. Fire-and-forget.
+const backfillCreatorUid = async (box) => {
+  try {
+    if (!box || box.creatorUid || !box.creatorDeviceId) return;
+    if (box.creatorDeviceId !== getDeviceId()) return;
+    const uid = await ensureSignedIn();
+    if (!uid) return;
+    await db.collection('sharedBoxes').doc(box.id).update({ creatorUid: uid });
+  } catch (e) { /* best-effort; retried on next load */ }
+};
+
 const fetchSharedBox = async (shareCode, includeImages = true) => {
   if (!firebaseEnabled || !db) return null;
   try {
     const doc = await db.collection('sharedBoxes').doc(shareCode).get();
     if (!doc.exists) return null;
     const box = { id: doc.id, ...doc.data() };
+    backfillCreatorUid(box);
     if (!includeImages) return box;
     const imagesMap = await readSharedImages(shareCode);
     return mergeItemImages(box, imagesMap);
@@ -259,6 +314,7 @@ const addPullToSharedBox = async (shareCode, pull) => {
     throw new Error('Firebase not available');
   }
   try {
+    await ensureSignedIn();
     const boxRef = db.collection('sharedBoxes').doc(shareCode);
 
     await db.runTransaction(async (transaction) => {
@@ -328,6 +384,7 @@ const subscribeToSharedBox = (shareCode, callback, onError) => {
 const deleteSharedBox = async (shareCode) => {
   if (!firebaseEnabled || !db) return false;
   try {
+    await ensureSignedIn();
     // Remove the item-images sibling doc too (Firestore doesn't cascade).
     // Best-effort: never block box deletion on it.
     await db.collection('sharedBoxes').doc(shareCode)
@@ -345,9 +402,11 @@ const deleteSharedBox = async (shareCode) => {
 const saveBoxTemplate = async (box, options = {}) => {
   if (!firebaseEnabled || !db) return null;
   try {
+    const uid = await ensureSignedIn();
     const shareCode = options.existingCode || generateShareCode();
     const templateData = {
       templateId: shareCode,
+      ...(uid ? { creatorUid: uid } : {}),
       name: box.name,
       items: (box.items || []).map(item => ({
         id: item.id,
@@ -442,6 +501,8 @@ export {
   storage,
   auth,
   firebaseEnabled,
+  ensureSignedIn,
+  getUid,
   fetchDefaultBoxes,
   fetchSeasonalBoxes,
   getAllAvailableBoxImages,

@@ -1,23 +1,48 @@
 rules_version = '2';
 
-// Canonical Firestore rules for Loot Box Creator.
+// Canonical Firestore rules for Loot Box Creator — ANONYMOUS AUTH edition.
 // Deploy via Firebase console (Firestore > Rules) or `firebase deploy --only firestore:rules`.
 //
-// LIMITATION: this app has no user auth (device IDs only), so rules can
-// validate data shape but cannot verify WHO sent a request. Anyone who knows
-// a shareCode can technically modify pullHistory or delete a shared box via
-// the SDK. Real enforcement requires Firebase Anonymous Auth and storing the
-// creator's uid on each box.
+// DEPLOY ORDER (matters!):
+//   1. Firebase console: Authentication > Sign-in method > Anonymous > Enable
+//   2. Ship the client that signs in anonymously (src/services/firebase.js
+//      ensureSignedIn) and attaches creatorUid to new shared boxes
+//   3. Fill in the isAdmin() allowlist below with the uids shown in the
+//      headers of box-admin.html and shared-box-cleanup.html
+//   4. THEN paste these rules. Clients still running the pre-auth bundle
+//      will fail writes until they refresh (GitHub Pages caches the page
+//      for ~10 minutes, so the window is short).
+//
+// Model: everyone is an anonymous Firebase user (uid is stable per browser
+// profile). Shared boxes carry creatorUid; only that uid (or an admin) can
+// edit or delete the box. Boxes created before auth ("legacy": have
+// creatorDeviceId but no creatorUid) are claimable — the first signed-in
+// client whose device created them stamps its uid via backfillCreatorUid.
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    // Admin browser profiles. Each admin page shows its uid in the header
+    // after signing in — paste those uids here. NOTE: clearing a browser's
+    // site data issues a new uid; update this list if that happens.
+    function isAdmin() {
+      return signedIn() && request.auth.uid in [
+        'PASTE-ADMIN-UID-HERE'
+      ];
+    }
+
     match /sharedBoxes/{boxId} {
       allow read: if true;
 
-      // Doc IDs are 6-char share codes (see generateShareCode in index.html).
-      // Pinning the shape stops bots from spraying arbitrarily-named docs.
-      allow create: if boxId.matches('[A-Z0-9]{6}')
+      // Doc IDs are 6-char share codes (see generateShareCode). The creator
+      // must stamp their own uid on the box at creation.
+      allow create: if signedIn()
+                    && boxId.matches('[A-Z0-9]{6}')
+                    && request.resource.data.creatorUid == request.auth.uid
                     && request.resource.data.name is string
                     && request.resource.data.name.size() > 0
                     && request.resource.data.name.size() <= 100
@@ -28,50 +53,68 @@ service cloud.firestore {
                     && request.resource.data.creatorDeviceId.size() > 0;
 
       // Two legitimate update shapes:
-      //  1. A participant appending ONE pull. pullHistory may only grow by
-      //     exactly one entry and is hard-capped, so a spoofed client can't
-      //     rewrite history or inflate the 1MB doc without limit.
-      //  2. The creator editing settings. This path strips pullHistory
-      //     client-side (see updateSharedBox), so it must NOT touch
-      //     pullHistory, and it must preserve the original creatorDeviceId
-      //     (or be adding it to a legacy doc that never had one).
-      allow update: if (
-                      request.resource.data.diff(resource.data).affectedKeys()
-                        .hasOnly(['pullHistory', 'updatedAt', 'lastActivity'])
-                      && request.resource.data.pullHistory is list
-                      && resource.data.pullHistory is list
-                      && request.resource.data.pullHistory.size()
-                           == resource.data.pullHistory.size() + 1
-                      && request.resource.data.pullHistory.size() <= 2000
-                    ) || (
-                      !request.resource.data.diff(resource.data).affectedKeys()
-                        .hasAny(['pullHistory'])
-                      && (
-                        !('creatorDeviceId' in resource.data)
-                        || request.resource.data.creatorDeviceId
-                             == resource.data.creatorDeviceId
+      //  1. Any signed-in participant appending ONE pull. pullHistory may
+      //     only grow by exactly one entry and is hard-capped.
+      //  2. The creator (or an admin) editing settings. This path never
+      //     touches pullHistory (client strips it), must preserve
+      //     creatorDeviceId, and must not reassign ownership. Legacy docs
+      //     (no creatorUid yet) may have it set — but only to the caller's
+      //     own uid (the one-time claim used by backfillCreatorUid).
+      allow update: if signedIn() && (
+                      (
+                        request.resource.data.diff(resource.data).affectedKeys()
+                          .hasOnly(['pullHistory', 'updatedAt', 'lastActivity'])
+                        && request.resource.data.pullHistory is list
+                        && resource.data.pullHistory is list
+                        && request.resource.data.pullHistory.size()
+                             == resource.data.pullHistory.size() + 1
+                        && request.resource.data.pullHistory.size() <= 2000
+                      ) || (
+                        !request.resource.data.diff(resource.data).affectedKeys()
+                          .hasAny(['pullHistory'])
+                        && (
+                          !('creatorDeviceId' in resource.data)
+                          || request.resource.data.creatorDeviceId
+                               == resource.data.creatorDeviceId
+                        )
+                        && (
+                          (
+                            ('creatorUid' in resource.data)
+                            && resource.data.creatorUid == request.auth.uid
+                            && request.resource.data.creatorUid
+                                 == resource.data.creatorUid
+                          ) || (
+                            !('creatorUid' in resource.data)
+                            && (
+                              !('creatorUid' in request.resource.data)
+                              || request.resource.data.creatorUid == request.auth.uid
+                            )
+                          ) || isAdmin()
+                        )
                       )
                     );
 
-      // Needed so the creator's client can delete its own box.
-      // Cannot be restricted to the creator without real auth (see above).
-      allow delete: if true;
+      // Creator-only delete at last (legacy boxes stay deletable by anyone
+      // signed in until they're claimed — acceptable one-time window).
+      allow delete: if signedIn() && (
+                      isAdmin()
+                      || !('creatorUid' in resource.data)
+                      || resource.data.creatorUid == request.auth.uid
+                    );
 
-      // Item photos are stored here (out of the main doc so pulls don't
-      // re-broadcast them). Publicly readable like the box; writable under
-      // the same no-auth trust model. Bounded by the 1MB doc limit.
+      // Item photos live here (out of the main doc so pulls don't
+      // re-broadcast them). Bounded by the 1MB doc limit.
       match /meta/{doc} {
         allow read: if true;
-        allow write: if true;
+        allow write: if signedIn();
       }
     }
 
     match /boxCatalog/{boxId} {
       allow read: if true;
-      // WARNING: world-writable because box-admin.html writes from the
-      // browser with no auth. Lock this down (write: if false) once catalog
-      // management moves behind Firebase Auth or the Admin SDK.
-      allow write: if true;
+      // Locked at last (was world-writable pre-auth): only admin browser
+      // profiles manage the catalog via box-admin.html.
+      allow write: if isAdmin();
     }
 
     match /boxTemplates/{templateId} {
@@ -79,7 +122,8 @@ service cloud.firestore {
 
       // Create and update share validation; update is needed because
       // re-sharing a local box overwrites its existing template doc.
-      allow create, update: if request.resource.data.name is string
+      allow create, update: if signedIn()
+                    && request.resource.data.name is string
                     && request.resource.data.name.size() > 0
                     && request.resource.data.name.size() <= 100
                     && request.resource.data.items is list
