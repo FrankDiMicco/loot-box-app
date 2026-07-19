@@ -80,6 +80,20 @@ source — a bot can bill us directly. Layers, in bang-for-buck order:
 - Shared-box ephemerality (see Monetization direction below) also bounds
   storage costs permanently.
 
+### 8. Lock `boxCatalog` writes (DEFERRED — Frank, July 2026)
+`boxCatalog` is world-writable (`allow write: if true` in `firestore.rules`)
+because `box-admin.html` writes catalog art from the browser with no auth —
+so anyone could add or overwrite box skins via the SDK. The fix is
+`allow write: if false` (or gate behind an admin UID once auth exists), but
+that BREAKS box-admin.html uploads until the admin page has a login; manage
+the catalog from the Firebase console in the interim. Deferred deliberately:
+low real-world risk at friends-scale, and Frank doesn't want to lose the
+admin upload workflow yet. Do this alongside item 4 (Anonymous Auth), which
+gives box-admin a real identity to check. Also noted in item 7's rules
+bullet. NOTE: the sharedBoxes rules hardening + budget alerts + App Check
+enrollment are the OTHER parts of the safety pass — rules are already
+hardened AND deployed (July 2026); App Check still needs a reCAPTCHA v3 key.
+
 ---
 
 ## Cleanups (small, do opportunistically)
