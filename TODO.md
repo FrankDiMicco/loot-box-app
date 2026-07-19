@@ -208,6 +208,9 @@ blank when the stripped snapshot omits it. Still open:
   unlock (see Monetization direction).
 
 ### Capacitor / iOS App Store (future direction)
+**Full phased plan lives in `ROADMAP-IOS.md`** (added July 2026) — sequence,
+gates (Mac access, $99/yr dev account), costs, and store-compliance steps.
+This section holds the feature-level detail that roadmap references.
 Wrap the existing app in Capacitor (a `normalizeAssetPath` comment shows this
 was anticipated). Native features are also what passes App Store guideline
 4.2 (thin web wrappers get rejected).
