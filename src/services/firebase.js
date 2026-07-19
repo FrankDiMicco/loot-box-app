@@ -282,13 +282,15 @@ const updateSharedBox = async (shareCode, updates) => {
 // Legacy boxes predate anonymous auth: they carry creatorDeviceId but no
 // creatorUid. When the creator's own device next loads one, stamp the
 // current uid on it so ownership rules can apply. Fire-and-forget.
-const backfillCreatorUid = async (box) => {
+// NOTE: takes the shareCode explicitly — box.id is the box's LOCAL id
+// (doc.data() carries an `id` field that shadows doc.id in the spread).
+const backfillCreatorUid = async (box, shareCode) => {
   try {
-    if (!box || box.creatorUid || !box.creatorDeviceId) return;
+    if (!box || box.creatorUid || !box.creatorDeviceId || !shareCode) return;
     if (box.creatorDeviceId !== getDeviceId()) return;
     const uid = await ensureSignedIn();
     if (!uid) return;
-    await db.collection('sharedBoxes').doc(box.id).update({ creatorUid: uid });
+    await db.collection('sharedBoxes').doc(shareCode).update({ creatorUid: uid });
   } catch (e) { /* best-effort; retried on next load */ }
 };
 
@@ -298,7 +300,7 @@ const fetchSharedBox = async (shareCode, includeImages = true) => {
     const doc = await db.collection('sharedBoxes').doc(shareCode).get();
     if (!doc.exists) return null;
     const box = { id: doc.id, ...doc.data() };
-    backfillCreatorUid(box);
+    backfillCreatorUid(box, shareCode);
     if (!includeImages) return box;
     const imagesMap = await readSharedImages(shareCode);
     return mergeItemImages(box, imagesMap);
