@@ -121,6 +121,7 @@
     .pill-empty { background: rgba(245, 158, 11, 0.2); color: var(--gold); border: 1px solid rgba(245, 158, 11, 0.4); }
     .pill-fresh { background: rgba(59, 130, 246, 0.15); color: #93c5fd; border: 1px solid var(--border); }
     .pill-used { background: rgba(16, 185, 129, 0.15); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .pill-idle { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
     tbody input[type="checkbox"] { width: 17px; height: 17px; accent-color: var(--gold); cursor: pointer; }
     tbody input[type="checkbox"]:disabled { cursor: not-allowed; opacity: 0.3; }
 
@@ -160,8 +161,8 @@
     <div class="card">
       <div class="controls">
         <div class="form-group">
-          <label for="minAge">Min age (days)</label>
-          <input type="number" id="minAge" value="7" min="0" step="1">
+          <label for="minAge">Idle threshold (days)</label>
+          <input type="number" id="minAge" value="30" min="0" step="1" onchange="if(rows.length) render(currentMinAge())">
         </div>
         <button class="btn btn-primary" id="scanBtn" onclick="scan()">Scan shared boxes</button>
         <button class="btn btn-ghost" id="rescanBtn" onclick="scan()" style="display:none;">Rescan</button>
@@ -169,7 +170,7 @@
           <input type="checkbox" id="adminMode" onchange="onAdminToggle()"> Admin mode &mdash; allow deleting used boxes
         </label>
       </div>
-      <div class="admin-note" id="adminNote">Admin mode is on: used boxes are now selectable but never auto-checked. Select each one deliberately.</div>
+      <div class="admin-note" id="adminNote">Admin mode is on: any box idle past the threshold above is auto-selected, including used ones. Review the list &mdash; and the pull counts &mdash; before deleting.</div>
       <div class="progress-bar" id="progressBar"><div class="progress-fill" id="progressFill"></div></div>
       <div class="status" id="status"></div>
       <div class="summary" id="summary" style="display:none;"></div>
@@ -305,17 +306,27 @@
     }
 
     function render(minAgeDays) {
+      const minAgeMs = minAgeDays * DAY;
+      const adminMode = $('adminMode').checked;
       const total = rows.length;
       const empty = rows.filter(r => r.pulls === 0).length;
-      const candidates = rows.filter(r => r.candidate).length;
-      const protectedFresh = rows.filter(r => r.fresh).length;
+
+      // Recompute staleness against the current threshold so editing the
+      // number re-selects without a full re-scan.
+      //  - non-admin: only zero-pull stale boxes are selectable/auto-checked
+      //  - admin: any box idle past the threshold is auto-checked (used too)
+      rows.forEach(r => {
+        r.stale = (r.age == null) || (r.age >= minAgeMs);
+        r.autoCheck = adminMode ? r.stale : (r.pulls === 0 && r.stale);
+        r.selectable = adminMode || (r.pulls === 0 && r.stale);
+      });
+      const willSelect = rows.filter(r => r.autoCheck).length;
 
       $('summary').style.display = 'flex';
       $('summary').innerHTML = `
         <div class="summary-item"><b>${total}</b>Total boxes</div>
         <div class="summary-item"><b>${empty}</b>Zero pulls</div>
-        <div class="summary-item candidate"><b>${candidates}</b>Deletable (&ge; ${minAgeDays}d old)</div>
-        <div class="summary-item"><b>${protectedFresh}</b>Empty but fresh</div>
+        <div class="summary-item candidate"><b>${willSelect}</b>${adminMode ? `Idle &ge; ${minAgeDays}d` : `Empty &amp; &ge; ${minAgeDays}d`}</div>
       `;
 
       if (total === 0) {
@@ -323,23 +334,18 @@
         $('resultsCard').style.display = 'none';
         return;
       }
-      setStatus(candidates > 0
-        ? `Found <strong>${candidates}</strong> box(es) safe to delete. Review below, then delete.`
-        : 'No boxes match the deletion criteria. Nothing to clean up.', candidates > 0 ? '' : 'success');
+      setStatus(willSelect > 0
+        ? `Auto-selected <strong>${willSelect}</strong> box(es) idle for &ge; ${minAgeDays} days. Review below, then delete.`
+        : 'No boxes match the criteria. Nothing to clean up.', willSelect > 0 ? '' : 'success');
 
-      const adminMode = $('adminMode').checked;
       $('resultsBody').innerHTML = rows.map(r => {
-        const selectable = adminMode || r.candidate;
-        const rowClass = r.candidate ? 'candidate' : (r.pulls > 0 && !adminMode ? 'protected' : '');
-        // Auto-check only the safe candidates (zero-pull + stale). In admin
-        // mode, used boxes are selectable but start unchecked on purpose.
-        const checkbox = selectable
-          ? `<input type="checkbox" class="rowCheck" data-code="${esc(r.code)}" data-pulls="${r.pulls}" ${r.candidate ? 'checked' : ''} onclick="updateDeleteBtn()">`
+        const rowClass = r.autoCheck ? 'candidate' : (r.pulls > 0 && !adminMode ? 'protected' : '');
+        const checkbox = r.selectable
+          ? `<input type="checkbox" class="rowCheck" data-code="${esc(r.code)}" data-pulls="${r.pulls}" ${r.autoCheck ? 'checked' : ''} onclick="updateDeleteBtn()">`
           : `<input type="checkbox" disabled>`;
         let state;
-        if (r.pulls > 0) state = '<span class="pill pill-used">Used</span>';
-        else if (r.candidate) state = '<span class="pill pill-empty">Empty</span>';
-        else state = '<span class="pill pill-fresh">Fresh</span>';
+        if (r.pulls === 0) state = r.stale ? '<span class="pill pill-empty">Empty</span>' : '<span class="pill pill-fresh">Fresh</span>';
+        else state = r.stale ? '<span class="pill pill-idle">Idle</span>' : '<span class="pill pill-used">Active</span>';
         return `
           <tr class="${rowClass}">
             <td>${checkbox}</td>
@@ -353,7 +359,7 @@
       }).join('');
 
       $('resultsCard').style.display = '';
-      $('selectAll').checked = candidates > 0;
+      $('selectAll').checked = willSelect > 0;
       updateDeleteBtn();
     }
 
@@ -374,12 +380,12 @@
       updateDeleteBtn();
     }
 
+    const currentMinAge = () => Math.max(0, parseInt($('minAge').value, 10) || 0);
+
     function onAdminToggle() {
       $('adminNote').classList.toggle('on', $('adminMode').checked);
-      // Re-render so used-box checkboxes appear/disappear. Uncheck select-all
-      // so enabling admin mode never pre-selects a used box.
-      $('selectAll').checked = false;
-      if (rows.length) render(Math.max(0, parseInt($('minAge').value, 10) || 0));
+      // Re-render so used-box checkboxes appear and idle ones auto-check.
+      if (rows.length) render(currentMinAge());
     }
 
     // ========== DELETE (with confirm) ==========
