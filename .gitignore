@@ -2,3 +2,5 @@
 template-admin.html
 box-admin.html
 set-premium.html
+node_modules/
+dist/
