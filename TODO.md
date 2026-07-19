@@ -35,13 +35,17 @@ Already good: reduced-motion support, `:focus-visible`, keyboard-operable chest.
 
 ## Scale / security (needed before wide sharing; fine to defer for friends-scale)
 
-### 4. Firebase Anonymous Auth + tightened rules
-No auth today; device IDs are self-issued and spoofable. Anyone who knows a
-shareCode can delete any shared box (`allow delete: if true` — unavoidable
-without auth), and `boxCatalog` is world-writable because `box-admin.html`
-writes from the browser unauthenticated. Plan: enable Anonymous Auth (SDK
-already loaded in index.html), store `creatorUid` on boxes, rules check
-`request.auth.uid`, lock `boxCatalog` writes behind an admin UID list.
+### 4. Firebase Anonymous Auth — STAGE A SHIPPED July 2026; stage B = deploy rules
+Stage A (live): Anonymous provider enabled; app signs in at boot
+(`ensureSignedIn` in src/services/firebase.js); new shared boxes/templates
+carry `creatorUid`; legacy boxes are auto-claimed by their creator's
+device on next load (`backfillCreatorUid`). Admin pages (box-admin.html,
+shared-box-cleanup.html) sign in and show their uid in the header.
+Stage B (pending, Frank): fill the `isAdmin()` allowlist in
+`firestore.rules` with the admin-page uids, then paste the rules into the
+Firebase console. That makes edits/deletes creator-only and locks
+`boxCatalog` writes (also closes item 8). Deploy order is documented in
+the rules file header.
 
 ### 5. Pulls subcollection (removes the 1MB ceiling)
 `pullHistory` is one ever-growing array on the `sharedBoxes` doc. Firestore
