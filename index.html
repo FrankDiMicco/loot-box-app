@@ -2111,19 +2111,25 @@
       try {
         const ctx = _ensureAudio();
         const now = ctx.currentTime;
+        // Two detuned sines a fifth apart — a smooth, shimmering "gathering
+        // energy" swell (replaces the earlier buzzy sawtooth hum).
         const osc = ctx.createOscillator();
-        osc.type = 'sawtooth';
+        osc.type = 'sine';
         osc.frequency.setValueAtTime(70, now);
+        const osc2 = ctx.createOscillator();
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(105, now);
+        osc2.detune.setValueAtTime(7, now);
         const lp = ctx.createBiquadFilter();
         lp.type = 'lowpass';
-        lp.frequency.setValueAtTime(300, now);
+        lp.frequency.setValueAtTime(500, now);
         const g = ctx.createGain();
         g.gain.setValueAtTime(0.0001, now);
-        g.gain.linearRampToValueAtTime(0.05, now + 0.15);
-        osc.connect(lp); lp.connect(g);
+        g.gain.linearRampToValueAtTime(0.07, now + 0.15);
+        osc.connect(lp); osc2.connect(lp); lp.connect(g);
         _routeOut(g, 0.4);
-        osc.start(now);
-        _chargeNodes = { osc, lp, g };
+        osc.start(now); osc2.start(now);
+        _chargeNodes = { osc, osc2, lp, g };
       } catch (e) {}
     };
     const updateChargeHum = (progress) => {
@@ -2131,19 +2137,21 @@
       try {
         const now = _audioCtx.currentTime;
         _chargeNodes.osc.frequency.linearRampToValueAtTime(70 + progress * 180, now + 0.05);
-        _chargeNodes.lp.frequency.linearRampToValueAtTime(300 + progress * 2200, now + 0.05);
-        _chargeNodes.g.gain.linearRampToValueAtTime(0.05 + progress * 0.06, now + 0.05);
+        if (_chargeNodes.osc2) _chargeNodes.osc2.frequency.linearRampToValueAtTime(105 + progress * 270, now + 0.05);
+        _chargeNodes.lp.frequency.linearRampToValueAtTime(500 + progress * 2200, now + 0.05);
+        _chargeNodes.g.gain.linearRampToValueAtTime(0.07 + progress * 0.05, now + 0.05);
       } catch (e) {}
     };
     const stopChargeHum = () => {
       if (!_chargeNodes || !_audioCtx) { _chargeNodes = null; return; }
       try {
         const now = _audioCtx.currentTime;
-        const { osc, g } = _chargeNodes;
+        const { osc, osc2, g } = _chargeNodes;
         g.gain.cancelScheduledValues(now);
         g.gain.setValueAtTime(g.gain.value, now);
         g.gain.linearRampToValueAtTime(0.0001, now + 0.12);
         osc.stop(now + 0.16);
+        if (osc2) osc2.stop(now + 0.16);
       } catch (e) {}
       _chargeNodes = null;
     };
