@@ -15,7 +15,10 @@ service cloud.firestore {
     match /sharedBoxes/{boxId} {
       allow read: if true;
 
-      allow create: if request.resource.data.name is string
+      // Doc IDs are 6-char share codes (see generateShareCode in index.html).
+      // Pinning the shape stops bots from spraying arbitrarily-named docs.
+      allow create: if boxId.matches('[A-Z0-9]{6}')
+                    && request.resource.data.name is string
                     && request.resource.data.name.size() > 0
                     && request.resource.data.name.size() <= 100
                     && request.resource.data.items is list
@@ -24,13 +27,31 @@ service cloud.firestore {
                     && request.resource.data.creatorDeviceId is string
                     && request.resource.data.creatorDeviceId.size() > 0;
 
-      // Participants may only touch pull history fields.
-      // Fuller edits must preserve the original creatorDeviceId
-      // (or be adding it to a legacy doc that never had one).
-      allow update: if request.resource.data.diff(resource.data).affectedKeys()
-                      .hasOnly(['pullHistory', 'updatedAt', 'lastActivity'])
-                    || !('creatorDeviceId' in resource.data)
-                    || request.resource.data.creatorDeviceId == resource.data.creatorDeviceId;
+      // Two legitimate update shapes:
+      //  1. A participant appending ONE pull. pullHistory may only grow by
+      //     exactly one entry and is hard-capped, so a spoofed client can't
+      //     rewrite history or inflate the 1MB doc without limit.
+      //  2. The creator editing settings. This path strips pullHistory
+      //     client-side (see updateSharedBox), so it must NOT touch
+      //     pullHistory, and it must preserve the original creatorDeviceId
+      //     (or be adding it to a legacy doc that never had one).
+      allow update: if (
+                      request.resource.data.diff(resource.data).affectedKeys()
+                        .hasOnly(['pullHistory', 'updatedAt', 'lastActivity'])
+                      && request.resource.data.pullHistory is list
+                      && resource.data.pullHistory is list
+                      && request.resource.data.pullHistory.size()
+                           == resource.data.pullHistory.size() + 1
+                      && request.resource.data.pullHistory.size() <= 2000
+                    ) || (
+                      !request.resource.data.diff(resource.data).affectedKeys()
+                        .hasAny(['pullHistory'])
+                      && (
+                        !('creatorDeviceId' in resource.data)
+                        || request.resource.data.creatorDeviceId
+                             == resource.data.creatorDeviceId
+                      )
+                    );
 
       // Needed so the creator's client can delete its own box.
       // Cannot be restricted to the creator without real auth (see above).

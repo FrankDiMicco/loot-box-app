@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shared Box Cleanup</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Firebase SDK (Firestore only — this tool never touches Storage) -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg-primary: #0a0e1a;
+      --bg-card: rgba(26, 31, 53, 0.6);
+      --border: rgba(59, 130, 246, 0.2);
+      --border-hover: rgba(59, 130, 246, 0.5);
+      --brand: #3b82f6;
+      --brand-dark: #1e40af;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --success: #10b981;
+      --error: #ef4444;
+      --gold: #f59e0b;
+      --radius: 12px;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(135deg, var(--bg-primary) 0%, #1a1f35 100%);
+      color: var(--text);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: rgba(15, 22, 36, 0.5); }
+    ::-webkit-scrollbar-thumb { background: rgba(59, 130, 246, 0.3); border-radius: 8px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(59, 130, 246, 0.6); }
+
+    .container { max-width: 1000px; margin: 0 auto; padding: 2rem; }
+
+    .header { margin-bottom: 1.5rem; padding-bottom: 1.25rem; border-bottom: 1px solid var(--border); }
+    .header h1 {
+      font-size: 2rem; font-weight: 700; margin-bottom: 0.4rem;
+      background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 50%, #93c5fd 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .header p { color: var(--text-muted); font-size: 0.9rem; line-height: 1.5; }
+
+    .card {
+      background: var(--bg-card); backdrop-filter: blur(12px);
+      border: 1px solid var(--border); border-radius: 16px;
+      padding: 1.5rem; margin-bottom: 1.5rem;
+    }
+
+    .controls { display: flex; align-items: flex-end; gap: 1rem; flex-wrap: wrap; }
+    .form-group { display: flex; flex-direction: column; gap: 0.4rem; }
+    .form-group label {
+      font-size: 0.75rem; font-weight: 600; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .form-group input {
+      padding: 0.6rem 0.8rem; font-size: 0.95rem; font-family: inherit; color: var(--text);
+      background: rgba(15, 22, 36, 0.8); border: 2px solid var(--border);
+      border-radius: 8px; outline: none; transition: border-color 0.2s ease; width: 120px;
+    }
+    .form-group input:focus { border-color: var(--brand); }
+
+    .btn {
+      padding: 0.65rem 1.3rem; font-size: 0.95rem; font-weight: 600; font-family: inherit;
+      color: #fff; border: none; border-radius: var(--radius); cursor: pointer;
+      transition: transform 0.2s ease, opacity 0.2s ease;
+      display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+    }
+    .btn:hover:not(:disabled) { transform: translateY(-2px); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn-primary { background: linear-gradient(135deg, var(--brand-dark), var(--brand)); box-shadow: 0 4px 16px rgba(30, 64, 175, 0.35); }
+    .btn-danger { background: linear-gradient(135deg, #dc2626, var(--error)); box-shadow: 0 4px 16px rgba(239, 68, 68, 0.3); }
+    .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text-muted); }
+    .btn-ghost:hover:not(:disabled) { border-color: var(--brand); color: var(--text); }
+
+    .status { margin-top: 1rem; font-size: 0.9rem; line-height: 1.5; color: var(--text-muted); }
+    .status.error { color: var(--error); }
+    .status.success { color: var(--success); }
+    .status strong { color: var(--text); }
+
+    .summary { display: flex; gap: 1.5rem; flex-wrap: wrap; margin-top: 1rem; }
+    .summary-item { font-size: 0.85rem; color: var(--text-dim); }
+    .summary-item b { display: block; font-size: 1.4rem; font-weight: 700; color: var(--text); }
+    .summary-item.candidate b { color: var(--gold); }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    thead th {
+      text-align: left; padding: 0.6rem 0.75rem; font-size: 0.7rem;
+      text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);
+      border-bottom: 1px solid var(--border); white-space: nowrap;
+    }
+    tbody td { padding: 0.6rem 0.75rem; border-bottom: 1px solid rgba(59, 130, 246, 0.08); }
+    tbody tr.candidate { background: rgba(245, 158, 11, 0.06); }
+    tbody tr.protected td { color: var(--text-dim); }
+    .code { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-weight: 600; color: var(--text); }
+    .pill {
+      display: inline-block; padding: 0.15rem 0.55rem; font-size: 0.68rem; font-weight: 700;
+      border-radius: 6px; text-transform: uppercase; letter-spacing: 0.03em;
+    }
+    .pill-empty { background: rgba(245, 158, 11, 0.2); color: var(--gold); border: 1px solid rgba(245, 158, 11, 0.4); }
+    .pill-fresh { background: rgba(59, 130, 246, 0.15); color: #93c5fd; border: 1px solid var(--border); }
+    .pill-used { background: rgba(16, 185, 129, 0.15); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.3); }
+    tbody input[type="checkbox"] { width: 17px; height: 17px; accent-color: var(--gold); cursor: pointer; }
+    tbody input[type="checkbox"]:disabled { cursor: not-allowed; opacity: 0.3; }
+
+    .table-wrap { overflow-x: auto; margin-top: 1rem; }
+    .empty { text-align: center; padding: 2.5rem; color: var(--text-dim); }
+
+    .action-row { display: flex; align-items: center; gap: 1rem; margin-top: 1.25rem; flex-wrap: wrap; }
+
+    /* Confirm dialog */
+    .overlay {
+      position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center; z-index: 999;
+    }
+    .overlay.hidden { display: none; }
+    .dialog {
+      background: #1a1f35; border: 1px solid var(--border); border-radius: 16px;
+      padding: 1.75rem; max-width: 420px; width: 90%;
+    }
+    .dialog h3 { font-size: 1.2rem; margin-bottom: 0.75rem; }
+    .dialog p { color: var(--text-muted); margin-bottom: 1.5rem; line-height: 1.55; }
+    .dialog .btn-row { display: flex; gap: 0.75rem; }
+    .dialog .btn-row .btn { flex: 1; }
+
+    .progress-bar { width: 100%; height: 6px; background: rgba(15, 22, 36, 0.8); border-radius: 3px; overflow: hidden; margin-top: 1rem; display: none; }
+    .progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--brand), var(--success)); border-radius: 3px; transition: width 0.2s ease; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Shared Box Cleanup</h1>
+      <p>Find and delete abandoned shared boxes &mdash; ones with <b>zero pulls</b> that
+        haven't been touched in a while. Scanning is read-only; nothing is deleted until
+        you review the list and confirm. Used boxes (any pulls) are never selectable here.</p>
+    </div>
+
+    <div class="card">
+      <div class="controls">
+        <div class="form-group">
+          <label for="minAge">Min age (days)</label>
+          <input type="number" id="minAge" value="7" min="0" step="1">
+        </div>
+        <button class="btn btn-primary" id="scanBtn" onclick="scan()">Scan shared boxes</button>
+        <button class="btn btn-ghost" id="rescanBtn" onclick="scan()" style="display:none;">Rescan</button>
+      </div>
+      <div class="progress-bar" id="progressBar"><div class="progress-fill" id="progressFill"></div></div>
+      <div class="status" id="status"></div>
+      <div class="summary" id="summary" style="display:none;"></div>
+    </div>
+
+    <div class="card" id="resultsCard" style="display:none;">
+      <div class="table-wrap">
+        <table id="resultsTable">
+          <thead>
+            <tr>
+              <th style="width:32px;"><input type="checkbox" id="selectAll" onclick="toggleSelectAll()" title="Select all candidates"></th>
+              <th>Code</th>
+              <th>Name</th>
+              <th>Pulls</th>
+              <th>Last activity</th>
+              <th>Age</th>
+              <th>State</th>
+            </tr>
+          </thead>
+          <tbody id="resultsBody"></tbody>
+        </table>
+      </div>
+      <div class="action-row">
+        <button class="btn btn-danger" id="deleteBtn" onclick="openConfirm()" disabled>Delete selected (0)</button>
+        <span class="status" id="deleteStatus" style="margin-top:0;"></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="confirmOverlay">
+    <div class="dialog">
+      <h3>Delete these boxes?</h3>
+      <p id="confirmMessage"></p>
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="closeConfirm()">Cancel</button>
+        <button class="btn btn-danger" id="confirmDeleteBtn" onclick="runDelete()">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ========== FIREBASE INIT ==========
+    // Same project as index.html / box-admin.html.
+    const firebaseConfig = {
+      apiKey: "AIzaSyCo5QnH9iEZL7fprJxs96y9WMq5dk1uxd8",
+      authDomain: "lootbox-app-dd5fa.firebaseapp.com",
+      projectId: "lootbox-app-dd5fa",
+      storageBucket: "lootbox-app-dd5fa.firebasestorage.app",
+      messagingSenderId: "16386037455",
+      appId: "1:16386037455:web:df2ef3eb25929357dfc9ba",
+      measurementId: "G-3KSR19L05G"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    const DAY = 86400000;
+
+    // Rows from the last scan, keyed by share code.
+    let rows = [];
+
+    const $ = (id) => document.getElementById(id);
+
+    function fmtDate(ts) {
+      if (!ts) return '—';
+      const d = new Date(ts);
+      return d.toLocaleDateString() + ' ' +
+        String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+    }
+    function fmtAge(ms) {
+      if (ms == null) return '—';
+      const days = Math.floor(ms / DAY);
+      if (days >= 1) return days + 'd';
+      const hours = Math.floor(ms / 3600000);
+      if (hours >= 1) return hours + 'h';
+      return Math.max(1, Math.floor(ms / 60000)) + 'm';
+    }
+    function esc(s) {
+      return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+        ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    // ========== SCAN (read-only) ==========
+    async function scan() {
+      const minAgeDays = Math.max(0, parseInt($('minAge').value, 10) || 0);
+      const minAgeMs = minAgeDays * DAY;
+      const now = Date.now();
+
+      $('scanBtn').disabled = true;
+      $('rescanBtn').disabled = true;
+      setStatus('Scanning shared boxes…', '');
+      $('summary').style.display = 'none';
+      $('resultsCard').style.display = 'none';
+
+      try {
+        const snap = await db.collection('sharedBoxes').get();
+        rows = snap.docs.map(doc => {
+          const data = doc.data() || {};
+          const pulls = Array.isArray(data.pullHistory) ? data.pullHistory.length : 0;
+          // updatedAt is written at creation and bumped on every pull, so for a
+          // zero-pull box it marks when it was created. Fall back to any other
+          // known timestamp; treat a total absence as "very old" (age unknown).
+          const lastTs = data.updatedAt || data.createdAt || data.createdDate || null;
+          const age = lastTs ? (now - lastTs) : null;
+          const stale = (age == null) || (age >= minAgeMs);
+          return {
+            code: doc.id,
+            name: data.name || '(unnamed)',
+            pulls,
+            lastTs,
+            age,
+            // A candidate for deletion: no pulls AND old enough.
+            candidate: pulls === 0 && stale,
+            fresh: pulls === 0 && !stale,
+          };
+        });
+
+        // Candidates first, then freshest-empty, then used.
+        rows.sort((a, b) => {
+          if (a.candidate !== b.candidate) return a.candidate ? -1 : 1;
+          if (a.pulls !== b.pulls) return a.pulls - b.pulls;
+          return (b.lastTs || 0) - (a.lastTs || 0);
+        });
+
+        render(minAgeDays);
+      } catch (err) {
+        setStatus('Scan failed: ' + esc(err.message), 'error');
+      } finally {
+        $('scanBtn').disabled = false;
+        $('rescanBtn').disabled = false;
+        $('scanBtn').style.display = 'none';
+        $('rescanBtn').style.display = '';
+      }
+    }
+
+    function render(minAgeDays) {
+      const total = rows.length;
+      const empty = rows.filter(r => r.pulls === 0).length;
+      const candidates = rows.filter(r => r.candidate).length;
+      const protectedFresh = rows.filter(r => r.fresh).length;
+
+      $('summary').style.display = 'flex';
+      $('summary').innerHTML = `
+        <div class="summary-item"><b>${total}</b>Total boxes</div>
+        <div class="summary-item"><b>${empty}</b>Zero pulls</div>
+        <div class="summary-item candidate"><b>${candidates}</b>Deletable (&ge; ${minAgeDays}d old)</div>
+        <div class="summary-item"><b>${protectedFresh}</b>Empty but fresh</div>
+      `;
+
+      if (total === 0) {
+        setStatus('No shared boxes found.', '');
+        $('resultsCard').style.display = 'none';
+        return;
+      }
+      setStatus(candidates > 0
+        ? `Found <strong>${candidates}</strong> box(es) safe to delete. Review below, then delete.`
+        : 'No boxes match the deletion criteria. Nothing to clean up.', candidates > 0 ? '' : 'success');
+
+      $('resultsBody').innerHTML = rows.map(r => {
+        const rowClass = r.candidate ? 'candidate' : (r.pulls === 0 ? '' : 'protected');
+        const checkbox = r.candidate
+          ? `<input type="checkbox" class="rowCheck" data-code="${esc(r.code)}" checked onclick="updateDeleteBtn()">`
+          : `<input type="checkbox" disabled>`;
+        let state;
+        if (r.pulls > 0) state = '<span class="pill pill-used">Used</span>';
+        else if (r.candidate) state = '<span class="pill pill-empty">Empty</span>';
+        else state = '<span class="pill pill-fresh">Fresh</span>';
+        return `
+          <tr class="${rowClass}">
+            <td>${checkbox}</td>
+            <td class="code">${esc(r.code)}</td>
+            <td>${esc(r.name)}</td>
+            <td>${r.pulls}</td>
+            <td>${fmtDate(r.lastTs)}</td>
+            <td>${fmtAge(r.age)}</td>
+            <td>${state}</td>
+          </tr>`;
+      }).join('');
+
+      $('resultsCard').style.display = '';
+      $('selectAll').checked = candidates > 0;
+      updateDeleteBtn();
+    }
+
+    function selectedCodes() {
+      return Array.from(document.querySelectorAll('.rowCheck:checked')).map(el => el.dataset.code);
+    }
+
+    function updateDeleteBtn() {
+      const n = selectedCodes().length;
+      const btn = $('deleteBtn');
+      btn.textContent = `Delete selected (${n})`;
+      btn.disabled = n === 0;
+    }
+
+    function toggleSelectAll() {
+      const on = $('selectAll').checked;
+      document.querySelectorAll('.rowCheck').forEach(el => { el.checked = on; });
+      updateDeleteBtn();
+    }
+
+    // ========== DELETE (with confirm) ==========
+    function openConfirm() {
+      const n = selectedCodes().length;
+      if (n === 0) return;
+      $('confirmMessage').innerHTML =
+        `This permanently deletes <strong>${n}</strong> shared box(es) and their stored ` +
+        `item images. This cannot be undone.`;
+      $('confirmOverlay').classList.remove('hidden');
+    }
+    function closeConfirm() { $('confirmOverlay').classList.add('hidden'); }
+
+    async function runDelete() {
+      const codes = selectedCodes();
+      if (codes.length === 0) { closeConfirm(); return; }
+
+      closeConfirm();
+      $('deleteBtn').disabled = true;
+      $('scanBtn').disabled = true;
+      $('rescanBtn').disabled = true;
+      $('progressBar').style.display = 'block';
+      $('progressFill').style.width = '0%';
+
+      let done = 0, failed = 0;
+      for (const code of codes) {
+        try {
+          // Remove the item-images sibling doc first (Firestore doesn't cascade),
+          // then the box doc itself. Image delete is best-effort.
+          await db.collection('sharedBoxes').doc(code).collection('meta').doc('images').delete().catch(() => {});
+          await db.collection('sharedBoxes').doc(code).delete();
+        } catch (err) {
+          failed++;
+          console.error('Failed to delete', code, err);
+        }
+        done++;
+        $('progressFill').style.width = Math.round((done / codes.length) * 100) + '%';
+        setDeleteStatus(`Deleting… ${done}/${codes.length}`, '');
+      }
+
+      const okCount = codes.length - failed;
+      setDeleteStatus(
+        failed === 0
+          ? `Deleted <strong>${okCount}</strong> box(es).`
+          : `Deleted <strong>${okCount}</strong>, <strong>${failed}</strong> failed (see console).`,
+        failed === 0 ? 'success' : 'error');
+
+      $('scanBtn').disabled = false;
+      $('rescanBtn').disabled = false;
+      setTimeout(() => { $('progressBar').style.display = 'none'; scan(); }, 800);
+    }
+
+    // ========== STATUS HELPERS ==========
+    function setStatus(html, cls) {
+      const el = $('status');
+      el.innerHTML = html;
+      el.className = 'status' + (cls ? ' ' + cls : '');
+    }
+    function setDeleteStatus(html, cls) {
+      const el = $('deleteStatus');
+      el.innerHTML = html;
+      el.className = 'status' + (cls ? ' ' + cls : '');
+      el.style.marginTop = '0';
+    }
+  </script>
+</body>
+</html>
