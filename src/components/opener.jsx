@@ -641,7 +641,10 @@ const BoxOpener = ({ box, onBack, onBoxUpdate, success, error, info }) => {
     if (!chargingRef.current) return;
     // A real hold gets the fast charged burst; a quick tap keeps the
     // normal wiggle + build-up ceremony.
-    const wasCharged = (performance.now() - chargeStartRef.current) > 220;
+    // A deliberate mouse click can run 150-300ms, so anything under 400ms
+    // counts as a tap (normal ceremony); only a clear intentional hold —
+    // charge visuals/hum well underway — gets the charged burst.
+    const wasCharged = (performance.now() - chargeStartRef.current) > 400;
     chargingRef.current = false;
     if (chargeRafRef.current) cancelAnimationFrame(chargeRafRef.current);
     chargeRafRef.current = null;
