@@ -32,10 +32,9 @@ service cloud.firestore {
     function isAdmin() {
       return signedIn() && request.auth.uid in [
         // Frank's browser on frankdimicco.github.io (shared-box-cleanup.html)
-        'DOGDrkNIyTcL7HxZwtthNHM4v7k1'
-        // box-admin.html opens as file:// = a DIFFERENT origin = different
-        // uid. Add it here (shown in its header) before deploying, or
-        // catalog writes from box-admin will be denied.
+        'DOGDrkNIyTcL7HxZwtthNHM4v7k1',
+        // Frank's local box-admin.html (file:// is its own origin/uid)
+        'BvEehYJGw3ZIgm90BK5QDgeT5X72'
       ];
     }
 
