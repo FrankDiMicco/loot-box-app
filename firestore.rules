@@ -31,7 +31,11 @@ service cloud.firestore {
     // site data issues a new uid; update this list if that happens.
     function isAdmin() {
       return signedIn() && request.auth.uid in [
-        'PASTE-ADMIN-UID-HERE'
+        // Frank's browser on frankdimicco.github.io (shared-box-cleanup.html)
+        'DOGDrkNIyTcL7HxZwtthNHM4v7k1'
+        // box-admin.html opens as file:// = a DIFFERENT origin = different
+        // uid. Add it here (shown in its header) before deploying, or
+        // catalog writes from box-admin will be denied.
       ];
     }
 
