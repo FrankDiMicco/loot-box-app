@@ -12,12 +12,15 @@ Canonical security rules: `firestore.rules` (deploy manually via Firebase consol
 
 ## High priority
 
-### 1. Precompile with Vite (biggest structural win)
-Every visitor downloads ~1MB of Babel and compiles 7,500 lines of JSX on their
-phone at page load. Move to a Vite build: split `index.html` into modules
-(components / firebase services / utils), output static JS, deploy the build to
-GitHub Pages (e.g. via Actions). Also switch deprecated `ReactDOM.render` to
-`createRoot`. Most other items get easier after this one.
+### 1. Precompile with Vite — SHIPPED July 2026
+The app is now a Vite build: `src/main.jsx` + modules under
+`src/components/`, `src/lib/`, `src/services/`; static files in `public/`;
+`createRoot` instead of `ReactDOM.render`; GitHub Actions builds and
+deploys `dist/` to Pages on push (`.github/workflows/deploy.yml`).
+ESLint (`no-undef`, `no-import-assign`, `react/jsx-no-undef`) guards the
+module boundaries — run `npx eslint src` after moving code between files.
+Firebase + QRCode remain CDN globals (candidates to move to npm later).
+App: single-file React app in `index.html` → now see `src/`.
 
 ### 2. Accessibility pass (scoped in detail, mostly mechanical)
 - `ToggleSwitch` (Settings) is a click-only div → `<button role="switch" aria-checked>`

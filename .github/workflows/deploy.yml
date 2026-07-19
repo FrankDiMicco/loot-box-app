@@ -1,7 +1,6 @@
-# Deploys the site to GitHub Pages on every push to main.
-# Phase 1 of the Vite migration: publish the repo checkout unchanged
-# (identical to the old deploy-from-branch behavior). The Vite build step
-# replaces the upload path in the next phase.
+# Builds the app with Vite and deploys dist/ to GitHub Pages on every
+# push to main. A broken build blocks the deploy instead of shipping a
+# broken page.
 #
 # Requires: repo Settings -> Pages -> Source = "GitHub Actions".
 name: Deploy to GitHub Pages
@@ -29,9 +28,15 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: '.'
+          path: 'dist'
       - id: deployment
         uses: actions/deploy-pages@v4

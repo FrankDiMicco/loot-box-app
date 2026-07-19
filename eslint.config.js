@@ -1,4 +1,5 @@
 import globals from 'globals';
+import react from 'eslint-plugin-react';
 
 // Minimal config: the one rule that matters for the module split is
 // no-undef — it statically catches any symbol a file uses but no longer
@@ -16,10 +17,14 @@ export default [
         QRCode: 'readonly',
       },
     },
+    plugins: { react },
+    settings: { react: { version: 'detect' } },
     rules: {
       'no-undef': 'error',
       'no-import-assign': 'error',
       'no-unused-vars': 'off',
+      // Core no-undef ignores JSX identifiers; this catches <UndefinedComponent />
+      'react/jsx-no-undef': 'error',
     },
   },
 ];
