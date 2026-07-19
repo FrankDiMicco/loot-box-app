@@ -35,17 +35,17 @@ Already good: reduced-motion support, `:focus-visible`, keyboard-operable chest.
 
 ## Scale / security (needed before wide sharing; fine to defer for friends-scale)
 
-### 4. Firebase Anonymous Auth — STAGE A SHIPPED July 2026; stage B = deploy rules
-Stage A (live): Anonymous provider enabled; app signs in at boot
-(`ensureSignedIn` in src/services/firebase.js); new shared boxes/templates
-carry `creatorUid`; legacy boxes are auto-claimed by their creator's
-device on next load (`backfillCreatorUid`). Admin pages (box-admin.html,
-shared-box-cleanup.html) sign in and show their uid in the header.
-Stage B (pending, Frank): fill the `isAdmin()` allowlist in
-`firestore.rules` with the admin-page uids, then paste the rules into the
-Firebase console. That makes edits/deletes creator-only and locks
-`boxCatalog` writes (also closes item 8). Deploy order is documented in
-the rules file header.
+### 4. Firebase Anonymous Auth — FULLY SHIPPED July 19, 2026 (incl. item 8)
+Provider enabled; app signs in at boot (`ensureSignedIn`); shared
+boxes/templates carry `creatorUid`; legacy boxes auto-claimed by their
+creator's device (`backfillCreatorUid`). Auth-aware rules DEPLOYED and
+probe-verified (14/14): writes require sign-in, edits/deletes are
+creator-or-admin, ownership can't be reassigned, `boxCatalog` writes
+locked to the admin allowlist. Admin uids come from the headers of
+box-admin.html (file:// origin) and shared-box-cleanup.html (Pages
+origin) — clearing browser site data issues a NEW uid; if admin writes
+start failing with permission-denied, re-grab the uid and update the
+allowlist in `firestore.rules` + console.
 
 ### 5. Pulls subcollection (removes the 1MB ceiling)
 `pullHistory` is one ever-growing array on the `sharedBoxes` doc. Firestore
@@ -86,20 +86,6 @@ source — a bot can bill us directly. Layers, in bang-for-buck order:
   storage/unauthorized.
 - Shared-box ephemerality (see Monetization direction below) also bounds
   storage costs permanently.
-
-### 8. Lock `boxCatalog` writes (DEFERRED — Frank, July 2026)
-`boxCatalog` is world-writable (`allow write: if true` in `firestore.rules`)
-because `box-admin.html` writes catalog art from the browser with no auth —
-so anyone could add or overwrite box skins via the SDK. The fix is
-`allow write: if false` (or gate behind an admin UID once auth exists), but
-that BREAKS box-admin.html uploads until the admin page has a login; manage
-the catalog from the Firebase console in the interim. Deferred deliberately:
-low real-world risk at friends-scale, and Frank doesn't want to lose the
-admin upload workflow yet. Do this alongside item 4 (Anonymous Auth), which
-gives box-admin a real identity to check. Also noted in item 7's rules
-bullet. NOTE: the sharedBoxes rules hardening + budget alerts + App Check
-enrollment are the OTHER parts of the safety pass — rules are already
-hardened AND deployed (July 2026); App Check still needs a reCAPTCHA v3 key.
 
 ---
 
