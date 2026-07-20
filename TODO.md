@@ -98,23 +98,15 @@ source — a bot can bill us directly. Layers, in bang-for-buck order:
   actual designed logo/mark (designer or a proper asset), not another
   code-generated attempt. There's also a matching logo on the boot splash
   (`.boot-screen`, still the old `logo-chest.png`) to update in tandem.
-- Delete `set-premium.html` (sets a `tier` field nothing reads)
 - The 3 `source: "store"` placeholder docs (Ancient Relic, Cyber Elite Box,
   Golden Treasure — `via.placeholder.com` art, fake $0.99/$1.99/$2.99 prices)
   are now DEACTIVATED (`active: false`), so they're hidden from the app.
-  Optional remaining step: hard-delete them via box-admin's Delete button.
+  Optional remaining step: hard-delete them via box-admin's Delete button
+  (must be done from Frank's admin browser — catalog writes are allowlisted).
   Decision: no paid box store — user-uploaded boxes make it redundant.
-- Remove unused SDK script tags in index.html: `firebase-auth-compat` (until
-  item 4), `firebase-storage-compat` (app never uses Storage directly)
 - `loadData` re-fetches every shared box on each visit to home AND `App` +
   `BoxOpener` both subscribe to the open box (duplicate listeners) — let the
   App-level subscription be the single source
-- `BoxCard` reads localStorage (`getLastSeenPullCounts`, `getDeviceId`) during
-  render, re-parsed on every 30s tick — cache device ID in a module constant,
-  memoize the rest
-- `StatsScreen` uses raw `window.innerWidth` instead of the `useIsMobile` hook;
-  its Total Opens / Luck Score include OTHER people's pulls on shared boxes —
-  filter by `deviceId === getDeviceId()`
 - `project-summary.txt` is stale (says "~4000 lines", premium tiers, missing
   recent features) — refresh or fold into README
 
