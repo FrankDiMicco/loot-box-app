@@ -98,12 +98,6 @@ source — a bot can bill us directly. Layers, in bang-for-buck order:
   actual designed logo/mark (designer or a proper asset), not another
   code-generated attempt. There's also a matching logo on the boot splash
   (`.boot-screen`, still the old `logo-chest.png`) to update in tandem.
-- The 3 `source: "store"` placeholder docs (Ancient Relic, Cyber Elite Box,
-  Golden Treasure — `via.placeholder.com` art, fake $0.99/$1.99/$2.99 prices)
-  are now DEACTIVATED (`active: false`), so they're hidden from the app.
-  Optional remaining step: hard-delete them via box-admin's Delete button
-  (must be done from Frank's admin browser — catalog writes are allowlisted).
-  Decision: no paid box store — user-uploaded boxes make it redundant.
 
 ---
 
