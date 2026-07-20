@@ -268,7 +268,11 @@ const BoxOpener = ({ box, onBack, onBoxUpdate, success, error, info }) => {
   const isMobile = useIsMobile();
   const userToggledHistory = useRef(false);
 
-  // Real-time listener for shared boxes
+  // Real-time listener for shared boxes. App also subscribes to this box
+  // for its feed, but that's fine: the Firestore SDK dedupes listeners on
+  // the same doc into one network stream, and this one owns concerns App's
+  // doesn't — the party feed, delete-while-open bounce, and local history
+  // state (the box prop is a snapshot taken at open time, not live).
   useEffect(() => {
     if (box.type === 'shared' && box.shareCode) {
       const unsubscribe = subscribeToSharedBox(box.shareCode, (updatedBox) => {

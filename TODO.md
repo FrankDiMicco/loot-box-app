@@ -104,11 +104,6 @@ source — a bot can bill us directly. Layers, in bang-for-buck order:
   Optional remaining step: hard-delete them via box-admin's Delete button
   (must be done from Frank's admin browser — catalog writes are allowlisted).
   Decision: no paid box store — user-uploaded boxes make it redundant.
-- `loadData` re-fetches every shared box on each visit to home AND `App` +
-  `BoxOpener` both subscribe to the open box (duplicate listeners) — let the
-  App-level subscription be the single source
-- `project-summary.txt` is stale (says "~4000 lines", premium tiers, missing
-  recent features) — refresh or fold into README
 
 ---
 

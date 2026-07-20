@@ -161,7 +161,7 @@ import './styles.css';
         // themselves, this just hides the latency behind app startup.
         ensureSignedIn();
         migrateOldName();
-        loadData();
+        loadData({ refreshShared: true });
 
         // Check for shared box URL
         const hash = window.location.hash;
@@ -231,9 +231,20 @@ import './styles.css';
         };
       }, [boxes.filter(b => b.type === 'shared').map(b => b.shareCode).join(',')]);
 
-      const loadData = async () => {
+      // refreshShared: re-fetch every shared box from Firestore. Only the
+      // boot path needs that (to catch pulls made while the app was closed);
+      // afterwards the App-level subscriptions keep both state and
+      // localStorage fresh (the snapshot handler persists via saveBox), so
+      // in-session callers just re-read localStorage — no billed reads.
+      const loadData = async ({ refreshShared = false } = {}) => {
         const loadedBoxes = getAllBoxes();
         const settings = getUserSettings();
+
+        if (!refreshShared) {
+          setBoxes(loadedBoxes);
+          setUserSettings(settings);
+          return;
+        }
 
         // Fetch fresh pull counts for shared boxes from Firestore
         const updatedBoxes = await Promise.all(
