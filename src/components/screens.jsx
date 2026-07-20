@@ -4,6 +4,7 @@ import { Button, Card, useIsMobile } from './common.jsx';
 import { fetchCuratedTemplates } from '../services/firebase.js';
 import { ConfirmDialog, SettingsRow, ToggleSwitch } from './layout.jsx';
 import { APP_VERSION, AppStorage, STORAGE_KEYS, getAllBoxes, getUserSettings } from '../lib/storage.js';
+import { getDeviceId } from '../lib/utils.js';
 const DiscoverScreen = ({ onBack, onImport, success, info }) => {
   const isMobile = useIsMobile();
   const [templates, setTemplates] = useState([]);
@@ -256,10 +257,15 @@ const DiscoverScreen = ({ onBack, onImport, success, info }) => {
 
 // StatsScreen Component
 const StatsScreen = ({ userSettings, boxes, onBack }) => {
-  const isMobile = window.innerWidth < 768;
+  const isMobile = useIsMobile();
 
-  // Aggregate all pull history across all boxes
-  const allPulls = boxes.flatMap(b => b.pullHistory || []);
+  // Personal stats count only THIS device's pulls — on shared boxes the
+  // history holds everyone's. Pulls without a deviceId predate the field
+  // (old local history) and are treated as ours.
+  const myDeviceId = getDeviceId();
+  const allPulls = boxes
+    .flatMap(b => b.pullHistory || [])
+    .filter(p => !p.deviceId || p.deviceId === myDeviceId);
   const localBoxes = boxes.filter(b => b.type === 'local' && !b.isVisitor);
   const sharedBoxes = boxes.filter(b => b.type === 'shared' && !b.isVisitor);
 
@@ -282,7 +288,7 @@ const StatsScreen = ({ userSettings, boxes, onBack }) => {
   // Unique items discovered
   const uniqueItemNames = new Set(allPulls.map(p => p.itemName)).size;
 
-  // Luck Score: average of (100 - percentage) for all pulls
+  // Luck Score: average of (100 - percentage) for this device's pulls
   const luckScore = allPulls.length > 0
     ? Math.round(allPulls.reduce((sum, p) => sum + (100 - (p.percentage || 0)), 0) / allPulls.length)
     : 0;

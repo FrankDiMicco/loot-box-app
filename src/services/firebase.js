@@ -14,9 +14,10 @@ const firebaseConfig = {
   measurementId: "G-3KSR19L05G"
 };
 
-// Initialize Firebase (only if config is valid)
+// Initialize Firebase (only if config is valid). The app itself never
+// touches Cloud Storage (custom photos are data URIs in Firestore) — only
+// box-admin.html does, with its own SDK tags.
 let db = null;
-let storage = null;
 let auth = null;
 let firebaseEnabled = false;
 
@@ -24,7 +25,6 @@ try {
   if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
     firebase.initializeApp(firebaseConfig);
     db = firebase.firestore();
-    storage = firebase.storage();
     auth = firebase.auth();
     firebaseEnabled = true;
   } else {
@@ -500,7 +500,6 @@ const importBoxFromTemplate = (templateData) => {
 export {
   firebaseConfig,
   db,
-  storage,
   auth,
   firebaseEnabled,
   ensureSignedIn,

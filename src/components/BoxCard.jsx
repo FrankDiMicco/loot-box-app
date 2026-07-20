@@ -1,10 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useIsMobile } from './common.jsx';
 import { getLastSeenPullCounts, saveBox } from '../lib/storage.js';
 import { formatExpirationCountdown, formatRechargeTimeRemaining, getDeviceId, getRechargeCyclesRemaining, getRechargeOpensAvailable, getTimeUntilNextRecharge, getUserPullTimestamps } from '../lib/utils.js';
 import { saveBoxTemplate } from '../services/firebase.js';
 import { getBoxImageUrl } from '../lib/catalog.js';
 import { ConfirmDialog } from './layout.jsx';
+// The device id never changes within a session — read it once instead of
+// hitting localStorage on every card render.
+const MY_DEVICE_ID = getDeviceId();
+
 const BoxCard = ({ box, onClick, onEdit, onDelete, onDuplicate, success, error, isNew, isFav, onToggleFavorite }) => {
   const isMobile = useIsMobile();
   const { name, items = [], pullHistory = [], maxPulls, maxPullsPerUser, type = 'local' } = box;
@@ -12,13 +16,15 @@ const BoxCard = ({ box, onClick, onEdit, onDelete, onDuplicate, success, error, 
   const [showOverflowMenu, setShowOverflowMenu] = useState(false);
   const boxFavId = box.shareCode || box.id;
 
-  // Check for new pulls on shared boxes since last viewed
-  const hasNewPulls = (() => {
+  // Check for new pulls on shared boxes since last viewed. Memoized so the
+  // 30s expiration tick doesn't re-parse localStorage for every card — the
+  // dot can only change when fresh box data arrives (new object identity).
+  const hasNewPulls = useMemo(() => {
     if (!box.shareCode || !box.type || box.type !== 'shared') return false;
     const lastSeen = getLastSeenPullCounts()[box.shareCode];
     if (lastSeen === undefined) return false; // Never viewed = no dot (isNew badge handles that)
     return pullHistory.length > lastSeen;
-  })();
+  }, [box.shareCode, box.type, pullHistory]);
 
   // Close overflow menu on outside click
   useEffect(() => {
@@ -76,8 +82,7 @@ const BoxCard = ({ box, onClick, onEdit, onDelete, onDuplicate, success, error, 
   // Your opens (per-person usage for current user)
   const yourOpensUsed = (() => {
     if (!maxPullsPerUser || maxPullsPerUser <= 0) return 0;
-    const myDeviceId = getDeviceId();
-    return (pullHistory || []).filter(p => p.deviceId === myDeviceId).length;
+    return (pullHistory || []).filter(p => p.deviceId === MY_DEVICE_ID).length;
   })();
 
   const yourOpensRemaining = maxPullsPerUser ? Math.max(0, maxPullsPerUser - yourOpensUsed) : 0;
