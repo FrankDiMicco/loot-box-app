@@ -14,6 +14,11 @@ const firebaseConfig = {
   measurementId: "G-3KSR19L05G"
 };
 
+// reCAPTCHA v3 site key for Firebase App Check. Public by design — it's a
+// client-side key; abuse protection comes from the paired secret held in
+// the Firebase console + reCAPTCHA scoring, not from hiding this value.
+const APPCHECK_RECAPTCHA_V3_SITE_KEY = '6LcRN2AtAAAAAN4pNx14s_0AE6n6jI3PVnJOKEwA';
+
 // Initialize Firebase (only if config is valid). The app itself never
 // touches Cloud Storage (custom photos are data URIs in Firestore) — only
 // box-admin.html does, with its own SDK tags.
@@ -24,6 +29,20 @@ let firebaseEnabled = false;
 try {
   if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
     firebase.initializeApp(firebaseConfig);
+
+    // App Check attests that requests come from our real app (reCAPTCHA v3,
+    // invisible/no challenge) before they reach Firestore, blocking scripted
+    // abuse of the public config. Harmless until enforcement is switched on
+    // in the console — until then it just reports metrics (monitor mode).
+    // Wrapped so a load/activation hiccup never blocks app startup.
+    try {
+      if (firebase.appCheck) {
+        firebase.appCheck().activate(APPCHECK_RECAPTCHA_V3_SITE_KEY, true);
+      }
+    } catch (e) {
+      console.warn('App Check activation failed (continuing):', e.message || e);
+    }
+
     db = firebase.firestore();
     auth = firebase.auth();
     firebaseEnabled = true;
