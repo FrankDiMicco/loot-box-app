@@ -62,7 +62,46 @@ const Button = ({ children, onClick, variant = 'primary', size = 'md', disabled 
   );
 };
 
-// Input Component  
+// Back Button — icon-only nav control shared by the create/edit and opener
+// screens. Centralized so the two can't drift, and styled to stand out
+// against busy, blue-accented form chrome: 44px tap target, a brighter
+// chevron, a defined border, and a drop shadow that lifts it off flat
+// fields. Pass `style` for per-screen spacing (e.g. marginBottom).
+const BackButton = ({ onClick, style = {} }) => {
+  const [isHovered, setIsHovered] = useState(false);
+
+  return (
+    <button
+      onClick={onClick}
+      aria-label="Back"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      style={{
+        width: '44px',
+        height: '44px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: isHovered ? 'rgba(37, 99, 235, 0.3)' : 'rgba(30, 41, 59, 0.85)',
+        border: `1px solid ${isHovered ? 'rgba(96, 165, 250, 0.75)' : 'rgba(96, 165, 250, 0.45)'}`,
+        borderRadius: '12px',
+        cursor: 'pointer',
+        color: '#e2e8f0',
+        padding: 0,
+        flexShrink: 0,
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.35)',
+        transition: 'all 0.2s ease',
+        ...style,
+      }}
+    >
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="15 18 9 12 15 6" />
+      </svg>
+    </button>
+  );
+};
+
+// Input Component
 const Input = ({ type = 'text', value, onChange, placeholder = '', label = '', fullWidth = false, ...props }) => {
   const [isFocused, setIsFocused] = useState(false);
 
@@ -249,6 +288,7 @@ const useToast = () => {
 
 export {
   Button,
+  BackButton,
   Input,
   Card,
   Toast,

@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { calculateDynamicOdds, formatExpirationCountdown, formatRechargeTimeRemaining, getDeviceId, getRarityTier, getRechargeCyclesRemaining, getRechargeOpensAvailable, getTierAccent, getTimeUntilNextRecharge, getUserPullTimestamps, isExpiringSoon } from '../lib/utils.js';
 import { getBoxUserName, getLastUsedName, getUserSettings, markPullsSeen, saveBox, setBoxUserName, setLastUsedName } from '../lib/storage.js';
 import { _warmUpAudio, playBuildUpSound, playChargeRelease, playPartyPing, playTierRevealSound, spawnParticles, startChargeHum, stopChargeHum, triggerHaptic, updateChargeHum } from '../services/audio.js';
-import { Button, Card, Input, useIsMobile } from './common.jsx';
+import { BackButton, Button, Card, Input, useIsMobile } from './common.jsx';
 import { addPullToSharedBox, subscribeToSharedBox } from '../services/firebase.js';
 import { getReadableTextColor, isLightColor } from './creator.jsx';
 import { getBoxImageUrl } from '../lib/catalog.js';
@@ -809,19 +809,7 @@ const BoxOpener = ({ box, onBack, onBoxUpdate, success, error, info }) => {
       {/* Header */}
       <div style={{ marginBottom: '1rem' }}>
         {/* Back button - left aligned, compact */}
-        <button onClick={onBack} aria-label="Back" style={{
-          width: '40px', height: '40px',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: 'rgba(15, 23, 42, 0.6)',
-          border: '1px solid rgba(59, 130, 246, 0.2)',
-          borderRadius: '10px', cursor: 'pointer',
-          color: '#a0aec0', padding: 0, flexShrink: 0,
-          marginBottom: '0.5rem',
-        }}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="15 18 9 12 15 6" />
-          </svg>
-        </button>
+        <BackButton onClick={onBack} style={{ marginBottom: '0.5rem' }} />
 
         {/* Box name - full width, centered */}
         <h2 tabIndex={-1} className="screen-heading" style={{

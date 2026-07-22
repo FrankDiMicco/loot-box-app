@@ -1,6 +1,6 @@
 import ReactDOM from 'react-dom';
 import { useEffect, useRef, useState } from 'react';
-import { Button, Card, Input, useIsMobile } from './common.jsx';
+import { BackButton, Button, Card, Input, useIsMobile } from './common.jsx';
 import { compressToDataURL, getColorName } from './BoxCard.jsx';
 import { generateShareCode, getDeviceId, getRemainingPercentage, validatePercentages } from '../lib/utils.js';
 import { triggerHaptic } from '../services/audio.js';
@@ -1414,29 +1414,7 @@ const BoxCreator = ({ onComplete, onCancel, editingBox = null, success, error, i
       {/* Header */}
       <div style={{ marginBottom: '1.5rem' }}>
         {/* Back button - top left */}
-        <button
-          onClick={onCancel}
-          aria-label="Back"
-          style={{
-            width: '40px',
-            height: '40px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: 'rgba(15, 23, 42, 0.6)',
-            border: '1px solid rgba(59, 130, 246, 0.2)',
-            borderRadius: '10px',
-            cursor: 'pointer',
-            color: '#a0aec0',
-            padding: 0,
-            flexShrink: 0,
-            marginBottom: '1rem',
-          }}
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="15 18 9 12 15 6" />
-          </svg>
-        </button>
+        <BackButton onClick={onCancel} style={{ marginBottom: '1rem' }} />
         {/* Title - centered */}
         <h2 tabIndex={-1} className="screen-heading" style={{
           fontSize: '1.75rem',
