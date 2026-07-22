@@ -107,9 +107,19 @@ service cloud.firestore {
 
       // Item photos live here (out of the main doc so pulls don't
       // re-broadcast them). Bounded by the 1MB doc limit.
+      // Writes are creator-or-admin only — previously ANY signed-in user
+      // could overwrite (or bloat) any box's images. During initial
+      // creation the parent box doc doesn't exist yet (saveSharedBox writes
+      // meta first, then the box), so permit that one window. Legacy boxes
+      // (no creatorUid) stay writable until claimed, matching the parent.
       match /meta/{doc} {
         allow read: if true;
-        allow write: if signedIn();
+        allow write: if signedIn() && (
+                       isAdmin()
+                       || !exists(/databases/$(database)/documents/sharedBoxes/$(boxId))
+                       || !('creatorUid' in get(/databases/$(database)/documents/sharedBoxes/$(boxId)).data)
+                       || get(/databases/$(database)/documents/sharedBoxes/$(boxId)).data.creatorUid == request.auth.uid
+                     );
       }
     }
 
@@ -123,15 +133,51 @@ service cloud.firestore {
     match /boxTemplates/{templateId} {
       allow read: if true;
 
-      // Create and update share validation; update is needed because
-      // re-sharing a local box overwrites its existing template doc.
-      allow create, update: if signedIn()
-                    && request.resource.data.name is string
-                    && request.resource.data.name.size() > 0
-                    && request.resource.data.name.size() <= 100
-                    && request.resource.data.items is list
-                    && request.resource.data.items.size() > 0
-                    && request.resource.data.items.size() <= 50;
+      function validTemplate() {
+        return request.resource.data.name is string
+               && request.resource.data.name.size() > 0
+               && request.resource.data.name.size() <= 100
+               && request.resource.data.items is list
+               && request.resource.data.items.size() > 0
+               && request.resource.data.items.size() <= 50;
+      }
+
+      // `curated` templates surface in every client's shelf
+      // (fetchCuratedTemplates). Only an admin may publish one; everyone
+      // else must leave the flag false/absent. The client never sets it.
+      function curatedOk() {
+        return isAdmin()
+               || !('curated' in request.resource.data)
+               || request.resource.data.curated == false;
+      }
+
+      // Create: any signed-in user, but they may only stamp their OWN uid
+      // as creator (or none). Templates carry creatorUid from saveBoxTemplate.
+      allow create: if signedIn() && validTemplate() && curatedOk()
+                    && (
+                      !('creatorUid' in request.resource.data)
+                      || request.resource.data.creatorUid == request.auth.uid
+                    );
+
+      // Update (re-sharing a local box overwrites its template doc): only
+      // the original creator or an admin, and ownership can't be reassigned.
+      // Previously ANY signed-in user could overwrite ANY template by id.
+      // Legacy templates (no creatorUid) stay updatable until claimed.
+      allow update: if signedIn() && validTemplate() && curatedOk()
+                    && (
+                      isAdmin()
+                      || (
+                        !('creatorUid' in resource.data)
+                        && (
+                          !('creatorUid' in request.resource.data)
+                          || request.resource.data.creatorUid == request.auth.uid
+                        )
+                      )
+                      || (
+                        resource.data.creatorUid == request.auth.uid
+                        && request.resource.data.creatorUid == resource.data.creatorUid
+                      )
+                    );
 
       allow delete: if false;
     }

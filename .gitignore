@@ -4,3 +4,9 @@ box-admin.html
 set-premium.html
 node_modules/
 dist/
+
+# Firebase emulator artifacts
+*-debug.log
+firestore-debug.log
+firebase-debug.log
+.firebase/
