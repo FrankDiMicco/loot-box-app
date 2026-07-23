@@ -34,6 +34,7 @@ npm install
 npm run dev       # Vite dev server on :5173
 npm run build     # production build to dist/
 npm run preview   # serve the built app on :4173 (test the service worker here)
+npm test          # vitest unit suite for the pure logic (src/**/*.test.js)
 npm run optimize:images  # re-compress bundled art after adding any (see scripts/)
 npx eslint src    # no-undef / no-import-assign / jsx-no-undef guard the
                   # module boundaries — run after moving code between files
