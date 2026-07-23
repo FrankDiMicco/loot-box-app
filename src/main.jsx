@@ -505,7 +505,7 @@ import './styles.css';
 
       if (!userSettings) return (
         <div className="boot-screen">
-          <img src="assets/images/ui/logo-chest.png" alt="" />
+          <img src="assets/images/ui/logo-chest.webp" alt="" />
           <div className="boot-title">Loot Box Creator</div>
         </div>
       );
@@ -633,7 +633,7 @@ import './styles.css';
                         zIndex: 0, pointerEvents: 'none',
                       }} />
                       <img
-                        src="assets/images/ui/empty-state-chest.png"
+                        src="assets/images/ui/empty-state-chest.webp"
                         alt=""
                         style={{
                           width: '200px', height: '200px', objectFit: 'contain',
@@ -726,7 +726,7 @@ import './styles.css';
                       zIndex: 0, pointerEvents: 'none',
                     }} />
                     <img
-                      src="assets/images/ui/empty-state-chest.png"
+                      src="assets/images/ui/empty-state-chest.webp"
                       alt=""
                       style={{
                         width: '200px', height: '200px', objectFit: 'contain',
@@ -776,7 +776,7 @@ import './styles.css';
                   ) : (
                     <>
                       <div style={{ marginBottom: '1rem', opacity: 0.3 }}>
-                        <img src="assets/images/ui/empty-state-chest.png" alt="" style={{ width: '80px', height: '80px', objectFit: 'contain' }} />
+                        <img src="assets/images/ui/empty-state-chest.webp" alt="" style={{ width: '80px', height: '80px', objectFit: 'contain' }} />
                       </div>
                       <div style={{ fontSize: '1.125rem', marginBottom: '0.5rem' }}>
                         {activeFilter === 'Local' && 'No local boxes yet'}
