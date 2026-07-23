@@ -231,6 +231,63 @@ const Toast = ({ message, type = 'info', duration = 3000, onClose, show = false 
   );
 };
 
+// GlowButton — the home "Create New Loot Box" CTA and the welcome CTA.
+// All styling + hover/active/shimmer behavior lives in the .glow-button
+// CSS class (styles.css); this just wires up the layered spans.
+const GlowButton = ({ children, onClick, style }) => (
+  <button className="glow-button" onClick={onClick} style={style}>
+    <span className="glow-button__shimmer" />
+    <span className="glow-button__edge" />
+    <span className="glow-button__label">{children}</span>
+  </button>
+);
+
+// Floating treasure-chest + drifting particles, shared by the home empty
+// states. glowSize tunes the radial halo behind the chest.
+const EMPTY_STATE_PARTICLES = [
+  { top: '70%', left: '15%', color: '#60a5fa', size: 5, delay: '0s',   duration: '3.5s' },
+  { top: '60%', left: '80%', color: '#a78bfa', size: 4, delay: '1.2s', duration: '4s'   },
+  { top: '40%', left: '10%', color: '#fbbf24', size: 6, delay: '2s',   duration: '3s'   },
+  { top: '75%', left: '55%', color: '#f0abfc', size: 4, delay: '0.6s', duration: '4.5s' },
+  { top: '50%', left: '88%', color: '#60a5fa', size: 5, delay: '3s',   duration: '3.8s' },
+  { top: '80%', left: '35%', color: '#a78bfa', size: 4, delay: '1.8s', duration: '5s'   },
+];
+
+const EmptyStateChest = ({ glowSize = 260 }) => (
+  <div style={{
+    position: 'relative', width: '220px', height: '220px', margin: '0 auto',
+    marginBottom: '1.5rem', animation: 'emptyStateFloat 3s ease-in-out infinite',
+  }}>
+    <div style={{
+      position: 'absolute', width: `${glowSize}px`, height: `${glowSize}px`, borderRadius: '50%',
+      background: 'radial-gradient(circle, rgba(59, 130, 246, 0.35) 0%, rgba(99, 102, 241, 0.15) 50%, transparent 75%)',
+      filter: 'blur(28px)',
+      top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+      zIndex: 0, pointerEvents: 'none',
+    }} />
+    <img
+      src="assets/images/ui/empty-state-chest.webp"
+      alt=""
+      style={{
+        width: '200px', height: '200px', objectFit: 'contain',
+        position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+        filter: 'drop-shadow(0 8px 24px rgba(59, 130, 246, 0.3))',
+        zIndex: 1,
+      }}
+    />
+    {EMPTY_STATE_PARTICLES.map((p, i) => (
+      <div key={i} style={{
+        position: 'absolute', top: p.top, left: p.left,
+        width: `${p.size}px`, height: `${p.size}px`, borderRadius: '50%',
+        backgroundColor: p.color,
+        boxShadow: `0 0 6px 2px ${p.color}99`,
+        animation: `floatParticle ${p.duration} ${p.delay} infinite ease-in-out`,
+        pointerEvents: 'none', zIndex: 2,
+      }} />
+    ))}
+  </div>
+);
+
 // useIsMobile Hook
 const useIsMobile = (breakpoint = 768) => {
   const [isMobile, setIsMobile] = useState(window.innerWidth < breakpoint);
@@ -289,6 +346,8 @@ const useToast = () => {
 export {
   Button,
   BackButton,
+  GlowButton,
+  EmptyStateChest,
   Input,
   Card,
   Toast,

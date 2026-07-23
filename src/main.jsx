@@ -1,4 +1,4 @@
-import { Button, Card, useIsMobile, useToast } from './components/common.jsx';
+import { Button, Card, EmptyStateChest, GlowButton, useIsMobile, useToast } from './components/common.jsx';
 import { AboutModal, FilterTabs, Header, SideDrawer } from './components/layout.jsx';
 import { BoxCard } from './components/BoxCard.jsx';
 import { BoxCreator } from './components/creator.jsx';
@@ -529,99 +529,12 @@ import './styles.css';
             <>
               <FilterTabs activeFilter={activeFilter} onFilterChange={setActiveFilter} filters={['All', 'Shared', 'Unopened', 'Faves', 'Local']} />
 
-              <div
-                style={{
-                  position: 'relative',
-                  width: '100%',
-                  marginBottom: isMobile ? '1rem' : '1.5rem',
-                  borderRadius: '16px',
-                  overflow: 'hidden',
-                }}
+              <GlowButton
+                onClick={handleCreateBox}
+                style={{ marginBottom: isMobile ? '1rem' : '1.5rem' }}
               >
-                <button
-                  onClick={handleCreateBox}
-                  style={{
-                    width: '100%',
-                    padding: isMobile ? '0.875rem 1.25rem' : '0.85rem 1.25rem',
-                    fontSize: isMobile ? '0.95rem' : '1rem',
-                    fontWeight: 700,
-                    fontFamily: 'inherit',
-                    color: '#e2e8f0',
-                    background: 'rgba(15, 23, 42, 0.7)',
-                    backdropFilter: 'blur(12px)',
-                    WebkitBackdropFilter: 'blur(12px)',
-                    border: '1px solid rgba(99, 102, 241, 0.45)',
-                    borderRadius: '16px',
-                    cursor: 'pointer',
-                    letterSpacing: '0.03em',
-                    position: 'relative',
-                    overflow: 'hidden',
-                    animation: 'borderPulse 3s ease-in-out infinite',
-                    transition: 'all 0.2s ease',
-                    zIndex: 0,
-                  }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.background = 'rgba(30, 27, 75, 0.75)';
-                    e.currentTarget.style.borderColor = 'rgba(139, 92, 246, 0.7)';
-                    e.currentTarget.style.color = '#ffffff';
-                    // trigger shimmer
-                    const shimmer = e.currentTarget.querySelector('.btn-shimmer');
-                    if (shimmer) shimmer.style.animation = 'shimmerSweep 0.6s ease forwards';
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.background = 'rgba(15, 23, 42, 0.7)';
-                    e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.45)';
-                    e.currentTarget.style.color = '#e2e8f0';
-                    const shimmer = e.currentTarget.querySelector('.btn-shimmer');
-                    if (shimmer) shimmer.style.animation = 'none';
-                  }}
-                  onTouchStart={e => {
-                    e.currentTarget.style.background = 'rgba(30, 27, 75, 0.75)';
-                    e.currentTarget.style.borderColor = 'rgba(139, 92, 246, 0.7)';
-                    const shimmer = e.currentTarget.querySelector('.btn-shimmer');
-                    if (shimmer) {
-                      shimmer.style.animation = 'none';
-                      void shimmer.offsetWidth;
-                      shimmer.style.animation = 'shimmerSweep 0.6s ease forwards';
-                    }
-                  }}
-                  onTouchEnd={e => {
-                    setTimeout(() => {
-                      e.currentTarget.style.background = 'rgba(15, 23, 42, 0.7)';
-                      e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.45)';
-                    }, 300);
-                  }}
-                >
-                  {/* Shimmer sweep overlay */}
-                  <div
-                    className="btn-shimmer"
-                    style={{
-                      position: 'absolute',
-                      top: 0, left: 0,
-                      width: '40%', height: '100%',
-                      background: 'linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.15), rgba(99, 102, 241, 0.1), transparent)',
-                      animation: 'none',
-                      pointerEvents: 'none',
-                      zIndex: 1,
-                    }}
-                  />
-
-                  {/* Top edge highlight */}
-                  <div style={{
-                    position: 'absolute',
-                    top: 0, left: '10%', right: '10%',
-                    height: '1px',
-                    background: 'linear-gradient(90deg, transparent, rgba(167, 139, 250, 0.6), transparent)',
-                    pointerEvents: 'none',
-                    zIndex: 2,
-                  }} />
-
-                  {/* Button text */}
-                  <span style={{ position: 'relative', zIndex: 3, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    Create New Loot Box
-                  </span>
-                </button>
-              </div>
+                Create New Loot Box
+              </GlowButton>
 
               {activeFilter === 'All' && boxes.length === 0 ? (
                 showWelcome ? (
@@ -629,46 +542,7 @@ import './styles.css';
                     display: 'flex', flexDirection: 'column', alignItems: 'center',
                     padding: '2.5rem 1.5rem 3rem',
                   }}>
-                    <div style={{
-                      position: 'relative', width: '220px', height: '220px', margin: '0 auto',
-                      marginBottom: '1.5rem',
-                      animation: 'emptyStateFloat 3s ease-in-out infinite',
-                    }}>
-                      <div style={{
-                        position: 'absolute', width: '280px', height: '280px', borderRadius: '50%',
-                        background: 'radial-gradient(circle, rgba(59, 130, 246, 0.35) 0%, rgba(99, 102, 241, 0.15) 50%, transparent 75%)',
-                        filter: 'blur(28px)',
-                        top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-                        zIndex: 0, pointerEvents: 'none',
-                      }} />
-                      <img
-                        src="assets/images/ui/empty-state-chest.webp"
-                        alt=""
-                        style={{
-                          width: '200px', height: '200px', objectFit: 'contain',
-                          position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-                          filter: 'drop-shadow(0 8px 24px rgba(59, 130, 246, 0.3))',
-                          zIndex: 1,
-                        }}
-                      />
-                      {[
-                        { top: '70%', left: '15%', color: '#60a5fa', size: 5, delay: '0s',   duration: '3.5s' },
-                        { top: '60%', left: '80%', color: '#a78bfa', size: 4, delay: '1.2s', duration: '4s'   },
-                        { top: '40%', left: '10%', color: '#fbbf24', size: 6, delay: '2s',   duration: '3s'   },
-                        { top: '75%', left: '55%', color: '#f0abfc', size: 4, delay: '0.6s', duration: '4.5s' },
-                        { top: '50%', left: '88%', color: '#60a5fa', size: 5, delay: '3s',   duration: '3.8s' },
-                        { top: '80%', left: '35%', color: '#a78bfa', size: 4, delay: '1.8s', duration: '5s'   },
-                      ].map((p, i) => (
-                        <div key={i} style={{
-                          position: 'absolute', top: p.top, left: p.left,
-                          width: `${p.size}px`, height: `${p.size}px`, borderRadius: '50%',
-                          backgroundColor: p.color,
-                          boxShadow: `0 0 6px 2px ${p.color}99`,
-                          animation: `floatParticle ${p.duration} ${p.delay} infinite ease-in-out`,
-                          pointerEvents: 'none', zIndex: 2,
-                        }} />
-                      ))}
-                    </div>
+                    <EmptyStateChest glowSize={280} />
                     <h2 style={{
                       fontSize: '1.4rem', fontWeight: 800, color: '#e2e8f0',
                       margin: '0 0 0.5rem 0', textAlign: 'center',
@@ -681,87 +555,19 @@ import './styles.css';
                     }}>
                       Build custom loot boxes and share them with friends.
                     </p>
-                    <button
+                    <GlowButton
                       onClick={() => { markWelcomeSeen(); setShowWelcome(false); handleCreateBox(); }}
-                      style={{
-                        width: '100%',
-                        maxWidth: '320px',
-                        padding: '0.875rem 1.25rem',
-                        fontSize: '0.95rem',
-                        fontWeight: 700,
-                        fontFamily: 'inherit',
-                        color: '#e2e8f0',
-                        background: 'rgba(15, 23, 42, 0.7)',
-                        backdropFilter: 'blur(12px)',
-                        WebkitBackdropFilter: 'blur(12px)',
-                        border: '1px solid rgba(99, 102, 241, 0.45)',
-                        borderRadius: '16px',
-                        cursor: 'pointer',
-                        letterSpacing: '0.03em',
-                        position: 'relative',
-                        overflow: 'hidden',
-                        animation: 'borderPulse 3s ease-in-out infinite',
-                        transition: 'all 0.2s ease',
-                      }}
-                      onMouseEnter={e => {
-                        e.currentTarget.style.background = 'rgba(30, 27, 75, 0.75)';
-                        e.currentTarget.style.borderColor = 'rgba(139, 92, 246, 0.7)';
-                        e.currentTarget.style.color = '#ffffff';
-                      }}
-                      onMouseLeave={e => {
-                        e.currentTarget.style.background = 'rgba(15, 23, 42, 0.7)';
-                        e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.45)';
-                        e.currentTarget.style.color = '#e2e8f0';
-                      }}
+                      style={{ maxWidth: '320px' }}
                     >
                       Create Your First Box
-                    </button>
+                    </GlowButton>
                   </div>
                 ) : (
                 <div style={{
                   display: 'flex', flexDirection: 'column', alignItems: 'center',
                   padding: '3rem 1.5rem 3rem',
                 }}>
-                  <div style={{
-                    position: 'relative', width: '220px', height: '220px', margin: '0 auto',
-                    marginBottom: '1.5rem',
-                    animation: 'emptyStateFloat 3s ease-in-out infinite',
-                  }}>
-                    <div style={{
-                      position: 'absolute', width: '260px', height: '260px', borderRadius: '50%',
-                      background: 'radial-gradient(circle, rgba(59, 130, 246, 0.35) 0%, rgba(99, 102, 241, 0.15) 50%, transparent 75%)',
-                      filter: 'blur(28px)',
-                      top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-                      zIndex: 0, pointerEvents: 'none',
-                    }} />
-                    <img
-                      src="assets/images/ui/empty-state-chest.webp"
-                      alt=""
-                      style={{
-                        width: '200px', height: '200px', objectFit: 'contain',
-                        position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-                        filter: 'drop-shadow(0 8px 24px rgba(59, 130, 246, 0.3))',
-                        zIndex: 1,
-                      }}
-                    />
-                    {[
-                      { top: '70%', left: '15%', color: '#60a5fa', size: 5, delay: '0s',   duration: '3.5s' },
-                      { top: '60%', left: '80%', color: '#a78bfa', size: 4, delay: '1.2s', duration: '4s'   },
-                      { top: '40%', left: '10%', color: '#fbbf24', size: 6, delay: '2s',   duration: '3s'   },
-                      { top: '75%', left: '55%', color: '#f0abfc', size: 4, delay: '0.6s', duration: '4.5s' },
-                      { top: '50%', left: '88%', color: '#60a5fa', size: 5, delay: '3s',   duration: '3.8s' },
-                      { top: '80%', left: '35%', color: '#a78bfa', size: 4, delay: '1.8s', duration: '5s'   },
-                    ].map((p, i) => (
-                      <div key={i} style={{
-                        position: 'absolute', top: p.top, left: p.left,
-                        width: `${p.size}px`, height: `${p.size}px`, borderRadius: '50%',
-                        backgroundColor: p.color,
-                        boxShadow: `0 0 6px 2px ${p.color}99`,
-                        animation: `floatParticle ${p.duration} ${p.delay} infinite ease-in-out`,
-                        pointerEvents: 'none', zIndex: 2,
-                      }} />
-                    ))}
-                  </div>
+                  <EmptyStateChest glowSize={260} />
                   <div style={{
                     fontSize: '0.9rem', color: '#a0aec0', textAlign: 'center',
                     maxWidth: '280px', lineHeight: '1.5',

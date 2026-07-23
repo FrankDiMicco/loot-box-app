@@ -413,3 +413,66 @@ input::placeholder, textarea::placeholder {
   color: #60a5fa;
   opacity: 0.85;
 }
+
+/* Glow button — the home "Create New Loot Box" CTA and the welcome CTA.
+   Hover/active state changes and the shimmer sweep are pure CSS (no JS
+   event handlers). Base is mobile (<768px); desktop bumps size below. */
+.glow-button {
+  width: 100%;
+  padding: 0.875rem 1.25rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  font-family: inherit;
+  color: #e2e8f0;
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(99, 102, 241, 0.45);
+  border-radius: 16px;
+  cursor: pointer;
+  letter-spacing: 0.03em;
+  position: relative;
+  overflow: hidden;
+  animation: borderPulse 3s ease-in-out infinite;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+@media (min-width: 768px) {
+  .glow-button { padding: 0.85rem 1.25rem; font-size: 1rem; }
+}
+.glow-button:hover,
+.glow-button:active {
+  background: rgba(30, 27, 75, 0.75);
+  border-color: rgba(139, 92, 246, 0.7);
+  color: #ffffff;
+}
+.glow-button__shimmer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 40%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.15), rgba(99, 102, 241, 0.1), transparent);
+  pointer-events: none;
+  z-index: 1;
+}
+.glow-button:hover .glow-button__shimmer,
+.glow-button:active .glow-button__shimmer {
+  animation: shimmerSweep 0.6s ease forwards;
+}
+.glow-button__edge {
+  position: absolute;
+  top: 0;
+  left: 10%;
+  right: 10%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(167, 139, 250, 0.6), transparent);
+  pointer-events: none;
+  z-index: 2;
+}
+.glow-button__label {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
