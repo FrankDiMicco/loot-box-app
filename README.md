@@ -14,6 +14,10 @@ opening with a live party feed.
   components in `src/components/`, utilities in `src/lib/`, Firebase and
   audio services in `src/services/`). Static assets in `public/`.
   Firebase compat + QRCode load as CDN globals from `index.html`.
+  An installable, offline-capable PWA: `vite-plugin-pwa` generates a service
+  worker at build time that precaches the app shell (and runtime-caches fonts
+  and the CDN libs), so the app boots and opens local boxes with no network.
+  Firestore calls are never intercepted — they always hit the network.
 - **Backend:** Firebase project `lootbox-app-dd5fa` — Firestore for shared
   boxes/templates/catalog, Anonymous Auth for identity. Local boxes live
   entirely in localStorage and work offline. The app never uses Cloud
@@ -29,7 +33,8 @@ opening with a live party feed.
 npm install
 npm run dev       # Vite dev server on :5173
 npm run build     # production build to dist/
-npm run preview   # serve the built app on :4173
+npm run preview   # serve the built app on :4173 (test the service worker here)
+npm run optimize:images  # re-compress bundled art after adding any (see scripts/)
 npx eslint src    # no-undef / no-import-assign / jsx-no-undef guard the
                   # module boundaries — run after moving code between files
 ```
