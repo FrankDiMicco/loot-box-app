@@ -45,7 +45,16 @@ import './styles.css';
               textAlign: 'center',
             }
           },
-            React.createElement('div', { style: { fontSize: '2.5rem', marginBottom: '1rem' } }, '\uD83D\uDCE6'),
+            React.createElement('svg', {
+              width: 60, height: 60, viewBox: '0 0 24 24', fill: 'none',
+              stroke: '#818cf8', strokeWidth: 1.5, strokeLinecap: 'round', strokeLinejoin: 'round',
+              style: { marginBottom: '1rem', filter: 'drop-shadow(0 4px 16px rgba(99, 102, 241, 0.45))' },
+            },
+              React.createElement('path', { d: 'M3 10.5C3 6.5 6 4.5 12 4.5C18 4.5 21 6.5 21 10.5' }),
+              React.createElement('rect', { x: 3, y: 10.5, width: 18, height: 8.5, rx: 1.5 }),
+              React.createElement('rect', { x: 10.25, y: 9, width: 3.5, height: 4, rx: 0.75 }),
+              React.createElement('circle', { cx: 12, cy: 10.9, r: 0.7, fill: '#818cf8', stroke: 'none' })
+            ),
             React.createElement('h1', { style: { fontSize: '1.3rem', fontWeight: 700, marginBottom: '0.5rem' } }, 'Something went wrong'),
             React.createElement('p', { style: { color: '#a0aec0', fontSize: '0.9rem', marginBottom: '1.5rem' } }, 'Please refresh the page.'),
             React.createElement('button', {
